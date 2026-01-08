@@ -3,7 +3,7 @@ import { ArrowRight, Compass, GraduationCap, Home, Calendar } from "lucide-react
 import { Button } from "@/components/ui/button";
 import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
 import marocCavalierCote from "@/assets/maroc-cavalier-cote.jpg";
-import yourteBretagne from "@/assets/yourte-bretagne.jpg";
+import yourteInterieur from "@/assets/yourte-interieur.jpg";
 
 const services = [
   {
@@ -29,7 +29,7 @@ const services = [
     title: "Hébergement",
     description:
       "Séjournez dans notre yourte traditionnelle au cœur de la ferme, pour une immersion totale dans l'univers équestre.",
-    image: yourteBretagne,
+    image: yourteInterieur,
     href: "/hebergement",
     accent: "from-secondary/80 to-secondary",
   },
