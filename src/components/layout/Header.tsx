@@ -68,14 +68,15 @@ export function Header() {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-3 group">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-              <span className="text-2xl">🐴</span>
-            </div>
+            <img 
+              src="/logo-an-arwen.png" 
+              alt="Ferme Équestre An Arwen" 
+              className="h-14 w-auto"
+            />
             <div className="hidden sm:block">
               <h1 className="font-serif text-xl font-bold text-foreground">
-                An Arwen
+                Ferme Équestre An Arwen
               </h1>
-              <p className="text-xs text-muted-foreground">Ferme Équestre</p>
             </div>
           </Link>
 
