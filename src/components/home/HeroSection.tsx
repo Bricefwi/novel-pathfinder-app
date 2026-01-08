@@ -64,8 +64,8 @@ export function HeroSection() {
           role="img"
           aria-label={slide.alt}
         >
-          {/* Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-foreground/40 via-foreground/30 to-foreground/60" />
+          {/* Overlay renforcé pour meilleure lisibilité du texte */}
+          <div className="absolute inset-0 bg-gradient-to-b from-foreground/50 via-foreground/40 to-foreground/70" />
         </div>
       ))}
 
@@ -101,25 +101,25 @@ export function HeroSection() {
         ))}
       </div>
 
-      {/* Content */}
+      {/* Content with text shadow for better visibility */}
       <div className="relative z-10 container mx-auto px-4 text-center">
         <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
           {/* Badge */}
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-card/20 backdrop-blur-sm border border-card/30">
-            <span className="text-sm text-card font-medium">
+          <div className="inline-flex items-center px-4 py-2 rounded-full bg-background/20 backdrop-blur-md border border-background/30 shadow-lg">
+            <span className="text-sm text-primary-foreground font-medium drop-shadow-md">
               ✨ Randonnées équestres en Bretagne & Maroc
             </span>
           </div>
 
-          {/* Title */}
-          <h1 className="font-serif text-4xl md:text-5xl lg:text-7xl font-bold text-card leading-tight">
+          {/* Title with text shadow */}
+          <h1 className="font-serif text-4xl md:text-5xl lg:text-7xl font-bold text-primary-foreground leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
             Quand la sérénité du voyage
             <br />
-            <span className="text-primary">rencontre l'aventure</span>
+            <span className="text-primary drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">rencontre l'aventure</span>
           </h1>
 
-          {/* Subtitle */}
-          <p className="text-lg md:text-xl text-card/90 max-w-2xl mx-auto leading-relaxed">
+          {/* Subtitle with shadow */}
+          <p className="text-lg md:text-xl text-primary-foreground/95 max-w-2xl mx-auto leading-relaxed drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
             Vivez des moments uniques au rythme du cheval, entre les légendes bretonnes
             et les dunes marocaines. Une expérience inoubliable vous attend.
           </p>
