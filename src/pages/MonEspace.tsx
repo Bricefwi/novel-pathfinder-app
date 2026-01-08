@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,7 +19,12 @@ import {
   CreditCard,
   Award,
   Mountain,
-  Compass
+  Compass,
+  ArrowRight,
+  CalendarDays,
+  MessageCircle,
+  Sparkles,
+  TrendingUp
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
@@ -66,12 +71,23 @@ interface Subscription {
   };
 }
 
+interface Activity {
+  id: string;
+  title: string;
+  location: string;
+  activity_type: string;
+  short_description: string | null;
+  featured_image: string | null;
+  price_from: number | null;
+}
+
 const MonEspace = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [recommendedActivities, setRecommendedActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -124,7 +140,27 @@ const MonEspace = () => {
 
     if (subsData) setSubscriptions(subsData as Subscription[]);
 
+    // Fetch recommended activities
+    const { data: activitiesData } = await supabase
+      .from("activities")
+      .select("id, title, location, activity_type, short_description, featured_image, price_from")
+      .eq("is_active", true)
+      .limit(4);
+
+    if (activitiesData) setRecommendedActivities(activitiesData);
+
     setLoading(false);
+  };
+
+  const getActivityTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      randonnee: "Randonnée",
+      cours: "Cours",
+      stage: "Stage",
+      sejour: "Séjour",
+      hebergement: "Hébergement",
+    };
+    return labels[type] || type;
   };
 
   const getStatusColor = (status: string) => {
@@ -241,6 +277,44 @@ const MonEspace = () => {
             </Card>
           )}
 
+          {/* Quick Actions */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <Link to="/planning">
+              <Card className="border-border/50 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer h-full">
+                <CardContent className="pt-6 text-center">
+                  <CalendarDays className="h-8 w-8 text-primary mx-auto mb-2" />
+                  <h3 className="font-semibold text-sm">Planning</h3>
+                  <p className="text-xs text-muted-foreground">Voir les disponibilités</p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link to="/sejours">
+              <Card className="border-border/50 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer h-full">
+                <CardContent className="pt-6 text-center">
+                  <Compass className="h-8 w-8 text-primary mx-auto mb-2" />
+                  <h3 className="font-semibold text-sm">Séjours</h3>
+                  <p className="text-xs text-muted-foreground">Découvrir les aventures</p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link to="/destinations">
+              <Card className="border-border/50 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer h-full">
+                <CardContent className="pt-6 text-center">
+                  <MapPin className="h-8 w-8 text-primary mx-auto mb-2" />
+                  <h3 className="font-semibold text-sm">Destinations</h3>
+                  <p className="text-xs text-muted-foreground">Explorer le monde</p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Card className="border-border/50 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer opacity-70">
+              <CardContent className="pt-6 text-center">
+                <MessageCircle className="h-8 w-8 text-primary mx-auto mb-2" />
+                <h3 className="font-semibold text-sm">Chat</h3>
+                <p className="text-xs text-muted-foreground">Bientôt disponible</p>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Stats Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <Card className="border-border/50">
@@ -311,6 +385,10 @@ const MonEspace = () => {
               <TabsTrigger value="preferences" className="flex items-center gap-2">
                 <Compass className="h-4 w-4" />
                 <span className="hidden sm:inline">Préférences</span>
+              </TabsTrigger>
+              <TabsTrigger value="decouvrir" className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden sm:inline">Pour vous</span>
               </TabsTrigger>
               <TabsTrigger value="profil" className="flex items-center gap-2">
                 <User className="h-4 w-4" />
@@ -527,6 +605,107 @@ const MonEspace = () => {
                 <Button onClick={() => navigate("/onboarding")}>
                   Modifier mes préférences
                 </Button>
+              </div>
+            </TabsContent>
+
+            {/* Discover Tab - Recommended Activities */}
+            <TabsContent value="decouvrir">
+              <div className="space-y-6">
+                <Card className="border-border/50">
+                  <CardHeader>
+                    <CardTitle className="font-serif flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                      Activités Recommandées
+                    </CardTitle>
+                    <CardDescription>
+                      Basées sur vos préférences et centres d'intérêt
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {recommendedActivities.length === 0 ? (
+                      <div className="text-center py-12">
+                        <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="font-semibold mb-2">Aucune activité disponible</h3>
+                        <p className="text-muted-foreground">
+                          De nouvelles aventures arrivent bientôt
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        {recommendedActivities.map((activity) => (
+                          <Link key={activity.id} to={`/destinations`}>
+                            <div className="group rounded-xl overflow-hidden border border-border hover:border-primary/50 hover:shadow-lg transition-all">
+                              <div className="aspect-[16/9] overflow-hidden bg-muted">
+                                {activity.featured_image ? (
+                                  <img 
+                                    src={activity.featured_image} 
+                                    alt={activity.title}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <Mountain className="h-12 w-12 text-muted-foreground" />
+                                  </div>
+                                )}
+                              </div>
+                              <div className="p-4">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Badge variant="outline" className="text-xs">
+                                    {getActivityTypeLabel(activity.activity_type)}
+                                  </Badge>
+                                </div>
+                                <h4 className="font-semibold group-hover:text-primary transition-colors">
+                                  {activity.title}
+                                </h4>
+                                <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                                  <MapPin className="h-3 w-3" />
+                                  {activity.location}
+                                </p>
+                                {activity.price_from && (
+                                  <p className="text-sm font-semibold text-primary mt-2">
+                                    À partir de {activity.price_from}€
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-6 text-center">
+                      <Link to="/destinations">
+                        <Button variant="outline" className="group">
+                          Voir toutes les activités
+                          <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Trending Section */}
+                <Card className="border-border/50">
+                  <CardHeader>
+                    <CardTitle className="font-serif flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      Tendances du moment
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {["Randonnée Maroc", "Stage Bretagne", "Séjour Yourte", "Balade plage"].map((trend) => (
+                        <Badge 
+                          key={trend} 
+                          variant="secondary" 
+                          className="cursor-pointer hover:bg-primary/20 transition-colors"
+                          onClick={() => navigate("/destinations")}
+                        >
+                          {trend}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </TabsContent>
 
