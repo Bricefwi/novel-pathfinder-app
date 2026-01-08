@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import galerieDesertCavaliers from "@/assets/galerie-desert-cavaliers.png";
 
 const galleryImages = [
   {
@@ -14,7 +15,7 @@ const galleryImages = [
     span: "col-span-1 row-span-1",
   },
   {
-    src: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=600&q=80",
+    src: galerieDesertCavaliers,
     alt: "Chevaux au galop",
     span: "col-span-1 row-span-1",
   },
