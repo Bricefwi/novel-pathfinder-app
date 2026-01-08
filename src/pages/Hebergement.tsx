@@ -3,6 +3,10 @@ import { Link } from "react-router-dom";
 import { Wifi, Car, Coffee, TreePine, Users, Bed, ArrowRight, Star, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Import real images
+import bretagnVillageChevaux from "@/assets/bretagne-village-chevaux.jpg";
+import marocArchitecture from "@/assets/maroc-architecture.jpg";
+
 const amenities = [
   { icon: Wifi, label: "WiFi gratuit" },
   { icon: Car, label: "Parking privé" },
@@ -46,7 +50,7 @@ const Hebergement = () => {
       <section className="relative min-h-[70vh] flex items-center justify-center overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center bg-fixed"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1920&q=80')" }}
+          style={{ backgroundImage: `url(${bretagnVillageChevaux})` }}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/60 via-foreground/40 to-foreground/60" />
         <div className="relative z-10 container mx-auto px-4 text-center">
@@ -94,14 +98,14 @@ const Hebergement = () => {
             <div className="relative">
               <div className="aspect-[4/5] rounded-3xl overflow-hidden">
                 <img 
-                  src="https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=80" 
-                  alt="Gîte An Arwen" 
+                  src={bretagnVillageChevaux} 
+                  alt="Gîte An Arwen - architecture bretonne traditionnelle" 
                   className="w-full h-full object-cover"
                 />
               </div>
               <div className="absolute -bottom-8 -left-8 bg-card p-6 rounded-2xl shadow-xl border border-border">
-                <p className="text-4xl font-bold text-primary">15+</p>
-                <p className="text-muted-foreground">années d'accueil</p>
+                <p className="text-4xl font-bold text-primary">25+</p>
+                <p className="text-muted-foreground">années d'expérience</p>
               </div>
             </div>
           </div>
@@ -188,8 +192,8 @@ const Hebergement = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=600&q=80",
-              "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=600&q=80",
+              bretagnVillageChevaux,
+              marocArchitecture,
               "https://images.unsplash.com/photo-1540518614846-7eded433c457?w=600&q=80",
               "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=600&q=80",
             ].map((src, index) => (
