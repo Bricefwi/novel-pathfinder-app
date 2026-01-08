@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
 import marocCavalierCote from "@/assets/maroc-cavalier-cote.jpg";
 import yourteInterieur from "@/assets/yourte-interieur.jpg";
+import bretagneVillageChevaux from "@/assets/bretagne-village-chevaux.jpg";
 
 const services = [
   {
@@ -38,8 +39,7 @@ const services = [
     title: "Événements",
     description:
       "Anniversaires, team building, baptêmes... Célébrez vos moments importants dans un cadre unique.",
-    image:
-      "https://www.ferme-equestre-an-arwen.com/wp-content/uploads/2022/07/Bretagne-romantique-a-cheval-an-arwen-23-scaled.jpg",
+    image: bretagneVillageChevaux,
     href: "/contact",
     accent: "from-chart-1/80 to-chart-1",
   },
