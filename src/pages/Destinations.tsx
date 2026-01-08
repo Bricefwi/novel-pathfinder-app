@@ -8,6 +8,7 @@ import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil
 import bretagnVillageChevaux from "@/assets/bretagne-village-chevaux.jpg";
 import marocDunesCavaliers from "@/assets/maroc-dunes-cavaliers.jpg";
 import marocCavalierCote from "@/assets/maroc-cavalier-cote.jpg";
+import korrigansForetChevaux from "@/assets/korrigans-foret-chevaux.jpg";
 
 const destinations = [
   {
@@ -36,7 +37,7 @@ const destinations = [
     id: "korrigans",
     title: "La Légende des Korrigans",
     description: "Plongez dans l'univers mystique des korrigans bretons à cheval, entre forêts enchantées et landes sauvages.",
-    image: cavaliersPlageCoucherSoleil,
+    image: korrigansForetChevaux,
     location: "Bretagne, France",
     duration: "2-3 jours",
     level: "Débutant",
