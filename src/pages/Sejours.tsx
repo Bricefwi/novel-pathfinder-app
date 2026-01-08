@@ -2,6 +2,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Link } from "react-router-dom";
 import { MapPin, Clock, Users, ArrowRight, Star, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import korrigansForetChevaux from "@/assets/korrigans-foret-chevaux.jpg";
 
 const sejours = [
   {
@@ -35,7 +36,7 @@ const sejours = [
     title: "La Légende des Korrigans",
     subtitle: "Plongez dans l'univers mystique breton",
     description: "Plongez dans l'univers mystique des korrigans bretons à cheval. Forêts enchantées, mégalithes et contes traditionnels.",
-    image: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800&q=80",
+    image: korrigansForetChevaux,
     location: "Forêt de Brocéliande",
     duration: "2-3 jours",
     level: "Débutant",
