@@ -17,6 +17,7 @@ const navigation = [
   { name: "Accueil", href: "/" },
   { name: "Destinations", href: "/destinations" },
   { name: "Séjours", href: "/sejours" },
+  { name: "Planning", href: "/planning" },
   { name: "Hébergement", href: "/hebergement" },
   { name: "Carnet de Voyage", href: "/carnet-de-voyage" },
   { name: "Galerie", href: "/galerie" },
@@ -109,9 +110,9 @@ export function Header() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem asChild>
-                    <Link to="/profil" className="flex items-center">
+                    <Link to="/mon-espace" className="flex items-center">
                       <User className="mr-2 h-4 w-4" />
-                      Mon Profil
+                      Mon Espace
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>

@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      accommodation_slots: {
+        Row: {
+          booking_id: string | null
+          created_at: string
+          date: string
+          id: string
+          is_available: boolean | null
+          name: string
+          notes: string | null
+          price_per_night: number | null
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string
+          date: string
+          id?: string
+          is_available?: boolean | null
+          name?: string
+          notes?: string | null
+          price_per_night?: number | null
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          is_available?: boolean | null
+          name?: string
+          notes?: string | null
+          price_per_night?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accommodation_slots_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activities: {
         Row: {
           activity_type: Database["public"]["Enums"]["activity_type"]
@@ -94,6 +135,98 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      activity_slots: {
+        Row: {
+          activity_id: string | null
+          created_at: string
+          current_participants: number | null
+          end_date: string
+          id: string
+          is_available: boolean | null
+          max_participants: number | null
+          notes: string | null
+          price: number | null
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          activity_id?: string | null
+          created_at?: string
+          current_participants?: number | null
+          end_date: string
+          id?: string
+          is_available?: boolean | null
+          max_participants?: number | null
+          notes?: string | null
+          price?: number | null
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          activity_id?: string | null
+          created_at?: string
+          current_participants?: number | null
+          end_date?: string
+          id?: string
+          is_available?: boolean | null
+          max_participants?: number | null
+          notes?: string | null
+          price?: number | null
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_slots_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_subscriptions: {
+        Row: {
+          activity_id: string | null
+          activity_slot_id: string | null
+          id: string
+          status: string | null
+          subscribed_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_id?: string | null
+          activity_slot_id?: string | null
+          id?: string
+          status?: string | null
+          subscribed_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_id?: string | null
+          activity_slot_id?: string | null
+          id?: string
+          status?: string | null
+          subscribed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_subscriptions_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activity_subscriptions_activity_slot_id_fkey"
+            columns: ["activity_slot_id"]
+            isOneToOne: false
+            referencedRelation: "activity_slots"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       articles: {
         Row: {
@@ -344,12 +477,20 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          dream_destinations: string[] | null
           first_name: string | null
           id: string
+          interests: string[] | null
           last_name: string | null
+          onboarding_completed: boolean | null
           phone: string | null
           preferences: Json | null
+          preferred_duration: string | null
+          preferred_trip_types: string[] | null
+          riding_experience_years: number | null
           riding_level: Database["public"]["Enums"]["riding_level"] | null
+          riding_style: string[] | null
+          travel_style: string | null
           updated_at: string
           user_id: string
         }
@@ -357,12 +498,20 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          dream_destinations?: string[] | null
           first_name?: string | null
           id?: string
+          interests?: string[] | null
           last_name?: string | null
+          onboarding_completed?: boolean | null
           phone?: string | null
           preferences?: Json | null
+          preferred_duration?: string | null
+          preferred_trip_types?: string[] | null
+          riding_experience_years?: number | null
           riding_level?: Database["public"]["Enums"]["riding_level"] | null
+          riding_style?: string[] | null
+          travel_style?: string | null
           updated_at?: string
           user_id: string
         }
@@ -370,12 +519,20 @@ export type Database = {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          dream_destinations?: string[] | null
           first_name?: string | null
           id?: string
+          interests?: string[] | null
           last_name?: string | null
+          onboarding_completed?: boolean | null
           phone?: string | null
           preferences?: Json | null
+          preferred_duration?: string | null
+          preferred_trip_types?: string[] | null
+          riding_experience_years?: number | null
           riding_level?: Database["public"]["Enums"]["riding_level"] | null
+          riding_style?: string[] | null
+          travel_style?: string | null
           updated_at?: string
           user_id?: string
         }
