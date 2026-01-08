@@ -5,11 +5,44 @@ import { Cookie, X } from "lucide-react";
 
 const COOKIE_CONSENT_KEY = "cookie-consent";
 
+function safeGetConsent(): string | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    return window.localStorage.getItem(COOKIE_CONSENT_KEY);
+  } catch {
+    // Certains navigateurs / iframes peuvent bloquer localStorage
+  }
+
+  try {
+    return window.sessionStorage.getItem(COOKIE_CONSENT_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetConsent(value: "accepted" | "refused"): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(COOKIE_CONSENT_KEY, value);
+    return;
+  } catch {
+    // fallback
+  }
+
+  try {
+    window.sessionStorage.setItem(COOKIE_CONSENT_KEY, value);
+  } catch {
+    // Pas de stockage disponible : on ne persiste pas, mais on évite de casser l'app.
+  }
+}
+
 export function CookieBanner() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const consent = localStorage.getItem(COOKIE_CONSENT_KEY);
+    const consent = safeGetConsent();
     if (!consent) {
       // Délai pour afficher le bandeau après le chargement
       const timer = setTimeout(() => setIsVisible(true), 1000);
@@ -18,12 +51,12 @@ export function CookieBanner() {
   }, []);
 
   const handleAccept = () => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, "accepted");
+    safeSetConsent("accepted");
     setIsVisible(false);
   };
 
   const handleRefuse = () => {
-    localStorage.setItem(COOKIE_CONSENT_KEY, "refused");
+    safeSetConsent("refused");
     setIsVisible(false);
   };
 
