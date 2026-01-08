@@ -1,0 +1,162 @@
+import { useEffect, useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { Plus, Trash2, Loader2, Star } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import type { Tables } from "@/integrations/supabase/types";
+
+type GalleryPhoto = Tables<"gallery_photos">;
+
+export function AdminGallery() {
+  const { toast } = useToast();
+  const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    image_url: "",
+    category: "general",
+    is_featured: false,
+  });
+
+  const fetchPhotos = async () => {
+    const { data, error } = await supabase
+      .from("gallery_photos")
+      .select("*")
+      .order("sort_order", { ascending: true });
+
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      setPhotos(data || []);
+    }
+    setIsLoading(false);
+  };
+
+  useEffect(() => {
+    fetchPhotos();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const { error } = await supabase
+      .from("gallery_photos")
+      .insert(formData);
+
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Photo ajoutée" });
+      fetchPhotos();
+      setIsDialogOpen(false);
+      setFormData({ title: "", description: "", image_url: "", category: "general", is_featured: false });
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Supprimer cette photo ?")) return;
+
+    const { error } = await supabase.from("gallery_photos").delete().eq("id", id);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Photo supprimée" });
+      fetchPhotos();
+    }
+  };
+
+  const toggleFeatured = async (photo: GalleryPhoto) => {
+    const { error } = await supabase
+      .from("gallery_photos")
+      .update({ is_featured: !photo.is_featured })
+      .eq("id", photo.id);
+
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      fetchPhotos();
+    }
+  };
+
+  if (isLoading) {
+    return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold">Gestion de la galerie</h2>
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus className="h-4 w-4 mr-2" />Ajouter une photo</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Ajouter une photo</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="image_url">URL de l'image *</Label>
+                <Input id="image_url" value={formData.image_url} onChange={(e) => setFormData({...formData, image_url: e.target.value})} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="title">Titre</Label>
+                <Input id="title" value={formData.title} onChange={(e) => setFormData({...formData, title: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Input id="description" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category">Catégorie</Label>
+                <Input id="category" value={formData.category} onChange={(e) => setFormData({...formData, category: e.target.value})} />
+              </div>
+              <label className="flex items-center gap-2">
+                <input type="checkbox" checked={formData.is_featured} onChange={(e) => setFormData({...formData, is_featured: e.target.checked})} />
+                Mettre en avant
+              </label>
+              <Button type="submit" className="w-full">Ajouter</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {photos.length === 0 ? (
+          <p className="col-span-full text-muted-foreground text-center py-8">Aucune photo</p>
+        ) : (
+          photos.map((photo) => (
+            <Card key={photo.id} className="overflow-hidden">
+              <div className="relative aspect-square">
+                <img src={photo.image_url} alt={photo.title || ""} className="w-full h-full object-cover" />
+                {photo.is_featured && (
+                  <div className="absolute top-2 left-2 bg-primary text-primary-foreground px-2 py-1 rounded text-xs">
+                    ⭐ Featured
+                  </div>
+                )}
+              </div>
+              <CardContent className="p-3">
+                <p className="font-medium truncate">{photo.title || "Sans titre"}</p>
+                <p className="text-xs text-muted-foreground">{photo.category}</p>
+                <div className="flex justify-end gap-1 mt-2">
+                  <Button variant="ghost" size="icon" onClick={() => toggleFeatured(photo)}>
+                    <Star className={`h-4 w-4 ${photo.is_featured ? "fill-primary text-primary" : ""}`} />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(photo.id)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
