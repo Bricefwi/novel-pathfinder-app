@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import galerieDesertCavaliers from "@/assets/galerie-desert-cavaliers.png";
+import galerieChevauxDesert from "@/assets/galerie-chevaux-desert.png";
 
 const galleryImages = [
   {
@@ -30,8 +31,8 @@ const galleryImages = [
     span: "col-span-1 row-span-1",
   },
   {
-    src: "https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=600&q=80",
-    alt: "Randonnée en groupe",
+    src: galerieChevauxDesert,
+    alt: "Chevaux dans le désert marocain",
     span: "col-span-1 row-span-1",
   },
 ];
