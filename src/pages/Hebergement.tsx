@@ -1,6 +1,6 @@
 import { Layout } from "@/components/layout/Layout";
 import { Link } from "react-router-dom";
-import { Wifi, Car, Coffee, TreePine, Users, Bed, ArrowRight, Star, Check, Home, Leaf, Heart } from "lucide-react";
+import { Wifi, Car, Coffee, TreePine, Users, Bed, ArrowRight, Star, Check, Home, Leaf, Heart, MapPin, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Import real yourte images
@@ -166,8 +166,114 @@ const Hebergement = () => {
         </div>
       </section>
 
+      {/* Magazine Editorial Section */}
+      <section className="py-24 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <article className="max-w-4xl mx-auto">
+            {/* Article Header */}
+            <header className="text-center mb-16">
+              <span className="text-primary font-medium tracking-widest uppercase text-sm">
+                Récit de voyage
+              </span>
+              <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mt-4 leading-tight">
+                L'Esprit des Steppes en Terre Bretonne
+              </h2>
+              <p className="text-xl md:text-2xl text-muted-foreground mt-6 italic">
+                Une Nuit Magique à An Arwen
+              </p>
+            </header>
+
+            {/* Lead Paragraph */}
+            <div className="mb-12">
+              <p className="text-lg md:text-xl text-foreground leading-relaxed font-medium text-center max-w-3xl mx-auto">
+                À la croisée d'une histoire millénaire et de la douceur de vivre bretonne, la yourte s'impose comme l'ultime refuge pour ceux qui cherchent à reconnecter leur âme avec la nature. Entre bois sculpté, tissus chatoyants et ciel étoilé, découvrez à la Ferme Équestre An Arwen un habitat qui ne ressemble à aucun autre.
+              </p>
+            </div>
+
+            {/* Section 1 */}
+            <div className="mb-16">
+              <h3 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
+                <span className="w-12 h-[2px] bg-primary"></span>
+                Une architecture du ciel et de la terre
+              </h3>
+              <div className="prose prose-lg max-w-none">
+                <p className="text-muted-foreground text-lg leading-relaxed mb-6">
+                  Le premier contact est visuel, presque magnétique. La yourte n'est pas une simple tente ; c'est un <strong className="text-foreground">microcosme</strong>. Sa forme circulaire, héritée des nomades d'Asie Centrale, offre une prise infinie à la sérénité.
+                </p>
+                <p className="text-muted-foreground text-lg leading-relaxed">
+                  En pénétrant à l'intérieur, l'œil est immédiatement attiré par le <strong className="text-foreground">Toono</strong>, cette ouverture circulaire au sommet du dôme. Véritable œil tourné vers le cosmos, il baigne l'espace d'une lumière zénithale le jour et devient une fenêtre privée sur la Voie Lactée une fois la nuit tombée.
+                </p>
+              </div>
+            </div>
+
+            {/* Section 2 with image */}
+            <div className="mb-16">
+              <div className="grid lg:grid-cols-5 gap-8 items-center">
+                <div className="lg:col-span-3">
+                  <h3 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
+                    <span className="w-12 h-[2px] bg-primary"></span>
+                    Le luxe de la lenteur et de l'authentique
+                  </h3>
+                  <p className="text-muted-foreground text-lg leading-relaxed mb-6">
+                    Oubliez les standards aseptisés. Ici, vos sens sont en éveil : l'odeur du bois naturel se mêle à la douceur des meubles traditionnels peints de motifs solaires.
+                  </p>
+                  <p className="text-muted-foreground text-lg leading-relaxed">
+                    Que ce soit au coucher du soleil, quand la lumière embrase les collines de La Chapelle du Lou du Lac, ou au petit matin, au rythme des chevaux, la yourte offre une isolation sensorielle unique. C'est un habitat qui respire et qui vous enveloppe dans une douceur protectrice.
+                  </p>
+                </div>
+                <div className="lg:col-span-2">
+                  <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-lg">
+                    <img 
+                      src={yourteInterieurChambre} 
+                      alt="Intérieur chaleureux de la yourte"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quote */}
+            <blockquote className="my-16 py-8 px-6 md:px-12 border-l-4 border-primary bg-background/50 rounded-r-2xl">
+              <p className="font-serif text-xl md:text-2xl text-foreground italic leading-relaxed">
+                "Dormir dans une yourte, c'est accepter de perdre ses angles droits pour retrouver son équilibre intérieur."
+              </p>
+            </blockquote>
+
+            {/* CTA Box */}
+            <div className="bg-primary/5 border border-primary/20 rounded-3xl p-8 md:p-12 text-center">
+              <h3 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-4">
+                Prêt pour votre épopée nomade ?
+              </h3>
+              <p className="text-muted-foreground text-lg mb-8 max-w-2xl mx-auto">
+                Ne vous contentez pas de dormir ailleurs, habitez un rêve. Que vous soyez en quête d'une retraite romantique ou d'une aventure familiale hors des sentiers battus, la Ferme Équestre An Arwen vous attend pour une parenthèse hors du temps.
+              </p>
+              
+              <div className="flex flex-col sm:flex-row flex-wrap justify-center gap-4 md:gap-8 mb-8 text-sm md:text-base">
+                <div className="flex items-center justify-center gap-2 text-foreground">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <span>5 Le Bignon, 35360 La Chapelle du Lou du Lac</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 text-foreground">
+                  <Phone className="h-5 w-5 text-primary" />
+                  <span>02 99 06 68 68</span>
+                </div>
+                <div className="flex items-center justify-center gap-2 text-foreground">
+                  <Mail className="h-5 w-5 text-primary" />
+                  <span>contact@ferme-equestre-an-arwen.com</span>
+                </div>
+              </div>
+
+              <p className="text-primary font-medium italic">
+                Le dépaysement n'a jamais été aussi proche.
+              </p>
+            </div>
+          </article>
+        </div>
+      </section>
+
       {/* Amenities */}
-      <section className="py-16 bg-muted/30">
+      <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="font-serif text-3xl font-bold text-foreground">
@@ -178,7 +284,7 @@ const Hebergement = () => {
             {amenities.map((amenity, index) => (
               <div 
                 key={index}
-                className="flex flex-col items-center text-center p-6 bg-background rounded-2xl border border-border hover:border-primary/30 transition-colors"
+                className="flex flex-col items-center text-center p-6 bg-muted/30 rounded-2xl border border-border hover:border-primary/30 transition-colors"
               >
                 <amenity.icon className="h-8 w-8 text-primary mb-3" />
                 <span className="text-foreground font-medium">{amenity.label}</span>
