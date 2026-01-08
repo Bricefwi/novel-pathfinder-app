@@ -4,32 +4,32 @@ import { Button } from "@/components/ui/button";
 
 const galleryImages = [
   {
-    src: "https://www.ferme-equestre-an-arwen.com/wp-content/uploads/2022/07/Bretagne-romantique-a-cheval-an-arwen-25-scaled.jpg",
+    src: "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=800&q=80",
     alt: "Randonnée sur la plage en Bretagne",
     span: "col-span-2 row-span-2",
   },
   {
-    src: "https://www.ferme-equestre-an-arwen.com/wp-content/uploads/2022/07/Bretagne-romantique-a-cheval-an-arwen-6-scaled.jpg",
+    src: "https://images.unsplash.com/photo-1598974357801-cbca100e65d3?w=600&q=80",
     alt: "Cavaliers en forêt",
     span: "col-span-1 row-span-1",
   },
   {
-    src: "https://www.ferme-equestre-an-arwen.com/wp-content/uploads/2022/07/Bretagne-romantique-a-cheval-an-arwen-3-scaled.jpg",
+    src: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=600&q=80",
     alt: "Chevaux au galop",
     span: "col-span-1 row-span-1",
   },
   {
-    src: "https://www.ferme-equestre-an-arwen.com/wp-content/uploads/2022/07/Bretagne-romantique-a-cheval-an-arwen-23-scaled.jpg",
+    src: "https://images.unsplash.com/photo-1489493887464-892be6d1daae?w=600&q=80",
     alt: "Coucher de soleil équestre",
     span: "col-span-1 row-span-2",
   },
   {
-    src: "https://www.ferme-equestre-an-arwen.com/wp-content/uploads/2022/07/Bretagne-romantique-a-cheval-an-arwen-10-scaled.jpg",
+    src: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80",
     alt: "Paysage breton",
     span: "col-span-1 row-span-1",
   },
   {
-    src: "https://www.ferme-equestre-an-arwen.com/wp-content/uploads/2022/07/Bretagne-romantique-a-cheval-an-arwen-14-scaled.jpg",
+    src: "https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=600&q=80",
     alt: "Randonnée en groupe",
     span: "col-span-1 row-span-1",
   },
