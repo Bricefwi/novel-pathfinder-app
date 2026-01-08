@@ -609,6 +609,50 @@ export type Database = {
           },
         ]
       }
+      user_reviews: {
+        Row: {
+          activity_id: string | null
+          content: string
+          created_at: string
+          id: string
+          is_approved: boolean | null
+          photo_urls: string[] | null
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activity_id?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          is_approved?: boolean | null
+          photo_urls?: string[] | null
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activity_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_approved?: boolean | null
+          photo_urls?: string[] | null
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_reviews_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
