@@ -1,6 +1,12 @@
 import { Link } from "react-router-dom";
-import { MapPin, Phone, Mail, Facebook, Instagram } from "lucide-react";
+import { MapPin, Phone, Mail, Facebook, Instagram, MessageCircle } from "lucide-react";
 import logoCheval from "@/assets/logo-cheval.png";
+
+const TikTokIcon = () => (
+  <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+    <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+  </svg>
+);
 
 const navigation = {
   destinations: [
@@ -16,11 +22,34 @@ const navigation = {
     { name: "FAQ", href: "/contact#faq" },
   ],
   legal: [
-    { name: "Mentions légales", href: "/mentions-legales" },
-    { name: "Politique de confidentialité", href: "/mentions-legales#confidentialite" },
-    { name: "CGV", href: "/mentions-legales#cgv" },
+    { name: "CGU", href: "/cgu" },
+    { name: "Politique de confidentialité", href: "/politique-confidentialite" },
+    { name: "Cookies", href: "/cookies" },
   ],
 };
+
+const socialLinks = [
+  {
+    name: "Facebook",
+    href: "https://www.facebook.com/fermeequestrearwen/",
+    icon: Facebook,
+  },
+  {
+    name: "Instagram",
+    href: "https://www.instagram.com/fermeequestreanarwen/",
+    icon: Instagram,
+  },
+  {
+    name: "TikTok",
+    href: "https://www.tiktok.com/@ferme_equestre_an_arwen",
+    icon: TikTokIcon,
+  },
+  {
+    name: "WhatsApp",
+    href: "https://wa.me/33299066868",
+    icon: MessageCircle,
+  },
+];
 
 export function Footer() {
   return (
@@ -43,23 +72,19 @@ export function Footer() {
               Quand la sérénité du voyage rencontre l'aventure à cheval. Découvrez nos randonnées
               équestres en Bretagne et au Maroc.
             </p>
-            <div className="flex space-x-4">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
-              >
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
-              >
-                <Instagram className="h-5 w-5" />
-              </a>
+            <div className="flex space-x-3">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.name}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={social.name}
+                  className="w-10 h-10 rounded-full bg-secondary-foreground/10 flex items-center justify-center hover:bg-primary hover:text-primary-foreground transition-colors"
+                >
+                  <social.icon />
+                </a>
+              ))}
             </div>
           </div>
 

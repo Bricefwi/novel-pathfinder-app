@@ -14,6 +14,9 @@ import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import MonEspace from "./pages/MonEspace";
 import Onboarding from "./pages/Onboarding";
+import CGU from "./pages/CGU";
+import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite";
+import Cookies from "./pages/Cookies";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +39,9 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/mon-espace" element={<MonEspace />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/cgu" element={<CGU />} />
+          <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+          <Route path="/cookies" element={<Cookies />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
