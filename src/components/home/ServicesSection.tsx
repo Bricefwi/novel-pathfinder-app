@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Compass, GraduationCap, Home, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
 
 const services = [
   {
@@ -8,8 +9,7 @@ const services = [
     title: "Randonnées",
     description:
       "Explorez la Bretagne romantique ou les dunes du Maroc lors de randonnées inoubliables de 2 à 7 jours.",
-    image:
-      "https://www.ferme-equestre-an-arwen.com/wp-content/uploads/2022/07/Bretagne-romantique-a-cheval-an-arwen-6-scaled.jpg",
+    image: cavaliersPlageCoucherSoleil,
     href: "/destinations",
     accent: "from-primary/80 to-primary",
   },
@@ -64,12 +64,12 @@ export function ServicesSection() {
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {services.map((service, index) => (
             <Link
               key={service.title}
               to={service.href}
-              className="group relative overflow-hidden rounded-3xl aspect-[16/10] block"
+              className="group relative overflow-hidden rounded-2xl aspect-[3/4] block"
               style={{ animationDelay: `${index * 100}ms` }}
             >
               {/* Background Image */}
@@ -84,17 +84,17 @@ export function ServicesSection() {
               />
 
               {/* Content */}
-              <div className="absolute inset-0 p-8 flex flex-col justify-end">
+              <div className="absolute inset-0 p-5 flex flex-col justify-end">
                 <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-card/20 backdrop-blur-sm flex items-center justify-center">
-                      <service.icon className="h-6 w-6 text-card" />
+                  <div className="flex items-center space-x-2 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-card/20 backdrop-blur-sm flex items-center justify-center">
+                      <service.icon className="h-5 w-5 text-card" />
                     </div>
-                    <h3 className="font-serif text-2xl font-bold text-card">
+                    <h3 className="font-serif text-xl font-bold text-card">
                       {service.title}
                     </h3>
                   </div>
-                  <p className="text-card/90 mb-4 max-w-md leading-relaxed">
+                  <p className="text-card/90 text-sm mb-3 leading-relaxed line-clamp-2">
                     {service.description}
                   </p>
                   <Button
