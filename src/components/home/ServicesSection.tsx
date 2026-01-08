@@ -78,10 +78,8 @@ export function ServicesSection() {
                 style={{ backgroundImage: `url('${service.image}')` }}
               />
 
-              {/* Overlay */}
-              <div
-                className={`absolute inset-0 bg-gradient-to-t ${service.accent} opacity-70 group-hover:opacity-80 transition-opacity`}
-              />
+              {/* Overlay - gradient sombre uniquement */}
+              <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/30 to-transparent group-hover:from-foreground/90 transition-all" />
 
               {/* Content */}
               <div className="absolute inset-0 p-5 flex flex-col justify-end">
