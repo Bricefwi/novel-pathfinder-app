@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { MapPin, Phone, Mail, Facebook, Instagram } from "lucide-react";
+import logoCheval from "@/assets/logo-cheval.png";
 
 const navigation = {
   destinations: [
@@ -30,8 +31,8 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-6">
             <Link to="/" className="flex items-center space-x-3 group">
-              <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                <span className="text-2xl">🐴</span>
+              <div className="w-14 h-14 rounded-full bg-background/10 flex items-center justify-center overflow-hidden">
+                <img src={logoCheval} alt="Logo Ferme Équestre An Arwen" className="w-12 h-12 object-contain" />
               </div>
               <div>
                 <h2 className="font-serif text-xl font-bold">An Arwen</h2>
