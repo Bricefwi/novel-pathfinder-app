@@ -24,6 +24,10 @@ const navigation = [
   { name: "Contact", href: "/contact" },
 ];
 
+const authNavigation = [
+  { name: "Mon Espace", href: "/mon-espace" },
+];
+
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -97,6 +101,20 @@ export function Header() {
                 {item.name}
               </Link>
             ))}
+            {user && authNavigation.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={cn(
+                  "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300",
+                  location.pathname === item.href
+                    ? "text-primary bg-primary/10"
+                    : "text-primary/80 hover:text-primary hover:bg-primary/5"
+                )}
+              >
+                {item.name}
+              </Link>
+            ))}
           </nav>
 
           {/* Actions */}
@@ -162,7 +180,7 @@ export function Header() {
           )}
         >
           <nav className="flex flex-col space-y-2 pb-4">
-            {navigation.map((item) => (
+              {navigation.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
@@ -172,6 +190,21 @@ export function Header() {
                   location.pathname === item.href
                     ? "text-primary bg-primary/10"
                     : "text-foreground/80 hover:text-primary hover:bg-primary/5"
+                )}
+              >
+                {item.name}
+              </Link>
+            ))}
+            {user && authNavigation.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                onClick={() => setIsOpen(false)}
+                className={cn(
+                  "px-4 py-3 text-sm font-medium rounded-lg transition-all border border-primary/30",
+                  location.pathname === item.href
+                    ? "text-primary bg-primary/10"
+                    : "text-primary hover:bg-primary/5"
                 )}
               >
                 {item.name}
