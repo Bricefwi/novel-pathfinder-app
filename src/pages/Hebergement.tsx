@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 
 // Import real yourte images
 import yourteCollage from "@/assets/yourte-collage.png";
+import yourteCollage2 from "@/assets/yourte-collage-2.png";
 import yourteInterieurLits from "@/assets/yourte-interieur-lits.webp";
 import yourteInterieurChambre from "@/assets/yourte-interieur-chambre.webp";
 import yourtePorte from "@/assets/yourte-porte.webp";
@@ -299,10 +300,10 @@ const Hebergement = () => {
         <div className="container mx-auto px-4">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="relative order-2 lg:order-1">
-              <div className="aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl">
+              <div className="aspect-[3/2] rounded-2xl overflow-hidden shadow-xl max-w-md mx-auto lg:max-w-none">
                 <img 
-                  src={yourteExterieurCoucher} 
-                  alt="Yourte An Arwen au coucher du soleil" 
+                  src={yourteCollage2} 
+                  alt="Collage photos de la Yourte An Arwen" 
                   className="w-full h-full object-cover"
                 />
               </div>
