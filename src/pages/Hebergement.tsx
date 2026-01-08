@@ -133,40 +133,33 @@ const Hebergement = () => {
             </h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-            <div className="col-span-2 row-span-2 rounded-3xl overflow-hidden group">
-              <img 
-                src={yourteInterieurChambre} 
-                alt="Intérieur yourte - chambre principale"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-            </div>
-            <div className="aspect-square rounded-2xl overflow-hidden group">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="aspect-[4/3] rounded-xl overflow-hidden group">
               <img 
                 src={yourteInterieurLits} 
                 alt="Yourte - espace couchage"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </div>
-            <div className="aspect-square rounded-2xl overflow-hidden group">
+            <div className="aspect-[4/3] rounded-xl overflow-hidden group">
               <img 
                 src={yourteExterieurCoucher} 
                 alt="Extérieur yourte au coucher du soleil"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </div>
-            <div className="aspect-square rounded-2xl overflow-hidden group">
+            <div className="aspect-[4/3] rounded-xl overflow-hidden group">
               <img 
                 src={yourtePorte} 
                 alt="Porte de la yourte"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </div>
-            <div className="aspect-square rounded-2xl overflow-hidden group">
+            <div className="aspect-[4/3] rounded-xl overflow-hidden group">
               <img 
                 src={yourteJardinHamac} 
                 alt="Jardin avec hamac"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />
             </div>
           </div>
