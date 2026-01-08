@@ -3,6 +3,7 @@ import { ArrowRight, Compass, GraduationCap, Home, Calendar } from "lucide-react
 import { Button } from "@/components/ui/button";
 import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
 import marocCavalierCote from "@/assets/maroc-cavalier-cote.jpg";
+import yourteBretagne from "@/assets/yourte-bretagne.jpg";
 
 const services = [
   {
@@ -27,9 +28,8 @@ const services = [
     icon: Home,
     title: "Hébergement",
     description:
-      "Séjournez dans notre gîte chaleureux au cœur de la ferme, pour une immersion totale dans l'univers équestre.",
-    image:
-      "https://www.ferme-equestre-an-arwen.com/wp-content/uploads/2022/07/Bretagne-romantique-a-cheval-an-arwen-25-scaled.jpg",
+      "Séjournez dans notre yourte traditionnelle au cœur de la ferme, pour une immersion totale dans l'univers équestre.",
+    image: yourteBretagne,
     href: "/hebergement",
     accent: "from-secondary/80 to-secondary",
   },
