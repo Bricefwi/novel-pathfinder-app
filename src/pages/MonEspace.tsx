@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import ChatCommunautaire from "@/components/chat/ChatCommunautaire";
 import { 
   User, 
   Heart, 
@@ -24,7 +25,8 @@ import {
   CalendarDays,
   MessageCircle,
   Sparkles,
-  TrendingUp
+  TrendingUp,
+  Users
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
@@ -306,11 +308,17 @@ const MonEspace = () => {
                 </CardContent>
               </Card>
             </Link>
-            <Card className="border-border/50 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer opacity-70">
+            <Card 
+              className="border-border/50 hover:border-primary/50 hover:shadow-md transition-all cursor-pointer"
+              onClick={() => {
+                const chatTab = document.querySelector('[value="chat"]') as HTMLElement;
+                if (chatTab) chatTab.click();
+              }}
+            >
               <CardContent className="pt-6 text-center">
                 <MessageCircle className="h-8 w-8 text-primary mx-auto mb-2" />
                 <h3 className="font-semibold text-sm">Chat</h3>
-                <p className="text-xs text-muted-foreground">Bientôt disponible</p>
+                <p className="text-xs text-muted-foreground">Communauté</p>
               </CardContent>
             </Card>
           </div>
@@ -373,7 +381,7 @@ const MonEspace = () => {
 
           {/* Main Tabs */}
           <Tabs defaultValue="reservations" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+            <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
               <TabsTrigger value="reservations" className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 <span className="hidden sm:inline">Réservations</span>
@@ -381,6 +389,10 @@ const MonEspace = () => {
               <TabsTrigger value="abonnements" className="flex items-center gap-2">
                 <Heart className="h-4 w-4" />
                 <span className="hidden sm:inline">Abonnements</span>
+              </TabsTrigger>
+              <TabsTrigger value="chat" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Chat</span>
               </TabsTrigger>
               <TabsTrigger value="preferences" className="flex items-center gap-2">
                 <Compass className="h-4 w-4" />
@@ -507,6 +519,11 @@ const MonEspace = () => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Chat Tab */}
+            <TabsContent value="chat">
+              <ChatCommunautaire />
             </TabsContent>
 
             {/* Preferences Tab */}

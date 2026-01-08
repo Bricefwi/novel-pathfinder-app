@@ -341,6 +341,30 @@ export type Database = {
           },
         ]
       }
+      chat_messages: {
+        Row: {
+          activity_type: string
+          content: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          content: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          content?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contact_requests: {
         Row: {
           activity_id: string | null
