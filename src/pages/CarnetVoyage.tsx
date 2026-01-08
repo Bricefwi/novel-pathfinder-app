@@ -3,6 +3,14 @@ import { Link } from "react-router-dom";
 import { Calendar, MapPin, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Import real images
+import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
+import marocDesertNuages from "@/assets/maroc-desert-nuages.jpg";
+import bretagnVillageChevaux from "@/assets/bretagne-village-chevaux.jpg";
+import marocDunesCavaliers from "@/assets/maroc-dunes-cavaliers.jpg";
+import marocCanyonCavaliers from "@/assets/maroc-canyon-cavaliers.jpg";
+import marocEssaouiraBateau from "@/assets/maroc-essaouira-bateau.jpg";
+
 const voyages = [
   {
     id: "bretagne-printemps-2024",
@@ -10,7 +18,7 @@ const voyages = [
     date: "Avril 2024",
     location: "Côte d'Émeraude",
     excerpt: "Une semaine magique entre les ajoncs en fleur et les plages désertes de la côte bretonne.",
-    image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
+    image: cavaliersPlageCoucherSoleil,
     featured: true,
   },
   {
@@ -19,7 +27,7 @@ const voyages = [
     date: "Février 2024",
     location: "Sahara, Maroc",
     excerpt: "Galops enivrants dans les dunes dorées et nuits étoilées sous les tentes berbères.",
-    image: "https://images.unsplash.com/photo-1509023464722-18d996393ca8?w=800&q=80",
+    image: marocDunesCavaliers,
     featured: true,
   },
   {
@@ -28,25 +36,25 @@ const voyages = [
     date: "Octobre 2023",
     location: "Forêt de Paimpont",
     excerpt: "Sur les traces de Merlin et des chevaliers de la Table Ronde.",
-    image: "https://images.unsplash.com/photo-1440342359743-84fcb8c21f21?w=800&q=80",
+    image: bretagnVillageChevaux,
     featured: false,
   },
   {
     id: "automne-breton",
-    title: "Couleurs d'automne",
+    title: "Randonnée au canyon marocain",
     date: "Novembre 2023",
-    location: "Monts d'Arrée",
-    excerpt: "Randonnée au cœur des landes bretonnes parées de leurs plus belles couleurs.",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80",
+    location: "Atlas, Maroc",
+    excerpt: "Exploration des canyons spectaculaires de l'Atlas marocain à cheval.",
+    image: marocCanyonCavaliers,
     featured: false,
   },
   {
-    id: "noel-ferme",
-    title: "Noël à la ferme",
+    id: "essaouira",
+    title: "Escale à Essaouira",
     date: "Décembre 2023",
-    location: "Ferme An Arwen",
-    excerpt: "Moments de partage et de fête avec nos pensionnaires à quatre pattes.",
-    image: "https://images.unsplash.com/photo-1482164565953-04b62dcac1cd?w=800&q=80",
+    location: "Essaouira, Maroc",
+    excerpt: "Découverte du port de pêche traditionnel et de la médina d'Essaouira.",
+    image: marocEssaouiraBateau,
     featured: false,
   },
   {
@@ -55,7 +63,7 @@ const voyages = [
     date: "Été 2023",
     location: "Saint-Malo - Cancale",
     excerpt: "Des galops inoubliables sur les plus belles plages de Bretagne.",
-    image: "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=800&q=80",
+    image: cavaliersPlageCoucherSoleil,
     featured: false,
   },
 ];
@@ -70,7 +78,7 @@ const CarnetVoyage = () => {
       <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=1920&q=80')" }}
+          style={{ backgroundImage: `url(${marocDesertNuages})` }}
         />
         <div className="absolute inset-0 bg-foreground/50" />
         <div className="relative z-10 container mx-auto px-4 text-center">
@@ -81,7 +89,7 @@ const CarnetVoyage = () => {
             Carnet de Voyage
           </h1>
           <p className="text-primary-foreground/90 text-xl max-w-2xl mx-auto">
-            Revivez nos plus belles aventures équestres à travers la Bretagne et au-delà.
+            Revivez nos plus belles aventures équestres à travers la Bretagne et au Maroc.
           </p>
         </div>
       </section>

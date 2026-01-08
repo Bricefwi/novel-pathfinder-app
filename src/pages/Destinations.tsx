@@ -3,12 +3,18 @@ import { Link } from "react-router-dom";
 import { MapPin, Clock, Users, ArrowRight, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Import real images
+import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
+import bretagnVillageChevaux from "@/assets/bretagne-village-chevaux.jpg";
+import marocDunesCavaliers from "@/assets/maroc-dunes-cavaliers.jpg";
+import marocCavalierCote from "@/assets/maroc-cavalier-cote.jpg";
+
 const destinations = [
   {
     id: "bretagne-romantique",
     title: "Bretagne Romantique",
     description: "Découvrez les châteaux et forêts légendaires de Bretagne lors d'une randonnée de 3 à 5 jours.",
-    image: "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=800&q=80",
+    image: cavaliersPlageCoucherSoleil,
     location: "Bretagne, France",
     duration: "3-5 jours",
     level: "Tous niveaux",
@@ -19,7 +25,7 @@ const destinations = [
     id: "chevalier-duguesclin",
     title: "Sur les traces du Chevalier Duguesclin",
     description: "Suivez les traces du célèbre chevalier breton à travers châteaux et légendes.",
-    image: "https://images.unsplash.com/photo-1598974357801-cbca100e65d3?w=800&q=80",
+    image: bretagnVillageChevaux,
     location: "Bretagne, France",
     duration: "4-6 jours",
     level: "Intermédiaire",
@@ -29,8 +35,8 @@ const destinations = [
   {
     id: "korrigans",
     title: "La Légende des Korrigans",
-    description: "Plongez dans l'univers mystique des korrigans bretons à cheval.",
-    image: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800&q=80",
+    description: "Plongez dans l'univers mystique des korrigans bretons à cheval, entre forêts enchantées et landes sauvages.",
+    image: cavaliersPlageCoucherSoleil,
     location: "Bretagne, France",
     duration: "2-3 jours",
     level: "Débutant",
@@ -41,7 +47,7 @@ const destinations = [
     id: "maroc-desert",
     title: "Séjour au Maroc",
     description: "Galopez dans les dunes du Sahara et découvrez la magie du désert marocain.",
-    image: "https://images.unsplash.com/photo-1489493887464-892be6d1daae?w=800&q=80",
+    image: marocDunesCavaliers,
     location: "Maroc",
     duration: "7 jours",
     level: "Confirmé",
@@ -57,7 +63,7 @@ const Destinations = () => {
       <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80')" }}
+          style={{ backgroundImage: `url(${marocCavalierCote})` }}
         />
         <div className="absolute inset-0 bg-foreground/50" />
         <div className="relative z-10 container mx-auto px-4 text-center">

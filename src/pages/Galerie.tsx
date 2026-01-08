@@ -2,70 +2,72 @@ import { Layout } from "@/components/layout/Layout";
 import { useState } from "react";
 import { X } from "lucide-react";
 
+// Import real images
+import marocPaysageRoute from "@/assets/maroc-paysage-route.jpg";
+import marocArchitecture from "@/assets/maroc-architecture.jpg";
+import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
+import marocDesertNuages from "@/assets/maroc-desert-nuages.jpg";
+import bretagnVillageChevaux from "@/assets/bretagne-village-chevaux.jpg";
+import marocCavalierCote from "@/assets/maroc-cavalier-cote.jpg";
+import marocOmbreCavalier from "@/assets/maroc-ombre-cavalier.jpg";
+import marocCanyonCavaliers from "@/assets/maroc-canyon-cavaliers.jpg";
+import marocDunesCavaliers from "@/assets/maroc-dunes-cavaliers.jpg";
+import marocEssaouiraBateau from "@/assets/maroc-essaouira-bateau.jpg";
+
 const photos = [
   {
-    src: "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=800&q=80",
-    alt: "Randonnée sur la plage",
+    src: cavaliersPlageCoucherSoleil,
+    alt: "Cavaliers sur la plage au coucher de soleil",
     category: "Randonnées",
   },
   {
-    src: "https://images.unsplash.com/photo-1598974357801-cbca100e65d3?w=800&q=80",
-    alt: "Cavaliers en forêt",
-    category: "Randonnées",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800&q=80",
-    alt: "Paysage breton",
-    category: "Paysages",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1489493887464-892be6d1daae?w=800&q=80",
-    alt: "Désert marocain",
+    src: marocDunesCavaliers,
+    alt: "Cavaliers sur les dunes du Sahara",
     category: "Maroc",
   },
   {
-    src: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&q=80",
-    alt: "Montagne bretonne",
-    category: "Paysages",
+    src: bretagnVillageChevaux,
+    alt: "Chevaux devant un restaurant breton typique",
+    category: "Bretagne",
   },
   {
-    src: "https://images.unsplash.com/photo-1534258936925-c58bed479fcb?w=800&q=80",
-    alt: "Cheval au galop",
-    category: "Chevaux",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80",
-    alt: "Portrait cheval",
-    category: "Chevaux",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1509023464722-18d996393ca8?w=800&q=80",
-    alt: "Dunes du désert",
+    src: marocCavalierCote,
+    alt: "Randonnée équestre sur la côte marocaine",
     category: "Maroc",
   },
   {
-    src: "https://images.unsplash.com/photo-1440342359743-84fcb8c21f21?w=800&q=80",
-    alt: "Forêt enchantée",
+    src: marocDesertNuages,
+    alt: "Paysage du désert marocain avec dunes",
     category: "Paysages",
   },
   {
-    src: "https://images.unsplash.com/photo-1551884831-bbf3cdc6469e?w=800&q=80",
-    alt: "Groupe de cavaliers",
-    category: "Randonnées",
+    src: marocCanyonCavaliers,
+    alt: "Cavaliers dans le canyon de l'Atlas",
+    category: "Maroc",
   },
   {
-    src: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80",
-    alt: "Gîte cosy",
-    category: "Hébergement",
+    src: marocArchitecture,
+    alt: "Architecture traditionnelle marocaine",
+    category: "Maroc",
   },
   {
-    src: "https://images.unsplash.com/photo-1507652313519-d4e9174996dd?w=800&q=80",
-    alt: "Écurie",
-    category: "Ferme",
+    src: marocPaysageRoute,
+    alt: "Route panoramique au Maroc",
+    category: "Paysages",
+  },
+  {
+    src: marocOmbreCavalier,
+    alt: "Ombre de cavalier dans le désert",
+    category: "Maroc",
+  },
+  {
+    src: marocEssaouiraBateau,
+    alt: "Bateau de pêche traditionnel à Essaouira",
+    category: "Maroc",
   },
 ];
 
-const categories = ["Tous", "Randonnées", "Chevaux", "Paysages", "Maroc", "Hébergement", "Ferme"];
+const categories = ["Tous", "Randonnées", "Bretagne", "Maroc", "Paysages"];
 
 const Galerie = () => {
   const [selectedCategory, setSelectedCategory] = useState("Tous");
@@ -81,7 +83,7 @@ const Galerie = () => {
       <section className="relative min-h-[50vh] flex items-center justify-center overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80')" }}
+          style={{ backgroundImage: `url(${marocDunesCavaliers})` }}
         />
         <div className="absolute inset-0 bg-foreground/50" />
         <div className="relative z-10 container mx-auto px-4 text-center">
@@ -97,11 +99,14 @@ const Galerie = () => {
       {/* Filters */}
       <section className="py-8 bg-background border-b border-border">
         <div className="container mx-auto px-4">
-          <div className="flex flex-wrap justify-center gap-2">
+          <div className="flex flex-wrap justify-center gap-2" role="tablist" aria-label="Filtrer par catégorie">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
+                role="tab"
+                aria-selected={selectedCategory === cat}
+                aria-controls="gallery-grid"
                 className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
                   selectedCategory === cat 
                     ? "bg-primary text-primary-foreground" 
@@ -116,7 +121,7 @@ const Galerie = () => {
       </section>
 
       {/* Gallery Grid - Masonry style */}
-      <section className="py-16 bg-background">
+      <section className="py-16 bg-background" id="gallery-grid" role="tabpanel">
         <div className="container mx-auto px-4">
           <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
             {filteredPhotos.map((photo, i) => (
@@ -124,6 +129,10 @@ const Galerie = () => {
                 key={i} 
                 className="break-inside-avoid rounded-2xl overflow-hidden group cursor-pointer"
                 onClick={() => setLightboxImage(photo.src)}
+                role="button"
+                tabIndex={0}
+                aria-label={`Agrandir l'image: ${photo.alt}`}
+                onKeyDown={(e) => e.key === 'Enter' && setLightboxImage(photo.src)}
               >
                 <div className="relative">
                   <img 
@@ -151,6 +160,9 @@ const Galerie = () => {
         <div 
           className="fixed inset-0 z-50 bg-foreground/90 flex items-center justify-center p-4"
           onClick={() => setLightboxImage(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image agrandie"
         >
           <button 
             className="absolute top-6 right-6 text-primary-foreground hover:text-primary transition-colors"
@@ -160,7 +172,7 @@ const Galerie = () => {
             <X className="h-8 w-8" />
           </button>
           <img 
-            src={lightboxImage.replace('w=800', 'w=1600')} 
+            src={lightboxImage} 
             alt="Photo agrandie" 
             className="max-w-full max-h-[90vh] rounded-lg object-contain"
             onClick={(e) => e.stopPropagation()}
