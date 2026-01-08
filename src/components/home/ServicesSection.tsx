@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Compass, GraduationCap, Home, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
+import marocCavalierCote from "@/assets/maroc-cavalier-cote.jpg";
 
 const services = [
   {
@@ -18,8 +19,7 @@ const services = [
     title: "Cours & Stages",
     description:
       "Perfectionnez votre équitation avec nos cours adaptés à tous les niveaux, du débutant à l'expert.",
-    image:
-      "https://www.ferme-equestre-an-arwen.com/wp-content/uploads/2022/07/Bretagne-romantique-a-cheval-an-arwen-3-scaled.jpg",
+    image: marocCavalierCote,
     href: "/destinations?type=cours",
     accent: "from-accent-foreground/80 to-accent-foreground",
   },
