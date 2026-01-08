@@ -30,13 +30,13 @@ const features = [
 const Hebergement = () => {
   return (
     <Layout>
-      {/* Hero - Full width with main collage */}
-      <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
+      {/* Hero - Reduced size with lighter overlay */}
+      <section className="relative min-h-[50vh] md:min-h-[60vh] flex items-center justify-center overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${yourteCollage})` }}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-foreground/70 via-foreground/50 to-foreground/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-foreground/40 via-foreground/25 to-foreground/40" />
         <div className="relative z-10 container mx-auto px-4 text-center">
           <span className="inline-block text-primary-foreground/80 font-medium mb-4 tracking-widest uppercase text-sm">
             Hébergement Insolite
