@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CalendarDays, MapPin, Users, Home, ChevronLeft, ChevronRight } from "lucide-react";
 import { format, addMonths, subMonths, isSameDay, isWithinInterval, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
+import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
 
 interface ActivitySlot {
   id: string;
@@ -122,6 +123,7 @@ const Planning = () => {
 
   return (
     <Layout>
+      <SEOHead {...seoConfigs.planning} />
       <section className="pt-32 pb-16 min-h-screen">
         <div className="container mx-auto px-4">
           {/* Header */}

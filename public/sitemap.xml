@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  
+  <!-- Page d'accueil -->
+  <url>
+    <loc>https://www.ferme-equestre-an-arwen.com/</loc>
+    <lastmod>2025-01-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.ferme-equestre-an-arwen.com/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.ferme-equestre-an-arwen.com/"/>
+  </url>
+  
+  <!-- Destinations / Randonnées -->
+  <url>
+    <loc>https://www.ferme-equestre-an-arwen.com/destinations</loc>
+    <lastmod>2025-01-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <!-- Séjours équestres -->
+  <url>
+    <loc>https://www.ferme-equestre-an-arwen.com/sejours</loc>
+    <lastmod>2025-01-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <!-- Hébergement Yourte Bretagne -->
+  <url>
+    <loc>https://www.ferme-equestre-an-arwen.com/hebergement</loc>
+    <lastmod>2025-01-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://www.ferme-equestre-an-arwen.com/assets/yourte-exterieur-coucher.webp</image:loc>
+      <image:title>Yourte traditionnelle en Bretagne - Hébergement insolite</image:title>
+    </image:image>
+  </url>
+  
+  <!-- Galerie photos -->
+  <url>
+    <loc>https://www.ferme-equestre-an-arwen.com/galerie</loc>
+    <lastmod>2025-01-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Contact -->
+  <url>
+    <loc>https://www.ferme-equestre-an-arwen.com/contact</loc>
+    <lastmod>2025-01-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <!-- Préparer son voyage -->
+  <url>
+    <loc>https://www.ferme-equestre-an-arwen.com/preparer-voyage</loc>
+    <lastmod>2025-01-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Carnet de voyage / Blog -->
+  <url>
+    <loc>https://www.ferme-equestre-an-arwen.com/carnet-voyage</loc>
+    <lastmod>2025-01-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  
+  <!-- Demande de devis -->
+  <url>
+    <loc>https://www.ferme-equestre-an-arwen.com/demande-devis</loc>
+    <lastmod>2025-01-09</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <!-- Planning -->
+  <url>
+    <loc>https://www.ferme-equestre-an-arwen.com/planning</loc>
+    <lastmod>2025-01-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <!-- Pages légales -->
+  <url>
+    <loc>https://www.ferme-equestre-an-arwen.com/cgu</loc>
+    <lastmod>2025-01-09</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.ferme-equestre-an-arwen.com/politique-confidentialite</loc>
+    <lastmod>2025-01-09</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  
+  <url>
+    <loc>https://www.ferme-equestre-an-arwen.com/cookies</loc>
+    <lastmod>2025-01-09</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+</urlset>

@@ -1,6 +1,7 @@
 import { Layout } from "@/components/layout/Layout";
 import { useState } from "react";
 import { X } from "lucide-react";
+import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
 
 // Import real images
 import marocPaysageRoute from "@/assets/maroc-paysage-route.jpg";
@@ -79,6 +80,7 @@ const Galerie = () => {
 
   return (
     <Layout>
+      <SEOHead {...seoConfigs.galerie} />
       {/* Hero */}
       <section className="relative min-h-[50vh] flex items-center justify-center overflow-hidden">
         <div 

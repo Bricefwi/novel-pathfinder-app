@@ -49,7 +49,6 @@ const App = () => (
           <Route path="/admin" element={<Admin />} />
           <Route path="/preparer-voyage" element={<PreparerVoyage />} />
           <Route path="*" element={<NotFound />} />
-          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

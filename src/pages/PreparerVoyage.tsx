@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import videoPlage from "@/assets/video-plage-cheval.mp4";
+import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
 
 const PreparerVoyage = () => {
   const [activeTab, setActiveTab] = useState('admin');
@@ -249,6 +250,7 @@ const PreparerVoyage = () => {
 
   return (
     <Layout>
+      <SEOHead {...seoConfigs.preparerVoyage} />
       {/* Hero Section avec Vidéo */}
       <section className="relative">
         <div className="relative h-[60vh] min-h-[400px] overflow-hidden">

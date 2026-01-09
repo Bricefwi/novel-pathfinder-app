@@ -2,6 +2,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Link } from "react-router-dom";
 import { MapPin, Clock, Users, ArrowRight, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
 
 // Import real images
 import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
@@ -60,6 +61,7 @@ const destinations = [
 const Destinations = () => {
   return (
     <Layout>
+      <SEOHead {...seoConfigs.destinations} />
       {/* Hero - Bellevoire style */}
       <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden">
         <div 
