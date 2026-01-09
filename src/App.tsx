@@ -11,6 +11,7 @@ import Hebergement from "./pages/Hebergement";
 import CarnetVoyage from "./pages/CarnetVoyage";
 import Galerie from "./pages/Galerie";
 import Contact from "./pages/Contact";
+import DemandeDevis from "./pages/DemandeDevis";
 import Auth from "./pages/Auth";
 import MonEspace from "./pages/MonEspace";
 import Onboarding from "./pages/Onboarding";
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/carnet-de-voyage" element={<CarnetVoyage />} />
           <Route path="/galerie" element={<Galerie />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/demande-devis" element={<DemandeDevis />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/mon-espace" element={<MonEspace />} />
           <Route path="/onboarding" element={<Onboarding />} />
