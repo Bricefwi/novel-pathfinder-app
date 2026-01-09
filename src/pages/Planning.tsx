@@ -5,11 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { CalendarDays, MapPin, Users, Home, ChevronLeft, ChevronRight } from "lucide-react";
-import { format, addMonths, subMonths, isSameDay, isWithinInterval, parseISO } from "date-fns";
+import { CalendarDays, MapPin, Users, Home, ChevronLeft, ChevronRight, Send, Loader2 } from "lucide-react";
+import { format, addMonths, subMonths, isSameDay, isWithinInterval, parseISO, isBefore, startOfDay, addDays, eachDayOfInterval, endOfMonth, startOfMonth } from "date-fns";
 import { fr } from "date-fns/locale";
 import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface ActivitySlot {
   id: string;
@@ -34,18 +40,56 @@ interface AccommodationSlot {
   is_available: boolean;
   price_per_night: number;
   name: string;
+  booking_id?: string | null;
+}
+
+interface AvailabilityRequest {
+  name: string;
+  email: string;
+  phone: string;
+  message: string;
 }
 
 const Planning = () => {
+  const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [activitySlots, setActivitySlots] = useState<ActivitySlot[]>([]);
   const [accommodationSlots, setAccommodationSlots] = useState<AccommodationSlot[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  
+  // Dialog states
+  const [showAvailabilityDialog, setShowAvailabilityDialog] = useState(false);
+  const [requestType, setRequestType] = useState<"activity" | "accommodation">("activity");
+  const [selectedActivity, setSelectedActivity] = useState<ActivitySlot | null>(null);
+  const [requestForm, setRequestForm] = useState<AvailabilityRequest>({ name: "", email: "", phone: "", message: "" });
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    checkUser();
     fetchData();
   }, [currentMonth]);
+
+  const checkUser = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    setUser(user);
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("first_name, last_name, phone")
+        .eq("user_id", user.id)
+        .single();
+      if (profile) {
+        setRequestForm(prev => ({
+          ...prev,
+          name: `${profile.first_name || ""} ${profile.last_name || ""}`.trim(),
+          email: user.email || "",
+          phone: profile.phone || "",
+        }));
+      }
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -97,13 +141,42 @@ const Planning = () => {
     activitySlots.forEach((slot) => {
       const start = parseISO(slot.start_date);
       const end = parseISO(slot.end_date);
-      let current = start;
+      let current = new Date(start);
       while (current <= end) {
         dates.push(new Date(current));
-        current = new Date(current.setDate(current.getDate() + 1));
+        current = addDays(current, 1);
       }
     });
     return dates;
+  };
+
+  // Generate all dates in the visible range
+  const getAccommodationDatesInRange = () => {
+    const start = startOfMonth(subMonths(currentMonth, 1));
+    const end = endOfMonth(addMonths(currentMonth, 2));
+    return eachDayOfInterval({ start, end });
+  };
+
+  // Get available dates for accommodation - dates NOT booked or marked unavailable
+  const getAvailableAccommodationDates = () => {
+    const allDates = getAccommodationDatesInRange();
+    const today = startOfDay(new Date());
+    
+    return allDates.filter(date => {
+      if (isBefore(date, today)) return false;
+      
+      const slot = accommodationSlots.find(s => isSameDay(parseISO(s.date), date));
+      // Available if: no slot exists OR (slot exists AND is_available is true AND no booking)
+      if (!slot) return true;
+      return slot.is_available && !slot.booking_id;
+    });
+  };
+
+  // Get booked dates
+  const getBookedAccommodationDates = () => {
+    return accommodationSlots
+      .filter(s => !s.is_available || s.booking_id)
+      .map(s => parseISO(s.date));
   };
 
   const getActivitiesForDate = (date: Date) => {
@@ -115,7 +188,83 @@ const Planning = () => {
   };
 
   const getAccommodationForDate = (date: Date) => {
-    return accommodationSlots.find((slot) => isSameDay(parseISO(slot.date), date));
+    const slot = accommodationSlots.find((slot) => isSameDay(parseISO(slot.date), date));
+    // If no slot exists, it's available by default
+    if (!slot) {
+      return {
+        id: "default",
+        date: format(date, "yyyy-MM-dd"),
+        is_available: true,
+        price_per_night: 80,
+        name: "Yourte An Arwen",
+        booking_id: null,
+      };
+    }
+    return slot;
+  };
+
+  const handleReserveActivity = (slot: ActivitySlot) => {
+    // Redirect to quote form with pre-filled activity
+    navigate(`/demande-devis?activity=${slot.activity?.title || ""}&date=${slot.start_date}`);
+  };
+
+  const handleRequestAvailability = (type: "activity" | "accommodation", activity?: ActivitySlot) => {
+    setRequestType(type);
+    setSelectedActivity(activity || null);
+    setShowAvailabilityDialog(true);
+  };
+
+  const handleSubmitAvailabilityRequest = async () => {
+    if (!requestForm.name || !requestForm.email) {
+      toast.error("Veuillez renseigner votre nom et email");
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      // Call the notify-admin edge function
+      const { error } = await supabase.functions.invoke("notify-admin", {
+        body: {
+          type: "disponibilite",
+          data: {
+            name: requestForm.name,
+            email: requestForm.email,
+            phone: requestForm.phone,
+            date: selectedDate ? format(selectedDate, "dd/MM/yyyy") : undefined,
+            activityTitle: selectedActivity?.activity?.title,
+            accommodationName: requestType === "accommodation" ? "Yourte An Arwen" : undefined,
+            message: requestForm.message,
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      // Also save to contact_requests table
+      await supabase.from("contact_requests").insert({
+        name: requestForm.name,
+        email: requestForm.email,
+        phone: requestForm.phone,
+        subject: `Demande de disponibilité - ${requestType === "accommodation" ? "Yourte An Arwen" : selectedActivity?.activity?.title}`,
+        message: `Date demandée: ${selectedDate ? format(selectedDate, "dd/MM/yyyy") : "Non précisée"}\n\n${requestForm.message}`,
+        preferred_date: selectedDate ? format(selectedDate, "yyyy-MM-dd") : null,
+      });
+
+      toast.success("Votre demande a été envoyée ! Nous vous répondrons rapidement.");
+      setShowAvailabilityDialog(false);
+      setRequestForm(prev => ({ ...prev, message: "" }));
+    } catch (error: any) {
+      console.error("Error sending availability request:", error);
+      toast.error("Erreur lors de l'envoi. Veuillez réessayer.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleReserveAccommodation = () => {
+    if (!selectedDate) return;
+    navigate(`/demande-devis?accommodation=yourte&date=${format(selectedDate, "yyyy-MM-dd")}`);
   };
 
   const selectedActivities = selectedDate ? getActivitiesForDate(selectedDate) : [];
@@ -220,13 +369,10 @@ const Planning = () => {
                         month={currentMonth}
                         onMonthChange={setCurrentMonth}
                         className="rounded-lg border-0 w-full"
+                        disabled={(date) => isBefore(date, startOfDay(new Date()))}
                         modifiers={{
-                          available: accommodationSlots
-                            .filter((s) => s.is_available)
-                            .map((s) => parseISO(s.date)),
-                          booked: accommodationSlots
-                            .filter((s) => !s.is_available)
-                            .map((s) => parseISO(s.date)),
+                          available: getAvailableAccommodationDates(),
+                          booked: getBookedAccommodationDates(),
                         }}
                         modifiersStyles={{
                           available: {
@@ -380,9 +526,22 @@ const Planning = () => {
                                     {slot.max_participants - slot.current_participants} places restantes
                                   </span>
                                 </div>
-                                <Button className="w-full mt-3" size="sm">
-                                  Réserver
-                                </Button>
+                                <div className="flex gap-2 mt-3">
+                                  <Button 
+                                    className="flex-1" 
+                                    size="sm"
+                                    onClick={() => handleReserveActivity(slot)}
+                                  >
+                                    Réserver
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleRequestAvailability("activity", slot)}
+                                  >
+                                    Demander info
+                                  </Button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -395,35 +554,45 @@ const Planning = () => {
                           <Home className="h-4 w-4 text-primary" />
                           Hébergement
                         </h4>
-                        {!selectedAccommodation ? (
-                          <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
-                            <p className="text-sm text-muted-foreground">
-                              Disponibilité non renseignée
-                            </p>
-                            <Button variant="outline" className="w-full mt-3" size="sm">
-                              Demander disponibilité
-                            </Button>
-                          </div>
-                        ) : (
+                        {selectedAccommodation ? (
                           <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
                             <div className="flex items-center justify-between">
                               <span className="font-medium">{selectedAccommodation.name}</span>
                               <Badge
-                                variant={selectedAccommodation.is_available ? "default" : "destructive"}
+                                variant={selectedAccommodation.is_available && !selectedAccommodation.booking_id ? "default" : "destructive"}
                               >
-                                {selectedAccommodation.is_available ? "Disponible" : "Réservé"}
+                                {selectedAccommodation.is_available && !selectedAccommodation.booking_id ? "Disponible" : "Réservé"}
                               </Badge>
                             </div>
-                            {selectedAccommodation.is_available && (
+                            {selectedAccommodation.is_available && !selectedAccommodation.booking_id && (
                               <>
                                 <p className="text-sm text-muted-foreground mt-2">
                                   {selectedAccommodation.price_per_night}€ / nuit
                                 </p>
-                                <Button className="w-full mt-3" size="sm">
-                                  Réserver
-                                </Button>
+                                <div className="flex gap-2 mt-3">
+                                  <Button 
+                                    className="flex-1" 
+                                    size="sm"
+                                    onClick={handleReserveAccommodation}
+                                  >
+                                    Réserver
+                                  </Button>
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm"
+                                    onClick={() => handleRequestAvailability("accommodation")}
+                                  >
+                                    Demander dispo
+                                  </Button>
+                                </div>
                               </>
                             )}
+                          </div>
+                        ) : (
+                          <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                            <p className="text-sm text-muted-foreground">
+                              Date passée
+                            </p>
                           </div>
                         )}
                       </div>
@@ -456,6 +625,80 @@ const Planning = () => {
           </div>
         </div>
       </section>
+
+      {/* Availability Request Dialog */}
+      <Dialog open={showAvailabilityDialog} onOpenChange={setShowAvailabilityDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Demander des informations</DialogTitle>
+            <DialogDescription>
+              {requestType === "activity" 
+                ? `Demande concernant : ${selectedActivity?.activity?.title || "Activité"}`
+                : `Demande concernant : Yourte An Arwen`}
+              {selectedDate && ` - ${format(selectedDate, "dd/MM/yyyy")}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="req-name">Nom *</Label>
+                <Input
+                  id="req-name"
+                  value={requestForm.name}
+                  onChange={(e) => setRequestForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Votre nom"
+                />
+              </div>
+              <div>
+                <Label htmlFor="req-email">Email *</Label>
+                <Input
+                  id="req-email"
+                  type="email"
+                  value={requestForm.email}
+                  onChange={(e) => setRequestForm(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="votre@email.com"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="req-phone">Téléphone</Label>
+              <Input
+                id="req-phone"
+                value={requestForm.phone}
+                onChange={(e) => setRequestForm(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="06 12 34 56 78"
+              />
+            </div>
+            <div>
+              <Label htmlFor="req-message">Message</Label>
+              <Textarea
+                id="req-message"
+                value={requestForm.message}
+                onChange={(e) => setRequestForm(prev => ({ ...prev, message: e.target.value }))}
+                placeholder="Précisez votre demande, le nombre de participants, vos questions..."
+                rows={4}
+              />
+            </div>
+            <Button 
+              className="w-full" 
+              onClick={handleSubmitAvailabilityRequest}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Envoi en cours...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Envoyer ma demande
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
