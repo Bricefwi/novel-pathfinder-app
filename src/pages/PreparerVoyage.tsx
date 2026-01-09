@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Layout } from "@/components/layout/Layout";
 import { 
   HeartPulse, 
@@ -10,7 +10,10 @@ import {
   FileText,
   ChevronRight,
   Menu,
-  Play
+  Play,
+  Pause,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -20,6 +23,27 @@ import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
 const PreparerVoyage = () => {
   const [activeTab, setActiveTab] = useState('admin');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
 
   const contentData = {
     admin: {
@@ -255,6 +279,7 @@ const PreparerVoyage = () => {
       <section className="relative">
         <div className="relative h-[60vh] min-h-[400px] overflow-hidden">
           <video 
+            ref={videoRef}
             src={videoPlage} 
             autoPlay 
             muted 
@@ -263,6 +288,29 @@ const PreparerVoyage = () => {
             className="absolute inset-0 w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background" />
+          
+          {/* Video Controls */}
+          <div className="absolute bottom-6 right-6 flex gap-2 z-20">
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={togglePlay}
+              className="bg-background/80 hover:bg-background backdrop-blur-sm"
+              aria-label={isPlaying ? "Pause" : "Lecture"}
+            >
+              {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={toggleMute}
+              className="bg-background/80 hover:bg-background backdrop-blur-sm"
+              aria-label={isMuted ? "Activer le son" : "Couper le son"}
+            >
+              {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+            </Button>
+          </div>
+
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="relative z-10 text-center px-4">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-foreground mb-4 drop-shadow-lg">
