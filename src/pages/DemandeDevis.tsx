@@ -13,40 +13,51 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 const devisSchema = z.object({
-  name: z.string().min(2, "Nom requis").max(100),
-  email: z.string().email("Email invalide").max(255),
-  phone: z.string().max(20).optional(),
+  name: z.string()
+    .trim()
+    .min(2, "Le nom doit contenir au moins 2 caractères")
+    .max(100, "Le nom ne peut pas dépasser 100 caractères"),
+  email: z.string()
+    .trim()
+    .email("Adresse email invalide")
+    .max(255, "L'email ne peut pas dépasser 255 caractères"),
+  phone: z.string()
+    .trim()
+    .max(20, "Le téléphone ne peut pas dépasser 20 caractères")
+    .regex(/^[\d\s\+\-\(\)]*$/, "Format de téléphone invalide")
+    .optional()
+    .or(z.literal("")),
   
   // Destination & Type
-  destination: z.string().min(1, "Destination requise"),
-  activityType: z.string().min(1, "Type d'activité requis"),
+  destination: z.string().min(1, "Destination requise").max(100),
+  activityType: z.string().min(1, "Type d'activité requis").max(100),
   
   // Dates
-  preferredPeriod: z.string().optional(),
-  flexibility: z.string().optional(),
-  duration: z.string().optional(),
+  preferredPeriod: z.string().max(200).optional().or(z.literal("")),
+  flexibility: z.string().max(200).optional().or(z.literal("")),
+  duration: z.string().max(50).optional().or(z.literal("")),
   
   // Participants
-  adultsCount: z.number().min(1).max(20),
-  childrenCount: z.number().min(0).max(10),
-  childrenAges: z.string().optional(),
+  adultsCount: z.number().min(1, "Au moins 1 adulte requis").max(20, "Maximum 20 adultes"),
+  childrenCount: z.number().min(0).max(10, "Maximum 10 enfants"),
+  childrenAges: z.string().max(100).optional().or(z.literal("")),
   
   // Niveau équestre
-  ridingLevel: z.string().min(1, "Niveau requis"),
-  ridingExperience: z.string().optional(),
-  hoursPerWeek: z.string().optional(),
+  ridingLevel: z.string().min(1, "Niveau requis").max(50),
+  ridingExperience: z.string().max(1000).optional().or(z.literal("")),
+  hoursPerWeek: z.string().max(100).optional().or(z.literal("")),
   
   // Condition physique
-  fitnessLevel: z.string().optional(),
-  healthNotes: z.string().optional(),
+  fitnessLevel: z.string().max(50).optional().or(z.literal("")),
+  healthNotes: z.string().max(500).optional().or(z.literal("")),
   
   // Hébergement
-  accommodationType: z.string().optional(),
+  accommodationType: z.string().max(100).optional().or(z.literal("")),
   
   // Attentes
-  expectations: z.string().optional(),
-  budget: z.string().optional(),
-  howDidYouHear: z.string().optional(),
+  expectations: z.string().max(2000).optional().or(z.literal("")),
+  budget: z.string().max(200).optional().or(z.literal("")),
+  howDidYouHear: z.string().max(200).optional().or(z.literal("")),
   newsletter: z.boolean().optional(),
 });
 
@@ -154,13 +165,15 @@ ${form.howDidYouHear ? `- Comment nous avez-vous connu : ${form.howDidYouHear}` 
 - Newsletter : ${form.newsletter ? "Oui" : "Non"}
     `.trim();
 
+    // Use validated data from result.data
+    const validatedForm = result.data;
     const { error } = await supabase.from("contact_requests").insert([{
-      name: form.name,
-      email: form.email,
-      phone: form.phone || null,
-      subject: `Demande de devis - ${form.destination} - ${form.activityType}`,
+      name: validatedForm.name,
+      email: validatedForm.email,
+      phone: validatedForm.phone || null,
+      subject: `Demande de devis - ${validatedForm.destination} - ${validatedForm.activityType}`,
       message: detailedMessage,
-      participants: (form.adultsCount || 1) + (form.childrenCount || 0),
+      participants: (validatedForm.adultsCount || 1) + (validatedForm.childrenCount || 0),
     }]);
 
     setLoading(false);

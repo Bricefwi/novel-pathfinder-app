@@ -6,6 +6,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { z } from "zod";
+
+// Validation schema for reviews
+const reviewSchema = z.object({
+  rating: z.number().min(1, "Veuillez sélectionner une note").max(5),
+  content: z.string()
+    .trim()
+    .min(10, "Votre avis doit contenir au moins 10 caractères")
+    .max(1000, "Votre avis ne peut pas dépasser 1000 caractères"),
+});
 
 interface ReviewFormProps {
   userId: string;
@@ -72,13 +82,11 @@ export function ReviewForm({ userId, onSuccess }: ReviewFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (rating === 0) {
-      toast.error("Veuillez sélectionner une note");
-      return;
-    }
-
-    if (content.trim().length < 10) {
-      toast.error("Votre avis doit contenir au moins 10 caractères");
+    // Validate input using zod schema
+    const result = reviewSchema.safeParse({ rating, content });
+    if (!result.success) {
+      const firstError = result.error.errors[0];
+      toast.error(firstError.message);
       return;
     }
 
@@ -90,10 +98,11 @@ export function ReviewForm({ userId, onSuccess }: ReviewFormProps) {
         photoUrls = await uploadPhotos();
       }
 
+      // Use validated and sanitized data
       const { error } = await supabase.from("user_reviews").insert({
         user_id: userId,
-        rating,
-        content: content.trim(),
+        rating: result.data.rating,
+        content: result.data.content,
         photo_urls: photoUrls,
       });
 
