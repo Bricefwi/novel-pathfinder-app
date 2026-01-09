@@ -19,6 +19,7 @@ const navigation = [
   { name: "Séjours", href: "/sejours" },
   { name: "Planning", href: "/planning" },
   { name: "Hébergement", href: "/hebergement" },
+  { name: "Préparer Voyage", href: "/preparer-voyage" },
   { name: "Carnet de Voyage", href: "/carnet-de-voyage" },
   { name: "Galerie", href: "/galerie" },
   { name: "Contact", href: "/contact" },
