@@ -292,19 +292,19 @@ const PreparerVoyage = () => {
           {/* Video Controls */}
           <div className="absolute bottom-6 right-6 flex gap-2 z-20">
             <Button
-              variant="secondary"
+              variant="default"
               size="icon"
               onClick={togglePlay}
-              className="bg-background/80 hover:bg-background backdrop-blur-sm"
+              className="bg-primary/90 hover:bg-primary text-primary-foreground backdrop-blur-sm shadow-lg"
               aria-label={isPlaying ? "Pause" : "Lecture"}
             >
               {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </Button>
             <Button
-              variant="secondary"
+              variant="default"
               size="icon"
               onClick={toggleMute}
-              className="bg-background/80 hover:bg-background backdrop-blur-sm"
+              className="bg-primary/90 hover:bg-primary text-primary-foreground backdrop-blur-sm shadow-lg"
               aria-label={isMuted ? "Activer le son" : "Couper le son"}
             >
               {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
