@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
 
 // Import fallback images
 import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
@@ -203,6 +204,7 @@ const CarnetVoyage = () => {
 
   return (
     <Layout>
+      <SEOHead {...seoConfigs.carnetVoyage} />
       {/* Hero */}
       <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden">
         <div 

@@ -11,6 +11,7 @@ import { Send, Users, MapPin, Calendar, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
+import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
 
 const devisSchema = z.object({
   name: z.string()
@@ -188,6 +189,7 @@ ${form.howDidYouHear ? `- Comment nous avez-vous connu : ${form.howDidYouHear}` 
 
   return (
     <Layout>
+      <SEOHead {...seoConfigs.devis} />
       {/* Header */}
       <section className="pt-32 pb-12 bg-muted/30">
         <div className="container mx-auto px-4 text-center">

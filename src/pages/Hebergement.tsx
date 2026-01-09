@@ -2,6 +2,7 @@ import { Layout } from "@/components/layout/Layout";
 import { Link } from "react-router-dom";
 import { Wifi, Car, Coffee, TreePine, Users, Bed, ArrowRight, Star, Check, Home, Leaf, Heart, MapPin, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
 
 // Import real yourte images
 import yourteCollage from "@/assets/yourte-collage.png";
@@ -30,6 +31,7 @@ const features = [
 const Hebergement = () => {
   return (
     <Layout>
+      <SEOHead {...seoConfigs.hebergement} />
       {/* Hero - Reduced size with lighter overlay */}
       <section className="relative min-h-[50vh] md:min-h-[60vh] flex items-center justify-center overflow-hidden">
         <div 

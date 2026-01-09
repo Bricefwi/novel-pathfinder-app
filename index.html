@@ -1,22 +1,251 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Lovable App</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
-
-    <!-- TODO: Update og:title to match your application name -->
-    <meta property="og:title" content="Lovable App" />
-    <meta property="og:description" content="Lovable Generated Project" />
+    
+    <!-- SEO Primary Meta Tags -->
+    <title>Ferme Équestre An Arwen | Randonnées à Cheval Bretagne & Maroc</title>
+    <meta name="title" content="Ferme Équestre An Arwen | Randonnées à Cheval Bretagne & Maroc" />
+    <meta name="description" content="Randonnées équestres en Bretagne et au Maroc. Galops sur les plages bretonnes, traversées du désert marocain. Hébergement yourte insolite. +20 ans d'expérience." />
+    <meta name="keywords" content="randonnée équestre Bretagne, cheval plage Bretagne, séjour équestre Maroc, yourte Bretagne, galop plage Mont-Saint-Michel, vacances à cheval France, randonnée cheval désert Maroc, centre équestre Ille-et-Vilaine, stage équitation Bretagne, tourisme équestre France, balade à cheval Bretagne, ferme équestre Bretagne, randonnée cheval bord de mer, vacances équestres famille" />
+    <meta name="author" content="Ferme Équestre An Arwen" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow" />
+    <link rel="canonical" href="https://www.ferme-equestre-an-arwen.com/" />
+    
+    <!-- Geo Meta Tags for Local SEO -->
+    <meta name="geo.region" content="FR-BRE" />
+    <meta name="geo.placename" content="Bazouges-la-Pérouse, Bretagne, France" />
+    <meta name="geo.position" content="48.4328;-1.5691" />
+    <meta name="ICBM" content="48.4328, -1.5691" />
+    
+    <!-- Language & International -->
+    <meta name="language" content="French" />
+    <meta http-equiv="content-language" content="fr-FR" />
+    <link rel="alternate" hreflang="fr" href="https://www.ferme-equestre-an-arwen.com/" />
+    <link rel="alternate" hreflang="x-default" href="https://www.ferme-equestre-an-arwen.com/" />
+    
+    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
+    <meta property="og:url" content="https://www.ferme-equestre-an-arwen.com/" />
+    <meta property="og:title" content="Ferme Équestre An Arwen | Randonnées à Cheval Bretagne & Maroc" />
+    <meta property="og:description" content="Randonnées équestres en Bretagne et au Maroc. Galops sur les plages bretonnes, traversées du désert marocain. Hébergement yourte insolite. +20 ans d'expérience." />
+    <meta property="og:image" content="https://www.ferme-equestre-an-arwen.com/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:site_name" content="Ferme Équestre An Arwen" />
+    
+    <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <meta name="twitter:url" content="https://www.ferme-equestre-an-arwen.com/" />
+    <meta name="twitter:title" content="Ferme Équestre An Arwen | Randonnées à Cheval Bretagne & Maroc" />
+    <meta name="twitter:description" content="Randonnées équestres en Bretagne et au Maroc. Galops sur les plages, traversées du désert. Hébergement yourte." />
+    <meta name="twitter:image" content="https://www.ferme-equestre-an-arwen.com/og-image.jpg" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/logo-an-arwen.png" />
+    <link rel="apple-touch-icon" href="/logo-an-arwen.png" />
+    
+    <!-- Preconnect for Performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- JSON-LD Structured Data - Local Business -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "LocalBusiness",
+      "@id": "https://www.ferme-equestre-an-arwen.com/#organization",
+      "name": "Ferme Équestre An Arwen",
+      "alternateName": "An Arwen",
+      "description": "Centre équestre spécialisé dans les randonnées à cheval en Bretagne et au Maroc. Galops sur les plages bretonnes, traversées du désert marocain, hébergement insolite en yourte traditionnelle.",
+      "url": "https://www.ferme-equestre-an-arwen.com",
+      "telephone": "+33299973546",
+      "email": "contact@ferme-equestre-an-arwen.com",
+      "image": [
+        "https://www.ferme-equestre-an-arwen.com/logo-an-arwen.png",
+        "https://www.ferme-equestre-an-arwen.com/og-image.jpg"
+      ],
+      "logo": "https://www.ferme-equestre-an-arwen.com/logo-an-arwen.png",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "La Ferme An Arwen",
+        "addressLocality": "Bazouges-la-Pérouse",
+        "postalCode": "35560",
+        "addressRegion": "Bretagne",
+        "addressCountry": "FR"
+      },
+      "geo": {
+        "@type": "GeoCoordinates",
+        "latitude": 48.4328,
+        "longitude": -1.5691
+      },
+      "areaServed": [
+        {
+          "@type": "Place",
+          "name": "Bretagne, France"
+        },
+        {
+          "@type": "Place",
+          "name": "Maroc"
+        },
+        {
+          "@type": "Country",
+          "name": "France"
+        }
+      ],
+      "priceRange": "€€",
+      "currenciesAccepted": "EUR",
+      "paymentAccepted": "Cash, Credit Card, Bank Transfer",
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+          "opens": "09:00",
+          "closes": "19:00"
+        }
+      ],
+      "sameAs": [
+        "https://www.facebook.com/fermeequestreanarwen",
+        "https://www.instagram.com/an_arwen_equestre",
+        "https://www.tiktok.com/@anarwenequestre"
+      ],
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "Services équestres",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Randonnée équestre Bretagne",
+              "description": "Randonnées à cheval sur les plages et sentiers bretons"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Service",
+              "name": "Randonnée équestre Maroc",
+              "description": "Traversées du désert et randonnées dans l'Atlas marocain"
+            }
+          },
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "LodgingBusiness",
+              "name": "Yourte traditionnelle",
+              "description": "Hébergement insolite en yourte mongole en Bretagne"
+            }
+          }
+        ]
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "reviewCount": "150",
+        "bestRating": "5"
+      }
+    }
+    </script>
+    
+    <!-- JSON-LD - Tourism Business -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "TouristAttraction",
+      "name": "Ferme Équestre An Arwen - Randonnées à cheval",
+      "description": "Découvrez la Bretagne et le Maroc à cheval avec des randonnées équestres inoubliables. Galops sur les plages, traversées du désert, hébergement en yourte.",
+      "url": "https://www.ferme-equestre-an-arwen.com",
+      "touristType": ["Adventure travelers", "Nature lovers", "Equestrians", "Families"],
+      "availableLanguage": ["French", "English"],
+      "isAccessibleForFree": false
+    }
+    </script>
+    
+    <!-- JSON-LD - Breadcrumb -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Accueil",
+          "item": "https://www.ferme-equestre-an-arwen.com/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Randonnées",
+          "item": "https://www.ferme-equestre-an-arwen.com/destinations"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "Séjours",
+          "item": "https://www.ferme-equestre-an-arwen.com/sejours"
+        },
+        {
+          "@type": "ListItem",
+          "position": 4,
+          "name": "Hébergement",
+          "item": "https://www.ferme-equestre-an-arwen.com/hebergement"
+        },
+        {
+          "@type": "ListItem",
+          "position": 5,
+          "name": "Contact",
+          "item": "https://www.ferme-equestre-an-arwen.com/contact"
+        }
+      ]
+    }
+    </script>
+    
+    <!-- JSON-LD - FAQ for AI & Search -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Où faire une randonnée à cheval sur la plage en Bretagne ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "La Ferme Équestre An Arwen propose des randonnées à cheval sur les plages de Bretagne, notamment près du Mont-Saint-Michel. Nous organisons des galops sur le sable avec des chevaux adaptés à tous les niveaux."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Peut-on faire une randonnée à cheval dans le désert marocain ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Oui, An Arwen organise des randonnées équestres au Maroc depuis plus de 15 ans. Nous proposons des traversées du désert, des randonnées dans l'Atlas et des séjours à Essaouira."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Faut-il être un cavalier confirmé pour participer ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Non, nous accueillons tous les niveaux de cavaliers, du débutant au confirmé. Nos chevaux sont sélectionnés et adaptés selon votre expérience équestre."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Proposez-vous un hébergement insolite en Bretagne ?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Oui, nous proposons un hébergement unique en yourte traditionnelle mongole, située au cœur de notre ferme équestre en Bretagne. Un séjour authentique en pleine nature."
+          }
+        }
+      ]
+    }
+    </script>
   </head>
 
   <body>

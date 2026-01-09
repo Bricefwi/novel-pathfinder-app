@@ -8,6 +8,7 @@ import { MapPin, Phone, Mail, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
+import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
 
 // Validation schema with length limits and format checks
 const contactSchema = z.object({
@@ -82,6 +83,7 @@ const Contact = () => {
 
   return (
     <Layout>
+      <SEOHead {...seoConfigs.contact} />
       <section className="pt-32 pb-16 bg-muted/30">
         <div className="container mx-auto px-4 text-center">
           <span className="inline-block text-primary font-medium mb-4">Contact</span>
