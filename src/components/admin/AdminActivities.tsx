@@ -66,13 +66,13 @@ export function AdminActivities() {
     };
 
     let error;
-    const isNewActivity = !editingId;
+    const isNewActivity = !editingActivity;
 
-    if (editingId) {
+    if (editingActivity) {
       const { error: updateError } = await supabase
         .from("activities")
         .update(activityData)
-        .eq("id", editingId);
+        .eq("id", editingActivity.id);
       error = updateError;
     } else {
       const { error: insertError } = await supabase
@@ -84,7 +84,7 @@ export function AdminActivities() {
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: editingId ? "Activité mise à jour" : "Activité créée" });
+      toast({ title: editingActivity ? "Activité mise à jour" : "Activité créée" });
       
       // Send notification to subscribers for new activities
       if (isNewActivity && activityData.is_active) {
@@ -108,7 +108,7 @@ export function AdminActivities() {
       }
       
       resetForm();
-      setDialogOpen(false);
+      setIsDialogOpen(false);
     }
     
     fetchActivities();
