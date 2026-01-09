@@ -134,7 +134,6 @@ const PreparerVoyage = () => {
       title: "Spécificités Terrain",
       icon: <Map className="w-6 h-6" />,
       color: "bg-muted text-muted-foreground",
-      video: videoPlage,
       sections: [
         {
           title: "🌊 Bretagne (Climat Océanique)",
@@ -189,25 +188,6 @@ const PreparerVoyage = () => {
           )}
         </header>
 
-        {/* Vidéo pour la section Destinations */}
-        {'video' in data && data.video && (
-          <div className="mb-8 rounded-xl overflow-hidden shadow-lg border border-border">
-            <video 
-              src={data.video} 
-              controls 
-              className="w-full aspect-video object-cover"
-              poster=""
-            >
-              Votre navigateur ne supporte pas la lecture vidéo.
-            </video>
-            <div className="bg-card p-4 border-t border-border">
-              <p className="text-sm text-muted-foreground flex items-center gap-2">
-                <Play className="w-4 h-4" />
-                Galop sur la plage en Bretagne - L'expérience An Arwen
-              </p>
-            </div>
-          </div>
-        )}
         
         <div className="grid gap-6">
           {data.sections.map((section, idx) => (
@@ -269,20 +249,28 @@ const PreparerVoyage = () => {
 
   return (
     <Layout>
-      {/* Hero Section */}
-      <section className="relative h-[50vh] min-h-[300px] flex items-center justify-center">
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url('/src/assets/maroc-dunes-cavaliers.jpg')` }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/40 to-background" />
-        <div className="relative z-10 text-center px-4">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-foreground mb-4">
-            Préparer Votre Voyage
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-            Guide complet pour randonneurs équestres • Bretagne | Maroc | Mongolie
-          </p>
+      {/* Hero Section avec Vidéo */}
+      <section className="relative">
+        <div className="relative h-[60vh] min-h-[400px] overflow-hidden">
+          <video 
+            src={videoPlage} 
+            autoPlay 
+            muted 
+            loop 
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="relative z-10 text-center px-4">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-serif font-bold text-foreground mb-4 drop-shadow-lg">
+                Préparer Votre Voyage
+              </h1>
+              <p className="text-lg md:text-xl text-foreground/90 max-w-2xl mx-auto drop-shadow-md">
+                Guide complet pour randonneurs équestres • Bretagne | Maroc | Mongolie
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
