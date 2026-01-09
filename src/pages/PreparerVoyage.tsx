@@ -10,10 +10,11 @@ import {
   FileText,
   ChevronRight,
   Menu,
-  X
+  Play
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import videoPlage from "@/assets/video-plage-cheval.mp4";
 
 const PreparerVoyage = () => {
   const [activeTab, setActiveTab] = useState('admin');
@@ -133,6 +134,7 @@ const PreparerVoyage = () => {
       title: "Spécificités Terrain",
       icon: <Map className="w-6 h-6" />,
       color: "bg-muted text-muted-foreground",
+      video: videoPlage,
       sections: [
         {
           title: "🌊 Bretagne (Climat Océanique)",
@@ -186,6 +188,26 @@ const PreparerVoyage = () => {
             <p className="mt-2 text-muted-foreground italic">{data.intro}</p>
           )}
         </header>
+
+        {/* Vidéo pour la section Destinations */}
+        {'video' in data && data.video && (
+          <div className="mb-8 rounded-xl overflow-hidden shadow-lg border border-border">
+            <video 
+              src={data.video} 
+              controls 
+              className="w-full aspect-video object-cover"
+              poster=""
+            >
+              Votre navigateur ne supporte pas la lecture vidéo.
+            </video>
+            <div className="bg-card p-4 border-t border-border">
+              <p className="text-sm text-muted-foreground flex items-center gap-2">
+                <Play className="w-4 h-4" />
+                Galop sur la plage en Bretagne - L'expérience An Arwen
+              </p>
+            </div>
+          </div>
+        )}
         
         <div className="grid gap-6">
           {data.sections.map((section, idx) => (
