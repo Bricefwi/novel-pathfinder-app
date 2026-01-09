@@ -506,6 +506,7 @@ export type Database = {
           id: string
           interests: string[] | null
           last_name: string | null
+          newsletter_subscribed: boolean | null
           onboarding_completed: boolean | null
           phone: string | null
           preferences: Json | null
@@ -527,6 +528,7 @@ export type Database = {
           id?: string
           interests?: string[] | null
           last_name?: string | null
+          newsletter_subscribed?: boolean | null
           onboarding_completed?: boolean | null
           phone?: string | null
           preferences?: Json | null
@@ -548,6 +550,7 @@ export type Database = {
           id?: string
           interests?: string[] | null
           last_name?: string | null
+          newsletter_subscribed?: boolean | null
           onboarding_completed?: boolean | null
           phone?: string | null
           preferences?: Json | null

@@ -62,35 +62,56 @@ export function AdminActivities() {
       ...formData,
       price_from: formData.price_from ? parseFloat(formData.price_from) : null,
       price_to: formData.price_to ? parseFloat(formData.price_to) : null,
-      max_participants: parseInt(formData.max_participants),
+      max_participants: formData.max_participants ? parseInt(formData.max_participants) : 8,
     };
 
-    if (editingActivity) {
-      const { error } = await supabase
+    let error;
+    const isNewActivity = !editingId;
+
+    if (editingId) {
+      const { error: updateError } = await supabase
         .from("activities")
         .update(activityData)
-        .eq("id", editingActivity.id);
-
-      if (error) {
-        toast({ title: "Erreur", description: error.message, variant: "destructive" });
-      } else {
-        toast({ title: "Activité mise à jour" });
-        fetchActivities();
-        setIsDialogOpen(false);
-      }
+        .eq("id", editingId);
+      error = updateError;
     } else {
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from("activities")
-        .insert(activityData);
-
-      if (error) {
-        toast({ title: "Erreur", description: error.message, variant: "destructive" });
-      } else {
-        toast({ title: "Activité créée" });
-        fetchActivities();
-        setIsDialogOpen(false);
-      }
+        .insert([activityData]);
+      error = insertError;
     }
+
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: editingId ? "Activité mise à jour" : "Activité créée" });
+      
+      // Send notification to subscribers for new activities
+      if (isNewActivity && activityData.is_active) {
+        try {
+          await supabase.functions.invoke("notify-subscribers", {
+            body: {
+              type: "nouvelle_activite",
+              data: {
+                title: activityData.title,
+                description: activityData.short_description || activityData.description,
+                activityType: activityData.activity_type,
+                location: activityData.location,
+                price: activityData.price_from,
+              },
+            },
+          });
+          toast({ title: "Notification envoyée aux abonnés" });
+        } catch (notifyError) {
+          console.error("Error notifying subscribers:", notifyError);
+        }
+      }
+      
+      resetForm();
+      setDialogOpen(false);
+    }
+    
+    fetchActivities();
   };
 
   const handleEdit = (activity: Activity) => {

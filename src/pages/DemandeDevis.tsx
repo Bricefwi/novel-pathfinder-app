@@ -76,6 +76,8 @@ const activityTypes = [
   { value: "stage", label: "Stage équitation" },
   { value: "cours", label: "Cours d'équitation" },
   { value: "hebergement", label: "Hébergement seul (Yourte)" },
+  { value: "groupe_scolaire", label: "Groupe scolaire" },
+  { value: "camp_vacances", label: "Camp de vacances / Centre de loisirs" },
 ];
 
 const ridingLevels = [
@@ -177,14 +179,34 @@ ${form.howDidYouHear ? `- Comment nous avez-vous connu : ${form.howDidYouHear}` 
       participants: (validatedForm.adultsCount || 1) + (validatedForm.childrenCount || 0),
     }]);
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       toast.error("Erreur lors de l'envoi. Veuillez réessayer.");
-    } else {
-      toast.success("Demande de devis envoyée avec succès ! Nous vous répondrons sous 48h.");
-      setForm({ adultsCount: 1, childrenCount: 0, newsletter: false });
+      return;
     }
+
+    // Send email notification to admin
+    try {
+      await supabase.functions.invoke("notify-admin", {
+        body: {
+          type: "devis",
+          data: {
+            name: validatedForm.name,
+            email: validatedForm.email,
+            phone: validatedForm.phone,
+            subject: `Demande de devis - ${validatedForm.destination} - ${validatedForm.activityType}`,
+            message: detailedMessage,
+            participants: (validatedForm.adultsCount || 1) + (validatedForm.childrenCount || 0),
+          },
+        },
+      });
+    } catch (emailError) {
+      console.error("Error sending notification email:", emailError);
+    }
+
+    setLoading(false);
+    toast.success("Demande de devis envoyée avec succès ! Nous vous répondrons sous 48h.");
+    setForm({ adultsCount: 1, childrenCount: 0, newsletter: false });
   };
 
   return (
