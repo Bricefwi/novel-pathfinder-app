@@ -285,7 +285,7 @@ const PreparerVoyage = () => {
             muted 
             loop 
             playsInline
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover object-center"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/20 to-background" />
           
