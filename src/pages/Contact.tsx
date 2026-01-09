@@ -7,15 +7,70 @@ import { Label } from "@/components/ui/label";
 import { MapPin, Phone, Mail, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { z } from "zod";
+
+// Validation schema with length limits and format checks
+const contactSchema = z.object({
+  name: z.string()
+    .trim()
+    .min(2, "Le nom doit contenir au moins 2 caractères")
+    .max(100, "Le nom ne peut pas dépasser 100 caractères"),
+  email: z.string()
+    .trim()
+    .email("Adresse email invalide")
+    .max(255, "L'email ne peut pas dépasser 255 caractères"),
+  phone: z.string()
+    .trim()
+    .max(20, "Le téléphone ne peut pas dépasser 20 caractères")
+    .regex(/^[\d\s\+\-\(\)]*$/, "Format de téléphone invalide")
+    .optional()
+    .or(z.literal("")),
+  subject: z.string()
+    .trim()
+    .max(200, "Le sujet ne peut pas dépasser 200 caractères")
+    .optional()
+    .or(z.literal("")),
+  message: z.string()
+    .trim()
+    .min(10, "Le message doit contenir au moins 10 caractères")
+    .max(5000, "Le message ne peut pas dépasser 5000 caractères"),
+});
 
 const Contact = () => {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    
+    // Validate input before submission
+    const result = contactSchema.safeParse(form);
+    if (!result.success) {
+      const fieldErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          fieldErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(fieldErrors);
+      toast.error("Veuillez corriger les erreurs dans le formulaire");
+      return;
+    }
+
     setLoading(true);
-    const { error } = await supabase.from("contact_requests").insert([form]);
+    
+    // Use validated and sanitized data
+    const sanitizedData = {
+      name: result.data.name,
+      email: result.data.email,
+      phone: result.data.phone || null,
+      subject: result.data.subject || null,
+      message: result.data.message,
+    };
+    
+    const { error } = await supabase.from("contact_requests").insert([sanitizedData]);
     setLoading(false);
     if (error) {
       toast.error("Erreur lors de l'envoi. Veuillez réessayer.");

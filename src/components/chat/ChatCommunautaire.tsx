@@ -8,6 +8,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Send, MessageCircle, Users, Mountain, GraduationCap, Calendar, Compass } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { z } from "zod";
+
+// Validation schema for chat messages
+const messageSchema = z.string()
+  .trim()
+  .min(1, "Le message ne peut pas être vide")
+  .max(500, "Le message ne peut pas dépasser 500 caractères");
 
 type ActivityType = 'randonnee' | 'cours' | 'stage' | 'sejour' | 'general';
 
@@ -143,14 +150,27 @@ const ChatCommunautaire = () => {
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !userId) return;
+    if (!userId) return;
+
+    // Validate message content
+    const result = messageSchema.safeParse(newMessage);
+    if (!result.success) {
+      toast({
+        title: "Erreur",
+        description: result.error.errors[0]?.message || "Message invalide",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const sanitizedContent = result.data;
 
     const { error } = await supabase
       .from('chat_messages')
       .insert({
         user_id: userId,
         activity_type: activeChannel,
-        content: newMessage.trim()
+        content: sanitizedContent
       });
 
     if (error) {
