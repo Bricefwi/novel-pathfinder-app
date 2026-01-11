@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-import { CartDrawer } from "@/components/shop/CartDrawer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -121,7 +120,6 @@ export function Header() {
 
           {/* Actions */}
           <div className="flex items-center space-x-3">
-            <CartDrawer />
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
