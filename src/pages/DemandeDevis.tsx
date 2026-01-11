@@ -7,11 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Users, MapPin, Calendar, Heart } from "lucide-react";
+import { Send, Users, MapPin, Calendar, Heart, ShoppingBag, CreditCard, Clock, Percent } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
 import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
+import { ProductGrid } from "@/components/shop/ProductGrid";
+import { Badge } from "@/components/ui/badge";
 
 const devisSchema = z.object({
   name: z.string()
@@ -215,18 +217,65 @@ ${form.howDidYouHear ? `- Comment nous avez-vous connu : ${form.howDidYouHear}` 
       {/* Header */}
       <section className="pt-32 pb-12 bg-muted/30">
         <div className="container mx-auto px-4 text-center">
-          <span className="inline-block text-primary font-medium mb-4">Devis personnalisé</span>
+          <span className="inline-block text-primary font-medium mb-4">Réservation & Paiement</span>
           <h1 className="font-serif text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Demandez votre devis
+            Réservez votre aventure
           </h1>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-            Décrivez-nous votre projet de voyage équestre et nous vous proposerons une aventure sur mesure.
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-8">
+            Choisissez votre séjour équestre et réservez en ligne. Paiement sécurisé avec options de facilités.
           </p>
+          
+          {/* Payment options badges */}
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Badge variant="outline" className="flex items-center gap-2 px-4 py-2">
+              <CreditCard className="h-4 w-4 text-primary" />
+              <span>Paiement comptant</span>
+            </Badge>
+            <Badge variant="outline" className="flex items-center gap-2 px-4 py-2">
+              <Clock className="h-4 w-4 text-primary" />
+              <span>Paiement en plusieurs fois</span>
+            </Badge>
+            <Badge variant="outline" className="flex items-center gap-2 px-4 py-2">
+              <Percent className="h-4 w-4 text-primary" />
+              <span>Acompte 20% pour réserver</span>
+            </Badge>
+          </div>
         </div>
       </section>
 
-      {/* Form */}
-      <section className="py-12">
+      {/* Boutique / Products Grid */}
+      <section className="py-16 bg-background">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <ShoppingBag className="h-12 w-12 text-primary mx-auto mb-4" />
+            <h2 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-4">
+              Nos Séjours & Hébergements
+            </h2>
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+              Sélectionnez vos produits et ajoutez-les au panier pour procéder au paiement sécurisé.
+            </p>
+          </div>
+          
+          <ProductGrid />
+        </div>
+      </section>
+
+      {/* Divider */}
+      <div className="container mx-auto px-4">
+        <div className="border-t border-border" />
+      </div>
+
+      {/* Alternative: Quote Request Form */}
+      <section className="py-16 bg-muted/20">
+        <div className="container mx-auto px-4 text-center mb-12">
+          <h2 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-4">
+            Ou demandez un devis personnalisé
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            Vous avez des besoins spécifiques ? Remplissez ce formulaire pour recevoir une proposition sur mesure.
+          </p>
+        </div>
+
         <div className="container mx-auto px-4 max-w-4xl">
           <form onSubmit={handleSubmit} className="space-y-8">
             
