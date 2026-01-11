@@ -8,12 +8,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, Users, MapPin, Calendar, Heart, CreditCard, Clock, Percent } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Send, Users, MapPin, Calendar, Heart, CreditCard, Clock, Percent, Euro, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
 import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
 import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { useQuery } from "@tanstack/react-query";
 
 const devisSchema = z.object({
   name: z.string()
@@ -31,14 +35,9 @@ const devisSchema = z.object({
     .optional()
     .or(z.literal("")),
   
-  // Destination & Type
-  destination: z.string().min(1, "Destination requise").max(100),
-  activityType: z.string().min(1, "Type d'activité requis").max(100),
-  
-  // Dates
-  preferredPeriod: z.string().max(200).optional().or(z.literal("")),
-  flexibility: z.string().max(200).optional().or(z.literal("")),
-  duration: z.string().max(50).optional().or(z.literal("")),
+  // Séjour sélectionné
+  selectedSejour: z.string().min(1, "Veuillez sélectionner un séjour"),
+  selectedSlot: z.string().optional().or(z.literal("")),
   
   // Participants
   adultsCount: z.number().min(1, "Au moins 1 adulte requis").max(20, "Maximum 20 adultes"),
@@ -54,32 +53,68 @@ const devisSchema = z.object({
   fitnessLevel: z.string().max(50).optional().or(z.literal("")),
   healthNotes: z.string().max(500).optional().or(z.literal("")),
   
-  // Hébergement
-  accommodationType: z.string().max(100).optional().or(z.literal("")),
+  // Paiement
+  paymentOption: z.enum(["deposit", "full", "installments"]),
   
   // Attentes
   expectations: z.string().max(2000).optional().or(z.literal("")),
-  budget: z.string().max(200).optional().or(z.literal("")),
   howDidYouHear: z.string().max(200).optional().or(z.literal("")),
   newsletter: z.boolean().optional(),
 });
 
 type DevisForm = z.infer<typeof devisSchema>;
 
-const destinations = [
-  { value: "bretagne", label: "Bretagne - France" },
-  { value: "maroc", label: "Maroc" },
-  { value: "autre", label: "Autre / Je ne sais pas encore" },
+// Séjours statiques (utilisés si pas de données en BDD)
+const staticSejours = [
+  { 
+    id: "bretagne-romantique", 
+    title: "Bretagne Romantique", 
+    price: 890, 
+    duration: "5 jours / 4 nuits",
+    location: "Bretagne",
+    description: "Entre terre et mer, découvrez la Bretagne à cheval"
+  },
+  { 
+    id: "bretagne-terre-mer", 
+    title: "Bretagne Terre & Mer", 
+    price: 1190, 
+    duration: "7 jours / 6 nuits",
+    location: "Bretagne",
+    description: "La grande traversée bretonne"
+  },
+  { 
+    id: "maroc-desert", 
+    title: "Maroc - Désert & Dunes", 
+    price: 1490, 
+    duration: "8 jours / 7 nuits",
+    location: "Maroc",
+    description: "Aventure équestre dans le désert marocain"
+  },
+  { 
+    id: "maroc-essaouira", 
+    title: "Maroc - Essaouira & Côte", 
+    price: 1290, 
+    duration: "7 jours / 6 nuits",
+    location: "Maroc",
+    description: "Randonnée côtière au Maroc"
+  },
+  { 
+    id: "hebergement-yourte", 
+    title: "Hébergement Yourte An Arwen", 
+    price: 85, 
+    duration: "par nuit",
+    location: "Bretagne",
+    description: "Nuit insolite en yourte traditionnelle"
+  },
 ];
 
-const activityTypes = [
-  { value: "randonnee", label: "Randonnée équestre" },
-  { value: "sejour", label: "Séjour à la ferme" },
-  { value: "stage", label: "Stage équitation" },
-  { value: "cours", label: "Cours d'équitation" },
-  { value: "hebergement", label: "Hébergement seul (Yourte)" },
-  { value: "groupe_scolaire", label: "Groupe scolaire" },
-  { value: "camp_vacances", label: "Camp de vacances / Centre de loisirs" },
+// Dates disponibles statiques (utilisées si pas de slots en BDD)
+const staticDates: { id: string; label: string; startDate: string; endDate: string; available: boolean; price?: number }[] = [
+  { id: "avril-2025", label: "12-16 Avril 2025", startDate: "2025-04-12", endDate: "2025-04-16", available: true },
+  { id: "mai-2025", label: "3-9 Mai 2025", startDate: "2025-05-03", endDate: "2025-05-09", available: true },
+  { id: "juin-2025", label: "14-20 Juin 2025", startDate: "2025-06-14", endDate: "2025-06-20", available: true },
+  { id: "juillet-2025", label: "5-11 Juillet 2025", startDate: "2025-07-05", endDate: "2025-07-11", available: false },
+  { id: "aout-2025", label: "16-22 Août 2025", startDate: "2025-08-16", endDate: "2025-08-22", available: true },
 ];
 
 const ridingLevels = [
@@ -97,20 +132,6 @@ const fitnessLevels = [
   { value: "sportif", label: "Sportif - Entraînement intensif" },
 ];
 
-const durations = [
-  { value: "1-jour", label: "1 journée" },
-  { value: "weekend", label: "Week-end (2-3 jours)" },
-  { value: "semaine", label: "1 semaine" },
-  { value: "2-semaines", label: "2 semaines" },
-  { value: "plus", label: "Plus de 2 semaines" },
-];
-
-const accommodationTypes = [
-  { value: "yourte", label: "Yourte An Arwen" },
-  { value: "independant", label: "Je m'organise seul" },
-  { value: "conseil", label: "J'aimerais des conseils" },
-];
-
 const DemandeDevis = () => {
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
@@ -118,25 +139,88 @@ const DemandeDevis = () => {
     adultsCount: 1,
     childrenCount: 0,
     newsletter: false,
+    paymentOption: "deposit",
   });
 
-  // Pre-fill from URL params (coming from Destinations page)
+  // Fetch activities from database
+  const { data: dbActivities } = useQuery({
+    queryKey: ["activities-for-booking"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("activities")
+        .select("id, title, price_from, price_to, duration, location, short_description, activity_type")
+        .eq("is_active", true)
+        .order("title");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch activity slots from database
+  const { data: dbSlots } = useQuery({
+    queryKey: ["activity-slots", form.selectedSejour],
+    queryFn: async () => {
+      if (!form.selectedSejour) return [];
+      const { data, error } = await supabase
+        .from("activity_slots")
+        .select("*")
+        .eq("activity_id", form.selectedSejour)
+        .eq("is_available", true)
+        .gte("start_date", new Date().toISOString())
+        .order("start_date");
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!form.selectedSejour && !staticSejours.find(s => s.id === form.selectedSejour),
+  });
+
+  // Use DB activities if available, otherwise use static
+  const sejours = dbActivities && dbActivities.length > 0 
+    ? dbActivities.map(a => ({
+        id: a.id,
+        title: a.title,
+        price: a.price_from || 0,
+        duration: a.duration || "",
+        location: a.location || "",
+        description: a.short_description || "",
+      }))
+    : staticSejours;
+
+  // Use DB slots if available, otherwise use static dates
+  const availableSlots = dbSlots && dbSlots.length > 0
+    ? dbSlots.map(s => ({
+        id: s.id,
+        label: `${format(new Date(s.start_date), "d MMM", { locale: fr })} - ${format(new Date(s.end_date), "d MMM yyyy", { locale: fr })}`,
+        startDate: s.start_date,
+        endDate: s.end_date,
+        available: s.is_available && (s.max_participants ? (s.current_participants || 0) < s.max_participants : true),
+        price: s.price,
+      }))
+    : staticDates;
+
+  const selectedSejourDetails = sejours.find(s => s.id === form.selectedSejour);
+  const selectedSlotDetails = availableSlots.find(s => s.id === form.selectedSlot);
+  
+  // Calculate price
+  const basePrice = selectedSlotDetails?.price || selectedSejourDetails?.price || 0;
+  const totalParticipants = (form.adultsCount || 1) + (form.childrenCount || 0);
+  const totalPrice = basePrice * totalParticipants;
+  const depositAmount = Math.ceil(totalPrice * 0.2); // 20% deposit
+
+  // Pre-fill from URL params
   useEffect(() => {
     const sejourParam = searchParams.get("sejour");
     if (sejourParam) {
-      // Try to detect destination from sejour name
       const sejourLower = sejourParam.toLowerCase();
-      if (sejourLower.includes("bretagne") || sejourLower.includes("terre") || sejourLower.includes("mer")) {
-        setForm(prev => ({ ...prev, destination: "bretagne", activityType: "randonnee" }));
-      } else if (sejourLower.includes("maroc") || sejourLower.includes("désert") || sejourLower.includes("essaouira")) {
-        setForm(prev => ({ ...prev, destination: "maroc", activityType: "randonnee" }));
-      } else if (sejourLower.includes("vosges")) {
-        setForm(prev => ({ ...prev, destination: "bretagne", activityType: "randonnee" }));
+      const matchingSejour = sejours.find(s => 
+        s.title.toLowerCase().includes(sejourLower) ||
+        sejourLower.includes(s.title.toLowerCase().split(" ")[0])
+      );
+      if (matchingSejour) {
+        setForm(prev => ({ ...prev, selectedSejour: matchingSejour.id }));
       }
-      // Add sejour name to expectations
-      setForm(prev => ({ ...prev, expectations: `Séjour souhaité : ${sejourParam}` }));
     }
-  }, [searchParams]);
+  }, [searchParams, sejours]);
 
   const updateField = <K extends keyof DevisForm>(field: K, value: DevisForm[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -154,21 +238,27 @@ const DemandeDevis = () => {
 
     setLoading(true);
 
-    // Build the message with all details
-    const detailedMessage = `
-📍 DESTINATION & TYPE
-- Destination souhaitée : ${form.destination}
-- Type d'activité : ${form.activityType}
+    const paymentLabel = form.paymentOption === "deposit" 
+      ? `Acompte 20% (${depositAmount}€)` 
+      : form.paymentOption === "full" 
+        ? `Paiement comptant (${totalPrice}€)` 
+        : `Paiement en 3 fois (3x${Math.ceil(totalPrice / 3)}€)`;
 
-📅 DATES & DURÉE
-- Période souhaitée : ${form.preferredPeriod || "Non précisé"}
-- Flexibilité : ${form.flexibility || "Non précisé"}
-- Durée : ${form.duration || "Non précisé"}
+    const detailedMessage = `
+🎯 SÉJOUR SÉLECTIONNÉ
+- Séjour : ${selectedSejourDetails?.title || form.selectedSejour}
+- Durée : ${selectedSejourDetails?.duration || "Non précisé"}
+- Date : ${selectedSlotDetails?.label || "À définir"}
+- Prix unitaire : ${basePrice}€
 
 👥 PARTICIPANTS
 - Adultes : ${form.adultsCount}
 - Enfants : ${form.childrenCount}
 ${form.childrenAges ? `- Âges des enfants : ${form.childrenAges}` : ""}
+
+💰 PAIEMENT
+- Total : ${totalPrice}€
+- Option choisie : ${paymentLabel}
 
 🐴 NIVEAU ÉQUESTRE
 - Niveau : ${form.ridingLevel}
@@ -179,25 +269,20 @@ ${form.childrenAges ? `- Âges des enfants : ${form.childrenAges}` : ""}
 - Niveau forme : ${form.fitnessLevel || "Non précisé"}
 ${form.healthNotes ? `- Remarques santé : ${form.healthNotes}` : ""}
 
-🏠 HÉBERGEMENT
-- Préférence : ${form.accommodationType || "Non précisé"}
-
-💬 ATTENTES & AUTRES
+💬 ATTENTES
 ${form.expectations ? `- Attentes : ${form.expectations}` : ""}
-${form.budget ? `- Budget indicatif : ${form.budget}` : ""}
 ${form.howDidYouHear ? `- Comment nous avez-vous connu : ${form.howDidYouHear}` : ""}
 - Newsletter : ${form.newsletter ? "Oui" : "Non"}
     `.trim();
 
-    // Use validated data from result.data
     const validatedForm = result.data;
     const { error } = await supabase.from("contact_requests").insert([{
       name: validatedForm.name,
       email: validatedForm.email,
       phone: validatedForm.phone || null,
-      subject: `Demande de devis - ${validatedForm.destination} - ${validatedForm.activityType}`,
+      subject: `Réservation - ${selectedSejourDetails?.title || validatedForm.selectedSejour} - ${paymentLabel}`,
       message: detailedMessage,
-      participants: (validatedForm.adultsCount || 1) + (validatedForm.childrenCount || 0),
+      participants: totalParticipants,
     }]);
 
     if (error) {
@@ -206,18 +291,20 @@ ${form.howDidYouHear ? `- Comment nous avez-vous connu : ${form.howDidYouHear}` 
       return;
     }
 
-    // Send email notification to admin
     try {
       await supabase.functions.invoke("notify-admin", {
         body: {
-          type: "devis",
+          type: "reservation",
           data: {
             name: validatedForm.name,
             email: validatedForm.email,
             phone: validatedForm.phone,
-            subject: `Demande de devis - ${validatedForm.destination} - ${validatedForm.activityType}`,
+            subject: `Réservation - ${selectedSejourDetails?.title} - ${paymentLabel}`,
             message: detailedMessage,
-            participants: (validatedForm.adultsCount || 1) + (validatedForm.childrenCount || 0),
+            participants: totalParticipants,
+            totalPrice,
+            depositAmount,
+            paymentOption: validatedForm.paymentOption,
           },
         },
       });
@@ -226,161 +313,146 @@ ${form.howDidYouHear ? `- Comment nous avez-vous connu : ${form.howDidYouHear}` 
     }
 
     setLoading(false);
-    toast.success("Demande de devis envoyée avec succès ! Nous vous répondrons sous 48h.");
-    setForm({ adultsCount: 1, childrenCount: 0, newsletter: false });
+    toast.success("Demande de réservation envoyée ! Vous recevrez un lien de paiement sous 24h.");
+    setForm({ adultsCount: 1, childrenCount: 0, newsletter: false, paymentOption: "deposit" });
   };
 
   return (
     <Layout>
       <SEOHead {...seoConfigs.devis} />
+      
       {/* Header */}
       <section className="pt-32 pb-12 bg-muted/30">
         <div className="container mx-auto px-4 text-center">
-          <span className="inline-block text-primary font-medium mb-4">Réservation</span>
+          <span className="inline-block text-primary font-medium mb-4">Réservation en ligne</span>
           <h1 className="font-serif text-4xl md:text-5xl font-bold text-foreground mb-6">
-            Demandez votre devis
+            Réservez votre aventure
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-8">
-            Remplissez ce formulaire pour recevoir une proposition personnalisée. Nous vous répondrons sous 48h.
+            Sélectionnez votre séjour, vos dates et procédez au paiement sécurisé.
           </p>
           
           {/* Payment options badges */}
           <div className="flex flex-wrap gap-3 justify-center">
-            <Badge variant="outline" className="flex items-center gap-2 px-4 py-2">
+            <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-background">
               <CreditCard className="h-4 w-4 text-primary" />
               <span>Paiement sécurisé</span>
             </Badge>
-            <Badge variant="outline" className="flex items-center gap-2 px-4 py-2">
-              <Clock className="h-4 w-4 text-primary" />
-              <span>Paiement en plusieurs fois</span>
-            </Badge>
-            <Badge variant="outline" className="flex items-center gap-2 px-4 py-2">
+            <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-background">
               <Percent className="h-4 w-4 text-primary" />
-              <span>Acompte 30% pour réserver</span>
+              <span>Acompte 20% pour réserver</span>
+            </Badge>
+            <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-background">
+              <Clock className="h-4 w-4 text-primary" />
+              <span>Paiement en 3 fois sans frais</span>
             </Badge>
           </div>
         </div>
       </section>
 
-      {/* Quote Request Form */}
+      {/* Reservation Form */}
       <section className="py-16 bg-background">
         <div className="container mx-auto px-4 max-w-4xl">
           <form onSubmit={handleSubmit} className="space-y-8">
             
-            {/* Contact Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  Vos coordonnées
-                </CardTitle>
-                <CardDescription>Pour vous recontacter avec notre proposition</CardDescription>
-              </CardHeader>
-              <CardContent className="grid sm:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="name">Nom complet *</Label>
-                  <Input
-                    id="name"
-                    value={form.name || ""}
-                    onChange={(e) => updateField("name", e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={form.email || ""}
-                    onChange={(e) => updateField("email", e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Téléphone</Label>
-                  <Input
-                    id="phone"
-                    value={form.phone || ""}
-                    onChange={(e) => updateField("phone", e.target.value)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Destination & Activity */}
-            <Card>
+            {/* Séjour Selection */}
+            <Card className="border-primary/20">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <MapPin className="h-5 w-5 text-primary" />
-                  Destination & Type de séjour
+                  Choisissez votre séjour
                 </CardTitle>
+                <CardDescription>Hébergement et repas inclus dans le prix</CardDescription>
               </CardHeader>
-              <CardContent className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <Label>Destination souhaitée *</Label>
-                  <Select value={form.destination} onValueChange={(v) => updateField("destination", v)}>
-                    <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
-                    <SelectContent>
-                      {destinations.map((d) => (
-                        <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label>Type d'activité *</Label>
-                  <Select value={form.activityType} onValueChange={(v) => updateField("activityType", v)}>
-                    <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
-                    <SelectContent>
-                      {activityTypes.map((a) => (
-                        <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <CardContent>
+                <RadioGroup
+                  value={form.selectedSejour}
+                  onValueChange={(v) => {
+                    updateField("selectedSejour", v);
+                    updateField("selectedSlot", ""); // Reset slot when sejour changes
+                  }}
+                  className="grid gap-4"
+                >
+                  {sejours.map((sejour) => (
+                    <div key={sejour.id} className="relative">
+                      <RadioGroupItem
+                        value={sejour.id}
+                        id={sejour.id}
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor={sejour.id}
+                        className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-muted/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5 transition-all"
+                      >
+                        <div className="flex-1">
+                          <div className="font-medium text-foreground">{sejour.title}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {sejour.location} • {sejour.duration}
+                          </div>
+                          {sejour.description && (
+                            <div className="text-xs text-muted-foreground mt-1">{sejour.description}</div>
+                          )}
+                        </div>
+                        <div className="text-right ml-4">
+                          <div className="font-bold text-primary text-lg">{sejour.price}€</div>
+                          <div className="text-xs text-muted-foreground">/personne</div>
+                        </div>
+                      </Label>
+                      {form.selectedSejour === sejour.id && (
+                        <Check className="absolute top-4 right-4 h-5 w-5 text-primary" />
+                      )}
+                    </div>
+                  ))}
+                </RadioGroup>
               </CardContent>
             </Card>
 
-            {/* Dates */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  Dates & Durée
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid sm:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="preferredPeriod">Période souhaitée</Label>
-                  <Input
-                    id="preferredPeriod"
-                    placeholder="Ex: Avril 2025, vacances de Pâques..."
-                    value={form.preferredPeriod || ""}
-                    onChange={(e) => updateField("preferredPeriod", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label>Durée souhaitée</Label>
-                  <Select value={form.duration} onValueChange={(v) => updateField("duration", v)}>
-                    <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
-                    <SelectContent>
-                      {durations.map((d) => (
-                        <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="flexibility">Flexibilité sur les dates</Label>
-                  <Input
-                    id="flexibility"
-                    placeholder="Ex: +/- 1 semaine"
-                    value={form.flexibility || ""}
-                    onChange={(e) => updateField("flexibility", e.target.value)}
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            {/* Dates Selection */}
+            {form.selectedSejour && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-primary" />
+                    Dates disponibles
+                  </CardTitle>
+                  <CardDescription>Sélectionnez votre créneau préféré</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <RadioGroup
+                    value={form.selectedSlot}
+                    onValueChange={(v) => updateField("selectedSlot", v)}
+                    className="grid sm:grid-cols-2 md:grid-cols-3 gap-3"
+                  >
+                    {availableSlots.map((slot) => (
+                      <div key={slot.id} className="relative">
+                        <RadioGroupItem
+                          value={slot.id}
+                          id={slot.id}
+                          className="peer sr-only"
+                          disabled={!slot.available}
+                        />
+                        <Label
+                          htmlFor={slot.id}
+                          className={`flex flex-col items-center p-3 border rounded-lg cursor-pointer transition-all text-center
+                            ${slot.available 
+                              ? "hover:bg-muted/50 peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/5" 
+                              : "opacity-50 cursor-not-allowed bg-muted/30"
+                            }`}
+                        >
+                          <span className="font-medium text-sm">{slot.label}</span>
+                          {!slot.available && (
+                            <Badge variant="secondary" className="mt-1 text-xs">Complet</Badge>
+                          )}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                  <p className="text-sm text-muted-foreground mt-4">
+                    Autre date souhaitée ? Précisez-la dans le champ "Attentes" ci-dessous.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Participants */}
             <Card>
@@ -424,6 +496,128 @@ ${form.howDidYouHear ? `- Comment nous avez-vous connu : ${form.howDidYouHear}` 
                     />
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Payment Options */}
+            {selectedSejourDetails && (
+              <Card className="border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Euro className="h-5 w-5 text-primary" />
+                    Récapitulatif & Paiement
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Price Summary */}
+                  <div className="bg-muted/30 p-4 rounded-lg space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>{selectedSejourDetails.title}</span>
+                      <span>{basePrice}€ × {totalParticipants} pers.</span>
+                    </div>
+                    {selectedSlotDetails && (
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>Dates</span>
+                        <span>{selectedSlotDetails.label}</span>
+                      </div>
+                    )}
+                    <div className="border-t pt-2 mt-2">
+                      <div className="flex justify-between font-bold text-lg">
+                        <span>Total</span>
+                        <span className="text-primary">{totalPrice}€</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Payment Options */}
+                  <div>
+                    <Label className="text-base font-medium mb-4 block">Choisissez votre mode de paiement</Label>
+                    <RadioGroup
+                      value={form.paymentOption}
+                      onValueChange={(v) => updateField("paymentOption", v as "deposit" | "full" | "installments")}
+                      className="space-y-3"
+                    >
+                      <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
+                        <RadioGroupItem value="deposit" id="deposit" />
+                        <Label htmlFor="deposit" className="flex-1 cursor-pointer">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="font-medium">Acompte 20%</span>
+                              <p className="text-sm text-muted-foreground">Réservez maintenant, payez le solde avant le départ</p>
+                            </div>
+                            <span className="font-bold text-primary">{depositAmount}€</span>
+                          </div>
+                        </Label>
+                      </div>
+
+                      <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
+                        <RadioGroupItem value="full" id="full" />
+                        <Label htmlFor="full" className="flex-1 cursor-pointer">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="font-medium">Paiement comptant</span>
+                              <p className="text-sm text-muted-foreground">Réglez la totalité maintenant</p>
+                            </div>
+                            <span className="font-bold text-primary">{totalPrice}€</span>
+                          </div>
+                        </Label>
+                      </div>
+
+                      <div className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-muted/50 cursor-pointer">
+                        <RadioGroupItem value="installments" id="installments" />
+                        <Label htmlFor="installments" className="flex-1 cursor-pointer">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <span className="font-medium">Paiement en 3 fois</span>
+                              <p className="text-sm text-muted-foreground">Sans frais, par carte bancaire</p>
+                            </div>
+                            <span className="font-bold text-primary">3 × {Math.ceil(totalPrice / 3)}€</span>
+                          </div>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Contact Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5 text-primary" />
+                  Vos coordonnées
+                </CardTitle>
+                <CardDescription>Pour vous envoyer le lien de paiement sécurisé</CardDescription>
+              </CardHeader>
+              <CardContent className="grid sm:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="name">Nom complet *</Label>
+                  <Input
+                    id="name"
+                    value={form.name || ""}
+                    onChange={(e) => updateField("name", e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={form.email || ""}
+                    onChange={(e) => updateField("email", e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Téléphone</Label>
+                  <Input
+                    id="phone"
+                    value={form.phone || ""}
+                    onChange={(e) => updateField("phone", e.target.value)}
+                  />
+                </div>
               </CardContent>
             </Card>
 
@@ -499,26 +693,6 @@ ${form.howDidYouHear ? `- Comment nous avez-vous connu : ${form.howDidYouHear}` 
               </CardContent>
             </Card>
 
-            {/* Accommodation */}
-            <Card>
-              <CardHeader>
-                <CardTitle>🏠 Hébergement</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div>
-                  <Label>Préférence d'hébergement</Label>
-                  <Select value={form.accommodationType} onValueChange={(v) => updateField("accommodationType", v)}>
-                    <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
-                    <SelectContent>
-                      {accommodationTypes.map((a) => (
-                        <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Expectations */}
             <Card>
               <CardHeader>
@@ -529,34 +703,23 @@ ${form.howDidYouHear ? `- Comment nous avez-vous connu : ${form.howDidYouHear}` 
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="expectations">Décrivez vos attentes et envies</Label>
+                  <Label htmlFor="expectations">Décrivez vos attentes, envies ou dates alternatives</Label>
                   <Textarea
                     id="expectations"
-                    placeholder="Ce que vous rêvez de vivre, vos motivations, questions particulières..."
+                    placeholder="Ce que vous rêvez de vivre, vos motivations, dates alternatives souhaitées..."
                     rows={4}
                     value={form.expectations || ""}
                     onChange={(e) => updateField("expectations", e.target.value)}
                   />
                 </div>
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="budget">Budget indicatif (optionnel)</Label>
-                    <Input
-                      id="budget"
-                      placeholder="Ex: 800-1200€/personne"
-                      value={form.budget || ""}
-                      onChange={(e) => updateField("budget", e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="howDidYouHear">Comment nous avez-vous connu ?</Label>
-                    <Input
-                      id="howDidYouHear"
-                      placeholder="Ex: Instagram, bouche à oreille..."
-                      value={form.howDidYouHear || ""}
-                      onChange={(e) => updateField("howDidYouHear", e.target.value)}
-                    />
-                  </div>
+                <div>
+                  <Label htmlFor="howDidYouHear">Comment nous avez-vous connu ?</Label>
+                  <Input
+                    id="howDidYouHear"
+                    placeholder="Ex: Instagram, bouche à oreille..."
+                    value={form.howDidYouHear || ""}
+                    onChange={(e) => updateField("howDidYouHear", e.target.value)}
+                  />
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -573,12 +736,12 @@ ${form.howDidYouHear ? `- Comment nous avez-vous connu : ${form.howDidYouHear}` 
 
             {/* Submit */}
             <div className="text-center">
-              <Button type="submit" size="lg" disabled={loading} className="px-12">
+              <Button type="submit" size="lg" disabled={loading || !form.selectedSejour} className="px-12">
                 <Send className="mr-2 h-5 w-5" />
-                {loading ? "Envoi en cours..." : "Envoyer ma demande de devis"}
+                {loading ? "Envoi en cours..." : "Confirmer ma réservation"}
               </Button>
               <p className="text-sm text-muted-foreground mt-4">
-                Nous vous répondrons sous 48h avec une proposition personnalisée.
+                Vous recevrez un lien de paiement sécurisé par email sous 24h.
               </p>
             </div>
           </form>
