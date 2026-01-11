@@ -1,10 +1,10 @@
 import { Layout } from "@/components/layout/Layout";
 import { Link } from "react-router-dom";
-import { ArrowRight, MapPin, Calendar, Users, Euro, Mountain, Compass } from "lucide-react";
+import { ArrowRight, MapPin, Calendar, Users, Euro, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { DestinationCard } from "@/components/destinations/DestinationCard";
 
 // Import real images
 import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
@@ -23,96 +23,120 @@ const destinationCards = [
     pays: "France",
     region: "Bretagne",
     titre: "Bretagne Romantique",
-    description: "Entre landes et océan, découvrez la magie de la Bretagne à cheval. Plages sauvages, forêts enchantées et légendes de Brocéliande.",
+    sousTitre: "Une escapade entre châteaux et forêts enchantées",
+    description: "Découvrez les châteaux et forêts légendaires de Bretagne lors d'une randonnée de 3 à 5 jours. Entre landes sauvages et patrimoine historique.",
     image: cavaliersPlageCoucherSoleil,
     niveau: "Tous niveaux",
-    duree: "2 à 6 jours",
-    prixFrom: 480,
+    duree: "3-5 jours",
+    prixFrom: 450,
     slug: "bretagne-romantique",
+    rating: 4.9,
+    inclusions: ["Hébergement en gîte", "Pension complète", "Guide accompagnateur", "Matériel équestre"],
   },
   {
-    id: "france-bretagne-terre-mer",
+    id: "france-terre-mer",
     pays: "France",
     region: "Bretagne",
     titre: "De la Terre à la Mer",
-    description: "Une traversée épique de la Bretagne intérieure jusqu'aux rivages atlantiques. Galops sur les plages et bivouacs sous les étoiles.",
+    sousTitre: "Une traversée épique de l'intérieur aux rivages",
+    description: "Traversée de la Bretagne intérieure jusqu'aux rivages atlantiques. Galops sur les plages et bivouacs sous les étoiles bretonnes.",
     image: bretagnVillageChevaux,
     niveau: "Intermédiaire",
     duree: "6 jours",
     prixFrom: 1190,
     slug: "terre-mer",
+    rating: 4.8,
+    inclusions: ["Hébergement varié", "Pension complète", "Guide expert", "Transferts inclus"],
   },
   {
     id: "france-vosges",
     pays: "France",
     region: "Vosges",
     titre: "Chevauchée des Vosges",
-    description: "Parcourez les crêtes vosgiennes à travers forêts de sapins et chaumes d'altitude. Panoramas exceptionnels garantis.",
+    sousTitre: "Les crêtes et les forêts de sapins",
+    description: "Parcourez les crêtes vosgiennes à travers forêts de sapins et chaumes d'altitude. Panoramas exceptionnels sur la plaine d'Alsace.",
     image: korrigansForetChevaux,
     niveau: "Intermédiaire",
     duree: "5 jours",
     prixFrom: 950,
     slug: "vosges",
+    rating: 4.7,
+    inclusions: ["Hébergement en ferme-auberge", "Pension complète", "Guide local", "Matériel fourni"],
   },
   {
     id: "maroc-sahara",
     pays: "Maroc",
     region: "Sud Marocain",
     titre: "Les Portes du Sahara",
-    description: "Chevauchée mythique aux portes du désert. Dunes dorées, oasis verdoyantes et nuits sous les étoiles du Sahara.",
+    sousTitre: "Chevauchée mythique aux portes du désert",
+    description: "Dunes dorées, oasis verdoyantes et nuits sous les étoiles du Sahara. Une immersion totale dans le grand Sud marocain.",
     image: marocDunesCavaliers,
     niveau: "Confirmé",
     duree: "7 jours",
     prixFrom: 1780,
     slug: "portes-sahara",
+    rating: 5.0,
+    inclusions: ["Bivouac & Riad", "Pension complète", "Guide berbère", "Dromadaires de soutien"],
   },
   {
     id: "maroc-desert-oasis",
     pays: "Maroc",
     region: "Sud Marocain",
     titre: "Entre Désert et Oasis",
-    description: "Un voyage entre sable et verdure, des palmeraies luxuriantes aux ergs majestueux. L'essence du Maroc authentique.",
+    sousTitre: "Un voyage entre sable et verdure",
+    description: "Des palmeraies luxuriantes aux ergs majestueux. L'essence du Maroc authentique entre contrastes et rencontres inoubliables.",
     image: marocDesertNuages,
     niveau: "Confirmé",
     duree: "7 jours",
     prixFrom: 1480,
     slug: "desert-oasis",
+    rating: 4.9,
+    inclusions: ["Hébergement traditionnel", "Pension complète", "Guide francophone", "Chevaux barbes"],
   },
   {
     id: "maroc-atlas-atlantique",
     pays: "Maroc",
     region: "Atlas & Côte",
     titre: "De l'Atlas à l'Atlantique",
-    description: "Des sommets enneigés de l'Atlas jusqu'aux vagues d'Essaouira. Une aventure complète à travers les paysages marocains.",
+    sousTitre: "Des sommets aux vagues d'Essaouira",
+    description: "Des sommets enneigés de l'Atlas jusqu'aux vagues d'Essaouira. Une aventure complète à travers tous les paysages marocains.",
     image: marocCanyonCavaliers,
     niveau: "Confirmé",
-    duree: "7 jours",
-    prixFrom: 1480,
+    duree: "8 jours",
+    prixFrom: 1650,
     slug: "atlas-atlantique",
+    rating: 4.8,
+    inclusions: ["Hébergement varié", "Pension complète", "2 guides", "Galops sur plage"],
   },
   {
     id: "europe-ecosse",
     pays: "Europe",
     region: "Écosse",
     titre: "Highlands à Cheval",
-    description: "Galopez à travers les Highlands légendaires, châteaux mystérieux et lochs brumeux. L'aventure écossaise ultime.",
-    image: korrigansForetChevaux,
+    sousTitre: "Châteaux mystérieux et lochs brumeux",
+    description: "Galopez à travers les Highlands légendaires, entre châteaux mystérieux, lochs brumeux et landes à perte de vue.",
+    image: marocEssaouiraBateau,
     niveau: "Confirmé",
     duree: "Sur demande",
     prixFrom: null,
     slug: "ecosse",
+    rating: 4.9,
+    inclusions: ["B&B typiques", "Pension complète", "Guide écossais", "Whisky inclus"],
   },
   {
     id: "asie-mongolie",
     pays: "Asie",
     region: "Mongolie",
     titre: "Steppes de Mongolie",
-    description: "Vivez comme un nomade dans l'immensité des steppes. Yourtes traditionnelles, troupeaux sauvages et hospitalité mongole.",
+    sousTitre: "Vivez comme un nomade dans l'immensité",
+    description: "Yourtes traditionnelles, troupeaux sauvages et hospitalité mongole. Une expérience unique au cœur de l'Asie centrale.",
     image: marocCavalierCote,
     niveau: "Confirmé",
     duree: "Sur demande",
     prixFrom: null,
     slug: "mongolie",
+    rating: 5.0,
+    inclusions: ["Yourtes traditionnelles", "Pension nomade", "Guide mongol", "Chevaux locaux"],
   },
 ];
 
@@ -170,82 +194,19 @@ const Destinations = () => {
         </div>
       </section>
 
-      {/* Destinations par pays */}
-      {Object.entries(groupedCards).map(([pays, cards]) => (
-        <section key={pays} className="py-12 bg-background">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Mountain className="h-6 w-6 text-primary" />
-              </div>
-              <h2 className="font-serif text-2xl md:text-3xl font-bold text-foreground">
-                {pays}
-              </h2>
-            </div>
-            
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {cards.map((card) => (
-                <Card 
-                  key={card.id}
-                  className="group overflow-hidden border-border hover:border-primary/50 transition-all duration-300 hover:shadow-lg"
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden">
-                    <img 
-                      src={card.image} 
-                      alt={card.titre}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
-                    <div className="absolute bottom-3 left-3 right-3">
-                      <Badge variant="secondary" className="mb-2 text-xs">
-                        {card.region}
-                      </Badge>
-                      <h3 className="font-serif text-lg font-bold text-primary-foreground drop-shadow-lg">
-                        {card.titre}
-                      </h3>
-                    </div>
-                  </div>
-                  <CardContent className="p-4">
-                    <p className="text-muted-foreground text-sm mb-4 line-clamp-3">
-                      {card.description}
-                    </p>
-                    
-                    <div className="flex flex-wrap gap-2 mb-4 text-xs">
-                      <Badge variant="outline" className="gap-1">
-                        <Users className="h-3 w-3" />
-                        {card.niveau}
-                      </Badge>
-                      <Badge variant="outline" className="gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {card.duree}
-                      </Badge>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div>
-                        {card.prixFrom ? (
-                          <p className="text-foreground font-bold">
-                            À partir de <span className="text-primary">{card.prixFrom.toLocaleString("fr-FR")} €</span>
-                          </p>
-                        ) : (
-                          <p className="text-muted-foreground text-sm">Sur demande</p>
-                        )}
-                      </div>
-                      <Link to={`/destinations/${card.slug}`}>
-                        <Button size="sm" variant="ghost" className="group/btn">
-                          Découvrir
-                          <ArrowRight className="ml-1 h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+      {/* Destinations - Cartes horizontales premium */}
+      <section className="py-16 bg-muted/20">
+        <div className="container mx-auto px-4">
+          <div className="space-y-8">
+            {destinationCards.map((card) => (
+              <DestinationCard
+                key={card.id}
+                {...card}
+              />
+            ))}
           </div>
-        </section>
-      ))}
+        </div>
+      </section>
 
       {/* Section calendrier */}
       <section className="py-16 bg-primary/5">
