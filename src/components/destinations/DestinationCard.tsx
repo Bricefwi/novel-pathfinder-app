@@ -128,7 +128,7 @@ export const DestinationCard = ({
                 <p className="text-muted-foreground">Sur demande</p>
               )}
             </div>
-            <Link to={`/destinations/${slug}`}>
+            <Link to={`/demande-devis?sejour=${encodeURIComponent(titre)}`}>
               <Button
                 size="lg"
                 className="group/btn bg-primary hover:bg-primary/90 text-primary-foreground px-8"
