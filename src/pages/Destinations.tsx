@@ -262,28 +262,25 @@ const Destinations = () => {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-16 bg-background">
+      {/* CTA Sur mesure - Style épuré */}
+      <section className="py-24 bg-[#F5F0EB]">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-4">
-            Prêt pour l'aventure ?
+          <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-4">
+            Un séjour sur mesure ?
           </h2>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-8">
-            Demandez un devis personnalisé ou réservez directement en ligne.
+            Contactez-nous pour créer ensemble votre aventure équestre personnalisée.
           </p>
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Link to="/demande-devis">
-              <Button size="lg" className="group">
-                Réserver maintenant
-                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
-            <Link to="/contact">
-              <Button size="lg" variant="outline">
-                Nous contacter
-              </Button>
-            </Link>
-          </div>
+          <Link to="/demande-devis">
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="group border-foreground/30 hover:bg-foreground hover:text-background"
+            >
+              Demander un devis
+              <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </Link>
         </div>
       </section>
     </Layout>

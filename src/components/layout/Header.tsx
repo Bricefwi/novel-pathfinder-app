@@ -16,7 +16,6 @@ import {
 const navigation = [
   { name: "Accueil", href: "/" },
   { name: "Destinations", href: "/destinations" },
-  { name: "Séjours", href: "/sejours" },
   { name: "Planning", href: "/planning" },
   { name: "Hébergement", href: "/hebergement" },
   { name: "Préparer Voyage", href: "/preparer-voyage" },
