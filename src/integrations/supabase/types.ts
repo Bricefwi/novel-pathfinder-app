@@ -418,6 +418,78 @@ export type Database = {
           },
         ]
       }
+      ecosystem_articles: {
+        Row: {
+          category: string | null
+          content: string | null
+          created_at: string
+          distance_from_arwen: string | null
+          excerpt: string | null
+          featured_image: string | null
+          id: string
+          images: string[] | null
+          is_published: boolean | null
+          location_address: string | null
+          location_coordinates: Json | null
+          location_email: string | null
+          location_name: string | null
+          location_phone: string | null
+          location_website: string | null
+          published_at: string | null
+          slug: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          views_count: number | null
+        }
+        Insert: {
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          distance_from_arwen?: string | null
+          excerpt?: string | null
+          featured_image?: string | null
+          id?: string
+          images?: string[] | null
+          is_published?: boolean | null
+          location_address?: string | null
+          location_coordinates?: Json | null
+          location_email?: string | null
+          location_name?: string | null
+          location_phone?: string | null
+          location_website?: string | null
+          published_at?: string | null
+          slug: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          views_count?: number | null
+        }
+        Update: {
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          distance_from_arwen?: string | null
+          excerpt?: string | null
+          featured_image?: string | null
+          id?: string
+          images?: string[] | null
+          is_published?: boolean | null
+          location_address?: string | null
+          location_coordinates?: Json | null
+          location_email?: string | null
+          location_name?: string | null
+          location_phone?: string | null
+          location_website?: string | null
+          published_at?: string | null
+          slug?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          views_count?: number | null
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           activity_id: string | null

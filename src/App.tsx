@@ -19,6 +19,8 @@ import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite";
 import Cookies from "./pages/Cookies";
 import Admin from "./pages/Admin";
 import PreparerVoyage from "./pages/PreparerVoyage";
+import EcoSysteme from "./pages/EcoSysteme";
+import EcoSystemeArticle from "./pages/EcoSystemeArticle";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +48,8 @@ const App = () => (
           <Route path="/cookies" element={<Cookies />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/preparer-voyage" element={<PreparerVoyage />} />
+          <Route path="/eco-systeme" element={<EcoSysteme />} />
+          <Route path="/eco-systeme/:slug" element={<EcoSystemeArticle />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

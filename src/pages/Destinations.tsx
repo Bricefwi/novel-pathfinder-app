@@ -31,6 +31,9 @@ import korrigansForetChevaux from "@/assets/korrigans-foret-chevaux.jpg";
 import marocCanyonCavaliers from "@/assets/maroc-canyon-cavaliers.jpg";
 import marocDesertNuages from "@/assets/maroc-desert-nuages.jpg";
 import marocEssaouiraBateau from "@/assets/maroc-essaouira-bateau.jpg";
+import ecosseHighlandsCavaliers from "@/assets/ecosse-highlands-cavaliers.jpg";
+import mongolieSteppesCavaliers from "@/assets/mongolie-steppes-cavaliers.jpg";
+import jordanieWadiRumCavaliers from "@/assets/jordanie-wadi-rum-cavaliers.jpg";
 
 interface Creneau {
   dateDebut: string;
@@ -211,19 +214,19 @@ const destinations: Pays[] = [
   {
     nom: "Europe",
     description: "Highlands écossais, steppes islandaises... Explorez les terres équestres européennes.",
-    image: marocEssaouiraBateau,
+    image: ecosseHighlandsCavaliers,
     regions: [
       {
         nom: "Écosse",
         description: "Châteaux mystérieux, lochs brumeux et landes à perte de vue.",
-        image: marocEssaouiraBateau,
+        image: ecosseHighlandsCavaliers,
         sejours: [
           {
             id: "ecosse",
             titre: "Highlands à Cheval",
             sousTitre: "Châteaux mystérieux et lochs brumeux",
             description: "Galopez à travers les Highlands légendaires, entre châteaux mystérieux, lochs brumeux et landes à perte de vue.",
-            image: marocEssaouiraBateau,
+            image: ecosseHighlandsCavaliers,
             niveau: "Confirmé",
             duree: "Sur demande",
             prixFrom: null,
@@ -238,19 +241,19 @@ const destinations: Pays[] = [
   {
     nom: "Asie",
     description: "Steppes mongoles, déserts jordaniens... Les grandes chevauchées d'Orient.",
-    image: marocCavalierCote,
+    image: mongolieSteppesCavaliers,
     regions: [
       {
         nom: "Mongolie",
         description: "L'immensité des steppes, les yourtes traditionnelles et l'hospitalité nomade.",
-        image: marocCavalierCote,
+        image: mongolieSteppesCavaliers,
         sejours: [
           {
             id: "mongolie",
             titre: "Steppes de Mongolie",
             sousTitre: "Vivez comme un nomade dans l'immensité",
             description: "Yourtes traditionnelles, troupeaux sauvages et hospitalité mongole. Une expérience unique au cœur de l'Asie centrale.",
-            image: marocCavalierCote,
+            image: mongolieSteppesCavaliers,
             niveau: "Confirmé",
             duree: "Sur demande",
             prixFrom: null,
@@ -263,14 +266,14 @@ const destinations: Pays[] = [
       {
         nom: "Jordanie",
         description: "Les paysages lunaires du Wadi Rum et les merveilles de Pétra.",
-        image: marocDesertNuages,
+        image: jordanieWadiRumCavaliers,
         sejours: [
           {
             id: "jordanie",
             titre: "Jordanie - Wadi Rum",
             sousTitre: "Chevauchée dans le désert de Lawrence",
             description: "Explorez les paysages lunaires du Wadi Rum, campez sous les étoiles et découvrez Pétra à cheval.",
-            image: marocDesertNuages,
+            image: jordanieWadiRumCavaliers,
             niveau: "Confirmé",
             duree: "Sur demande",
             prixFrom: null,
