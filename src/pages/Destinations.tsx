@@ -1,10 +1,9 @@
 import { Layout } from "@/components/layout/Layout";
 import { Link } from "react-router-dom";
-import { ArrowRight, MapPin, Calendar, Users, Euro, Compass } from "lucide-react";
+import { ArrowRight, MapPin, Calendar, Users, Euro, Compass, Star, Clock, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
 import { Badge } from "@/components/ui/badge";
-import { DestinationCard } from "@/components/destinations/DestinationCard";
 
 // Import real images
 import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
@@ -16,138 +15,301 @@ import marocCanyonCavaliers from "@/assets/maroc-canyon-cavaliers.jpg";
 import marocDesertNuages from "@/assets/maroc-desert-nuages.jpg";
 import marocEssaouiraBateau from "@/assets/maroc-essaouira-bateau.jpg";
 
-// Données des destinations principales (cartes de présentation)
-const destinationCards = [
+interface Sejour {
+  id: string;
+  titre: string;
+  sousTitre?: string;
+  description: string;
+  image: string;
+  niveau: string;
+  duree: string;
+  prixFrom: number | null;
+  rating: number;
+  inclusions: string[];
+}
+
+interface Region {
+  nom: string;
+  sejours: Sejour[];
+}
+
+interface Pays {
+  nom: string;
+  regions: Region[];
+}
+
+// Structure des destinations par arborescence : Pays > Région > Séjours
+const destinations: Pays[] = [
   {
-    id: "france-bretagne",
-    pays: "France",
-    region: "Bretagne",
-    titre: "Bretagne Romantique",
-    sousTitre: "Une escapade entre châteaux et forêts enchantées",
-    description: "Découvrez les châteaux et forêts légendaires de Bretagne lors d'une randonnée de 3 à 5 jours. Entre landes sauvages et patrimoine historique.",
-    image: cavaliersPlageCoucherSoleil,
-    niveau: "Tous niveaux",
-    duree: "3-5 jours",
-    prixFrom: 450,
-    slug: "bretagne-romantique",
-    rating: 4.9,
-    inclusions: ["Hébergement en gîte", "Pension complète", "Guide accompagnateur", "Matériel équestre"],
+    nom: "France",
+    regions: [
+      {
+        nom: "Bretagne",
+        sejours: [
+          {
+            id: "bretagne-romantique",
+            titre: "Bretagne Romantique",
+            sousTitre: "Une escapade entre châteaux et forêts enchantées",
+            description: "Découvrez les châteaux et forêts légendaires de Bretagne lors d'une randonnée de 3 à 5 jours. Entre landes sauvages et patrimoine historique.",
+            image: cavaliersPlageCoucherSoleil,
+            niveau: "Tous niveaux",
+            duree: "3-5 jours",
+            prixFrom: 480,
+            rating: 4.9,
+            inclusions: ["Hébergement en gîte", "Pension complète", "Guide accompagnateur", "Matériel équestre"],
+          },
+          {
+            id: "terre-mer",
+            titre: "De la Terre à la Mer",
+            sousTitre: "Une traversée épique de l'intérieur aux rivages",
+            description: "Traversée de la Bretagne intérieure jusqu'aux rivages atlantiques. Galops sur les plages et bivouacs sous les étoiles bretonnes.",
+            image: bretagnVillageChevaux,
+            niveau: "Intermédiaire",
+            duree: "6 jours",
+            prixFrom: 1190,
+            rating: 4.8,
+            inclusions: ["Hébergement varié", "Pension complète", "Guide expert", "Transferts inclus"],
+          },
+        ],
+      },
+      {
+        nom: "Vosges",
+        sejours: [
+          {
+            id: "vosges",
+            titre: "Chevauchée des Vosges",
+            sousTitre: "Les crêtes et les forêts de sapins",
+            description: "Parcourez les crêtes vosgiennes à travers forêts de sapins et chaumes d'altitude. Panoramas exceptionnels sur la plaine d'Alsace.",
+            image: korrigansForetChevaux,
+            niveau: "Intermédiaire",
+            duree: "5 jours",
+            prixFrom: 950,
+            rating: 4.7,
+            inclusions: ["Hébergement en ferme-auberge", "Pension complète", "Guide local", "Matériel fourni"],
+          },
+        ],
+      },
+    ],
   },
   {
-    id: "france-terre-mer",
-    pays: "France",
-    region: "Bretagne",
-    titre: "De la Terre à la Mer",
-    sousTitre: "Une traversée épique de l'intérieur aux rivages",
-    description: "Traversée de la Bretagne intérieure jusqu'aux rivages atlantiques. Galops sur les plages et bivouacs sous les étoiles bretonnes.",
-    image: bretagnVillageChevaux,
-    niveau: "Intermédiaire",
-    duree: "6 jours",
-    prixFrom: 1190,
-    slug: "terre-mer",
-    rating: 4.8,
-    inclusions: ["Hébergement varié", "Pension complète", "Guide expert", "Transferts inclus"],
+    nom: "Maroc",
+    regions: [
+      {
+        nom: "Sud Marocain",
+        sejours: [
+          {
+            id: "portes-sahara",
+            titre: "Les Portes du Sahara",
+            sousTitre: "Chevauchée mythique aux portes du désert",
+            description: "Dunes dorées, oasis verdoyantes et nuits sous les étoiles du Sahara. Une immersion totale dans le grand Sud marocain.",
+            image: marocDunesCavaliers,
+            niveau: "Confirmé",
+            duree: "7 jours",
+            prixFrom: 1780,
+            rating: 5.0,
+            inclusions: ["Bivouac & Riad", "Pension complète", "Guide berbère", "Dromadaires de soutien"],
+          },
+          {
+            id: "desert-oasis",
+            titre: "Entre Désert et Oasis",
+            sousTitre: "Un voyage entre sable et verdure",
+            description: "Des palmeraies luxuriantes aux ergs majestueux. L'essence du Maroc authentique entre contrastes et rencontres inoubliables.",
+            image: marocDesertNuages,
+            niveau: "Confirmé",
+            duree: "7 jours",
+            prixFrom: 1480,
+            rating: 4.9,
+            inclusions: ["Hébergement traditionnel", "Pension complète", "Guide francophone", "Chevaux barbes"],
+          },
+        ],
+      },
+      {
+        nom: "Atlas & Côte",
+        sejours: [
+          {
+            id: "atlas-atlantique",
+            titre: "De l'Atlas à l'Atlantique",
+            sousTitre: "Des sommets aux vagues d'Essaouira",
+            description: "Des sommets enneigés de l'Atlas jusqu'aux vagues d'Essaouira. Une aventure complète à travers tous les paysages marocains.",
+            image: marocCanyonCavaliers,
+            niveau: "Confirmé",
+            duree: "8 jours",
+            prixFrom: 1480,
+            rating: 4.8,
+            inclusions: ["Hébergement varié", "Pension complète", "2 guides", "Galops sur plage"],
+          },
+        ],
+      },
+    ],
   },
   {
-    id: "france-vosges",
-    pays: "France",
-    region: "Vosges",
-    titre: "Chevauchée des Vosges",
-    sousTitre: "Les crêtes et les forêts de sapins",
-    description: "Parcourez les crêtes vosgiennes à travers forêts de sapins et chaumes d'altitude. Panoramas exceptionnels sur la plaine d'Alsace.",
-    image: korrigansForetChevaux,
-    niveau: "Intermédiaire",
-    duree: "5 jours",
-    prixFrom: 950,
-    slug: "vosges",
-    rating: 4.7,
-    inclusions: ["Hébergement en ferme-auberge", "Pension complète", "Guide local", "Matériel fourni"],
+    nom: "Europe",
+    regions: [
+      {
+        nom: "Écosse",
+        sejours: [
+          {
+            id: "ecosse",
+            titre: "Highlands à Cheval",
+            sousTitre: "Châteaux mystérieux et lochs brumeux",
+            description: "Galopez à travers les Highlands légendaires, entre châteaux mystérieux, lochs brumeux et landes à perte de vue.",
+            image: marocEssaouiraBateau,
+            niveau: "Confirmé",
+            duree: "Sur demande",
+            prixFrom: null,
+            rating: 4.9,
+            inclusions: ["B&B typiques", "Pension complète", "Guide écossais", "Whisky inclus"],
+          },
+        ],
+      },
+    ],
   },
   {
-    id: "maroc-sahara",
-    pays: "Maroc",
-    region: "Sud Marocain",
-    titre: "Les Portes du Sahara",
-    sousTitre: "Chevauchée mythique aux portes du désert",
-    description: "Dunes dorées, oasis verdoyantes et nuits sous les étoiles du Sahara. Une immersion totale dans le grand Sud marocain.",
-    image: marocDunesCavaliers,
-    niveau: "Confirmé",
-    duree: "7 jours",
-    prixFrom: 1780,
-    slug: "portes-sahara",
-    rating: 5.0,
-    inclusions: ["Bivouac & Riad", "Pension complète", "Guide berbère", "Dromadaires de soutien"],
-  },
-  {
-    id: "maroc-desert-oasis",
-    pays: "Maroc",
-    region: "Sud Marocain",
-    titre: "Entre Désert et Oasis",
-    sousTitre: "Un voyage entre sable et verdure",
-    description: "Des palmeraies luxuriantes aux ergs majestueux. L'essence du Maroc authentique entre contrastes et rencontres inoubliables.",
-    image: marocDesertNuages,
-    niveau: "Confirmé",
-    duree: "7 jours",
-    prixFrom: 1480,
-    slug: "desert-oasis",
-    rating: 4.9,
-    inclusions: ["Hébergement traditionnel", "Pension complète", "Guide francophone", "Chevaux barbes"],
-  },
-  {
-    id: "maroc-atlas-atlantique",
-    pays: "Maroc",
-    region: "Atlas & Côte",
-    titre: "De l'Atlas à l'Atlantique",
-    sousTitre: "Des sommets aux vagues d'Essaouira",
-    description: "Des sommets enneigés de l'Atlas jusqu'aux vagues d'Essaouira. Une aventure complète à travers tous les paysages marocains.",
-    image: marocCanyonCavaliers,
-    niveau: "Confirmé",
-    duree: "8 jours",
-    prixFrom: 1650,
-    slug: "atlas-atlantique",
-    rating: 4.8,
-    inclusions: ["Hébergement varié", "Pension complète", "2 guides", "Galops sur plage"],
-  },
-  {
-    id: "europe-ecosse",
-    pays: "Europe",
-    region: "Écosse",
-    titre: "Highlands à Cheval",
-    sousTitre: "Châteaux mystérieux et lochs brumeux",
-    description: "Galopez à travers les Highlands légendaires, entre châteaux mystérieux, lochs brumeux et landes à perte de vue.",
-    image: marocEssaouiraBateau,
-    niveau: "Confirmé",
-    duree: "Sur demande",
-    prixFrom: null,
-    slug: "ecosse",
-    rating: 4.9,
-    inclusions: ["B&B typiques", "Pension complète", "Guide écossais", "Whisky inclus"],
-  },
-  {
-    id: "asie-mongolie",
-    pays: "Asie",
-    region: "Mongolie",
-    titre: "Steppes de Mongolie",
-    sousTitre: "Vivez comme un nomade dans l'immensité",
-    description: "Yourtes traditionnelles, troupeaux sauvages et hospitalité mongole. Une expérience unique au cœur de l'Asie centrale.",
-    image: marocCavalierCote,
-    niveau: "Confirmé",
-    duree: "Sur demande",
-    prixFrom: null,
-    slug: "mongolie",
-    rating: 5.0,
-    inclusions: ["Yourtes traditionnelles", "Pension nomade", "Guide mongol", "Chevaux locaux"],
+    nom: "Asie",
+    regions: [
+      {
+        nom: "Mongolie",
+        sejours: [
+          {
+            id: "mongolie",
+            titre: "Steppes de Mongolie",
+            sousTitre: "Vivez comme un nomade dans l'immensité",
+            description: "Yourtes traditionnelles, troupeaux sauvages et hospitalité mongole. Une expérience unique au cœur de l'Asie centrale.",
+            image: marocCavalierCote,
+            niveau: "Confirmé",
+            duree: "Sur demande",
+            prixFrom: null,
+            rating: 5.0,
+            inclusions: ["Yourtes traditionnelles", "Pension nomade", "Guide mongol", "Chevaux locaux"],
+          },
+        ],
+      },
+      {
+        nom: "Jordanie",
+        sejours: [
+          {
+            id: "jordanie",
+            titre: "Jordanie - Wadi Rum",
+            sousTitre: "Chevauchée dans le désert de Lawrence",
+            description: "Explorez les paysages lunaires du Wadi Rum, campez sous les étoiles et découvrez Pétra à cheval.",
+            image: marocDesertNuages,
+            niveau: "Confirmé",
+            duree: "Sur demande",
+            prixFrom: null,
+            rating: 4.9,
+            inclusions: ["Camps bédouins", "Pension complète", "Guide local", "Visite Pétra"],
+          },
+        ],
+      },
+    ],
   },
 ];
 
-// Grouper par pays pour l'affichage
-const groupedCards = destinationCards.reduce((acc, card) => {
-  if (!acc[card.pays]) {
-    acc[card.pays] = [];
-  }
-  acc[card.pays].push(card);
-  return acc;
-}, {} as Record<string, typeof destinationCards>);
+// Composant carte séjour
+const SejourCard = ({ sejour, region }: { sejour: Sejour; region: string }) => {
+  return (
+    <div className="group bg-card rounded-xl overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-xl">
+      <div className="flex flex-col lg:flex-row">
+        {/* Image section */}
+        <div className="relative lg:w-2/5 aspect-[4/3] lg:aspect-auto overflow-hidden">
+          <img
+            src={sejour.image}
+            alt={sejour.titre}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+          {/* Rating badge */}
+          <div className="absolute top-4 left-4">
+            <div className="flex items-center gap-1.5 bg-foreground/80 backdrop-blur-sm text-primary-foreground px-3 py-1.5 rounded-lg">
+              <Star className="h-4 w-4 fill-primary text-primary" />
+              <span className="font-semibold text-sm">{sejour.rating}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Content section */}
+        <div className="lg:w-3/5 p-6 lg:p-8 flex flex-col justify-between">
+          <div>
+            {/* Location label */}
+            <p className="text-primary font-medium text-sm tracking-wide uppercase mb-2">
+              {region}
+            </p>
+
+            {/* Title */}
+            <h3 className="font-serif text-2xl lg:text-3xl font-bold text-foreground mb-2">
+              {sejour.titre}
+            </h3>
+
+            {/* Subtitle */}
+            {sejour.sousTitre && (
+              <p className="text-muted-foreground italic mb-4">{sejour.sousTitre}</p>
+            )}
+
+            {/* Description */}
+            <p className="text-muted-foreground leading-relaxed mb-6">
+              {sejour.description}
+            </p>
+
+            {/* Duration & Level badges */}
+            <div className="flex flex-wrap gap-3 mb-6">
+              <Badge
+                variant="secondary"
+                className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground"
+              >
+                <Clock className="h-4 w-4" />
+                {sejour.duree}
+              </Badge>
+              <Badge
+                variant="secondary"
+                className="flex items-center gap-2 px-4 py-2 bg-muted text-foreground"
+              >
+                <Users className="h-4 w-4" />
+                {sejour.niveau}
+              </Badge>
+            </div>
+
+            {/* Inclusions grid */}
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2 mb-6">
+              {sejour.inclusions.map((inclusion, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-primary flex-shrink-0" />
+                  <span className="text-muted-foreground text-sm">
+                    {inclusion}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Price and CTA */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-border">
+            <div>
+              {sejour.prixFrom ? (
+                <>
+                  <p className="text-muted-foreground text-sm">À partir de</p>
+                  <p className="text-primary text-3xl font-bold">
+                    {sejour.prixFrom.toLocaleString("fr-FR")}€
+                  </p>
+                </>
+              ) : (
+                <p className="text-muted-foreground">Sur demande</p>
+              )}
+            </div>
+            <Link to={`/demande-devis?sejour=${encodeURIComponent(sejour.titre)}`}>
+              <Button
+                size="lg"
+                className="group/btn bg-primary hover:bg-primary/90 text-primary-foreground px-8"
+              >
+                Réserver
+                <ArrowRight className="ml-2 h-5 w-5 group-hover/btn:translate-x-1 transition-transform" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Destinations = () => {
   return (
@@ -194,19 +356,42 @@ const Destinations = () => {
         </div>
       </section>
 
-      {/* Destinations - Cartes horizontales premium */}
-      <section className="py-16 bg-muted/20">
-        <div className="container mx-auto px-4">
-          <div className="space-y-8">
-            {destinationCards.map((card) => (
-              <DestinationCard
-                key={card.id}
-                {...card}
-              />
+      {/* Destinations par pays - Arborescence hiérarchique */}
+      {destinations.map((pays) => (
+        <section key={pays.nom} className="py-16 bg-muted/20">
+          <div className="container mx-auto px-4">
+            {/* Titre du pays */}
+            <div className="mb-12 text-center">
+              <h2 className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-2">
+                {pays.nom}
+              </h2>
+              <div className="w-24 h-1 bg-primary mx-auto rounded-full" />
+            </div>
+
+            {/* Régions du pays */}
+            {pays.regions.map((region) => (
+              <div key={region.nom} className="mb-12 last:mb-0">
+                {/* Titre de la région */}
+                <h3 className="font-serif text-xl md:text-2xl font-semibold text-foreground/80 mb-6 flex items-center gap-3">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  {region.nom}
+                </h3>
+
+                {/* Séjours de la région */}
+                <div className="space-y-8">
+                  {region.sejours.map((sejour) => (
+                    <SejourCard 
+                      key={sejour.id} 
+                      sejour={sejour} 
+                      region={`${region.nom}, ${pays.nom}`} 
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
-        </div>
-      </section>
+        </section>
+      ))}
 
       {/* Section calendrier */}
       <section className="py-16 bg-primary/5">
