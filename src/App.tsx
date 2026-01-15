@@ -15,6 +15,7 @@ import Auth from "./pages/Auth";
 import MonEspace from "./pages/MonEspace";
 import Onboarding from "./pages/Onboarding";
 import CGU from "./pages/CGU";
+import CGV from "./pages/CGV";
 import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite";
 import Cookies from "./pages/Cookies";
 import MentionsLegales from "./pages/MentionsLegales";
@@ -45,6 +46,7 @@ const App = () => (
           <Route path="/mon-espace" element={<MonEspace />} />
           <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/cgu" element={<CGU />} />
+          <Route path="/cgv" element={<CGV />} />
           <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
           <Route path="/cookies" element={<Cookies />} />
           <Route path="/mentions-legales" element={<MentionsLegales />} />
