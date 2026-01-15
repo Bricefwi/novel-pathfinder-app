@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.notify-subscribers]
 verify_jwt = true
+
+[functions.send-quote-email]
+verify_jwt = true
+
+[functions.generate-ecosystem-article]
+verify_jwt = true
+
+[functions.check-unread-quotes]
+verify_jwt = false

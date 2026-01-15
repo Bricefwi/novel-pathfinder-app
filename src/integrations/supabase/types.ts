@@ -904,6 +904,7 @@ export type Database = {
           updated_at: string
           user_id: string | null
           valid_until: string | null
+          validation_notification_sent: boolean | null
         }
         Insert: {
           activity_duration?: string | null
@@ -935,6 +936,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           valid_until?: string | null
+          validation_notification_sent?: boolean | null
         }
         Update: {
           activity_duration?: string | null
@@ -966,6 +968,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           valid_until?: string | null
+          validation_notification_sent?: boolean | null
         }
         Relationships: [
           {
