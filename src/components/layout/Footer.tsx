@@ -19,7 +19,7 @@ const navigation = {
     { name: "Hébergement", href: "/hebergement" },
     { name: "Tarifs", href: "/tarifs" },
     { name: "Préparer son voyage", href: "/preparer-voyage" },
-    { name: "FAQ", href: "/contact#faq" },
+    { name: "FAQ", href: "/agent-faq" },
   ],
   legal: [
     { name: "Mentions légales", href: "/mentions-legales" },
