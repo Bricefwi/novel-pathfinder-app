@@ -568,6 +568,138 @@ export type Database = {
         }
         Relationships: []
       }
+      invoices: {
+        Row: {
+          activity_duration: string | null
+          activity_title: string
+          amount_paid: number | null
+          cgu_accepted: boolean | null
+          cgu_accepted_at: string | null
+          cgv_accepted: boolean | null
+          cgv_accepted_at: string | null
+          client_address: string | null
+          client_email: string
+          client_name: string
+          client_phone: string | null
+          client_signature: string | null
+          client_validated: boolean | null
+          client_validated_at: string | null
+          created_at: string
+          due_date: string | null
+          end_date: string | null
+          id: string
+          invoice_number: string
+          notes: string | null
+          participants: number
+          payment_date: string | null
+          payment_method: string | null
+          payment_status: string | null
+          pdf_generated_at: string | null
+          pdf_url: string | null
+          quote_id: string | null
+          start_date: string | null
+          status: string | null
+          subtotal: number
+          tax_amount: number | null
+          tax_rate: number | null
+          total_amount: number
+          unit_price: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          activity_duration?: string | null
+          activity_title: string
+          amount_paid?: number | null
+          cgu_accepted?: boolean | null
+          cgu_accepted_at?: string | null
+          cgv_accepted?: boolean | null
+          cgv_accepted_at?: string | null
+          client_address?: string | null
+          client_email: string
+          client_name: string
+          client_phone?: string | null
+          client_signature?: string | null
+          client_validated?: boolean | null
+          client_validated_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          end_date?: string | null
+          id?: string
+          invoice_number: string
+          notes?: string | null
+          participants?: number
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          pdf_generated_at?: string | null
+          pdf_url?: string | null
+          quote_id?: string | null
+          start_date?: string | null
+          status?: string | null
+          subtotal?: number
+          tax_amount?: number | null
+          tax_rate?: number | null
+          total_amount?: number
+          unit_price?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          activity_duration?: string | null
+          activity_title?: string
+          amount_paid?: number | null
+          cgu_accepted?: boolean | null
+          cgu_accepted_at?: string | null
+          cgv_accepted?: boolean | null
+          cgv_accepted_at?: string | null
+          client_address?: string | null
+          client_email?: string
+          client_name?: string
+          client_phone?: string | null
+          client_signature?: string | null
+          client_validated?: boolean | null
+          client_validated_at?: string | null
+          created_at?: string
+          due_date?: string | null
+          end_date?: string | null
+          id?: string
+          invoice_number?: string
+          notes?: string | null
+          participants?: number
+          payment_date?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
+          pdf_generated_at?: string | null
+          pdf_url?: string | null
+          quote_id?: string | null
+          start_date?: string | null
+          status?: string | null
+          subtotal?: number
+          tax_amount?: number | null
+          tax_rate?: number | null
+          total_amount?: number
+          unit_price?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoices_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -636,6 +768,110 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      quotes: {
+        Row: {
+          activity_duration: string | null
+          activity_id: string | null
+          activity_title: string
+          cgu_accepted: boolean | null
+          cgu_accepted_at: string | null
+          cgv_accepted: boolean | null
+          cgv_accepted_at: string | null
+          client_address: string | null
+          client_email: string
+          client_name: string
+          client_phone: string | null
+          created_at: string
+          deposit_amount: number | null
+          deposit_percentage: number | null
+          end_date: string | null
+          id: string
+          notes: string | null
+          participants: number
+          payment_option: string | null
+          pdf_generated_at: string | null
+          pdf_url: string | null
+          quote_number: string
+          start_date: string | null
+          status: string | null
+          total_price: number
+          unit_price: number
+          updated_at: string
+          user_id: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          activity_duration?: string | null
+          activity_id?: string | null
+          activity_title: string
+          cgu_accepted?: boolean | null
+          cgu_accepted_at?: string | null
+          cgv_accepted?: boolean | null
+          cgv_accepted_at?: string | null
+          client_address?: string | null
+          client_email: string
+          client_name: string
+          client_phone?: string | null
+          created_at?: string
+          deposit_amount?: number | null
+          deposit_percentage?: number | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          participants?: number
+          payment_option?: string | null
+          pdf_generated_at?: string | null
+          pdf_url?: string | null
+          quote_number: string
+          start_date?: string | null
+          status?: string | null
+          total_price?: number
+          unit_price?: number
+          updated_at?: string
+          user_id?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          activity_duration?: string | null
+          activity_id?: string | null
+          activity_title?: string
+          cgu_accepted?: boolean | null
+          cgu_accepted_at?: string | null
+          cgv_accepted?: boolean | null
+          cgv_accepted_at?: string | null
+          client_address?: string | null
+          client_email?: string
+          client_name?: string
+          client_phone?: string | null
+          created_at?: string
+          deposit_amount?: number | null
+          deposit_percentage?: number | null
+          end_date?: string | null
+          id?: string
+          notes?: string | null
+          participants?: number
+          payment_option?: string | null
+          pdf_generated_at?: string | null
+          pdf_url?: string | null
+          quote_number?: string
+          start_date?: string | null
+          status?: string | null
+          total_price?: number
+          unit_price?: number
+          updated_at?: string
+          user_id?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       testimonials: {
         Row: {
@@ -754,6 +990,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_invoice_number: { Args: never; Returns: string }
+      generate_quote_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
