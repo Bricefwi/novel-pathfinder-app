@@ -203,7 +203,7 @@ export default function AgentFAQ() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 py-8">
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 pt-28 pb-8">
         <div className="container max-w-3xl mx-auto px-4">
           {/* Header */}
           <div className="flex items-center gap-4 mb-6">
