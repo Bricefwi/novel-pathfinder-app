@@ -21,85 +21,85 @@ interface ArticleData {
   image_search_keywords: string[];
 }
 
-// Images réelles haute qualité par catégorie (Unsplash direct URLs)
+// Images spécifiques Bretagne et Brocéliande par catégorie (Unsplash URLs)
 const categoryImages: Record<string, { featured: string[]; gallery: string[][] }> = {
   "Randonnées": {
     featured: [
-      "https://images.unsplash.com/photo-1551632811-561732d1e306?w=1200&h=800&fit=crop&q=80", // Hiking trail
-      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&h=800&fit=crop&q=80", // Mountain path
-      "https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=1200&h=800&fit=crop&q=80", // Forest hike
-      "https://images.unsplash.com/photo-1533692328991-08159ff19fca?w=1200&h=800&fit=crop&q=80", // Nature trail
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=800&fit=crop&q=80", // Forêt de Brocéliande style
+      "https://images.unsplash.com/photo-1476231682828-37e571bc172f?w=1200&h=800&fit=crop&q=80", // Forêt brumeuse
+      "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200&h=800&fit=crop&q=80", // Forêt verte dense
+      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&h=800&fit=crop&q=80", // Sentier forestier
     ],
     gallery: [
       [
-        "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop&q=80", // Forest path
-        "https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&h=600&fit=crop&q=80", // Green forest
-        "https://images.unsplash.com/photo-1476231682828-37e571bc172f?w=800&h=600&fit=crop&q=80", // Misty forest
+        "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=800&h=600&fit=crop&q=80", // Lumière en forêt
+        "https://images.unsplash.com/photo-1425913397330-cf8af2ff40a1?w=800&h=600&fit=crop&q=80", // Forêt profonde
+        "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&h=600&fit=crop&q=80", // Chemin arboré
       ],
       [
-        "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&h=600&fit=crop&q=80", // Tree path
-        "https://images.unsplash.com/photo-1425913397330-cf8af2ff40a1?w=800&h=600&fit=crop&q=80", // Deep forest
-        "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=800&h=600&fit=crop&q=80", // Forest light
+        "https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=800&h=600&fit=crop&q=80", // Automne forêt
+        "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=800&h=600&fit=crop&q=80", // Forêt brumeuse automne
+        "https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?w=800&h=600&fit=crop&q=80", // Forêt mystique
       ],
     ],
   },
   "Fermes Pédagogiques": {
     featured: [
-      "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=1200&h=800&fit=crop&q=80", // Farm animals
-      "https://images.unsplash.com/photo-1605152276897-4f618f831968?w=1200&h=800&fit=crop&q=80", // Goats
-      "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1200&h=800&fit=crop&q=80", // Countryside
-      "https://images.unsplash.com/photo-1569880153113-76e33fc52d5f?w=1200&h=800&fit=crop&q=80", // Farm scene
+      "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=1200&h=800&fit=crop&q=80", // Animaux ferme
+      "https://images.unsplash.com/photo-1605152276897-4f618f831968?w=1200&h=800&fit=crop&q=80", // Chèvres
+      "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1200&h=800&fit=crop&q=80", // Campagne
+      "https://images.unsplash.com/photo-1569880153113-76e33fc52d5f?w=1200&h=800&fit=crop&q=80", // Scène ferme
     ],
     gallery: [
       [
-        "https://images.unsplash.com/photo-1574938730946-16a9c9ca4c77?w=800&h=600&fit=crop&q=80", // Chickens
-        "https://images.unsplash.com/photo-1602081115068-12e10f75fbc7?w=800&h=600&fit=crop&q=80", // Sheep
-        "https://images.unsplash.com/photo-1559628129-67cf63b72248?w=800&h=600&fit=crop&q=80", // Donkey
+        "https://images.unsplash.com/photo-1574938730946-16a9c9ca4c77?w=800&h=600&fit=crop&q=80", // Poules
+        "https://images.unsplash.com/photo-1602081115068-12e10f75fbc7?w=800&h=600&fit=crop&q=80", // Moutons
+        "https://images.unsplash.com/photo-1559628129-67cf63b72248?w=800&h=600&fit=crop&q=80", // Âne
       ],
       [
-        "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=800&h=600&fit=crop&q=80", // Cows
-        "https://images.unsplash.com/photo-1625596275461-46c6f8d01bea?w=800&h=600&fit=crop&q=80", // Piglets
-        "https://images.unsplash.com/photo-1589923188651-268a9765e432?w=800&h=600&fit=crop&q=80", // Farm kid
+        "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=800&h=600&fit=crop&q=80", // Vaches
+        "https://images.unsplash.com/photo-1625596275461-46c6f8d01bea?w=800&h=600&fit=crop&q=80", // Porcelets
+        "https://images.unsplash.com/photo-1589923188651-268a9765e432?w=800&h=600&fit=crop&q=80", // Enfant ferme
       ],
     ],
   },
   "Patrimoine": {
     featured: [
-      "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=1200&h=800&fit=crop&q=80", // Castle
-      "https://images.unsplash.com/photo-1564429238535-2a9ca65eb5c2?w=1200&h=800&fit=crop&q=80", // Medieval
-      "https://images.unsplash.com/photo-1555921015-5532091f6026?w=1200&h=800&fit=crop&q=80", // French castle
-      "https://images.unsplash.com/photo-1560930950-5cc20e80e392?w=1200&h=800&fit=crop&q=80", // Historic
+      "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=1200&h=800&fit=crop&q=80", // Château médiéval France
+      "https://images.unsplash.com/photo-1595867818082-083862f3d630?w=1200&h=800&fit=crop&q=80", // Murailles médiévales
+      "https://images.unsplash.com/photo-1524397057410-a44a7c4e82c6?w=1200&h=800&fit=crop&q=80", // Abbaye
+      "https://images.unsplash.com/photo-1565876427310-0695a4ff03b7?w=1200&h=800&fit=crop&q=80", // Chapelle
     ],
     gallery: [
       [
-        "https://images.unsplash.com/photo-1595867818082-083862f3d630?w=800&h=600&fit=crop&q=80", // Stone walls
-        "https://images.unsplash.com/photo-1524397057410-a44a7c4e82c6?w=800&h=600&fit=crop&q=80", // Abbey
-        "https://images.unsplash.com/photo-1565876427310-0695a4ff03b7?w=800&h=600&fit=crop&q=80", // Chapel
+        "https://images.unsplash.com/photo-1541417904950-b855846fe074?w=800&h=600&fit=crop&q=80", // Tour médiévale
+        "https://images.unsplash.com/photo-1598755257130-c2aaca1f061c?w=800&h=600&fit=crop&q=80", // Patrimoine
+        "https://images.unsplash.com/photo-1560930950-5cc20e80e392?w=800&h=600&fit=crop&q=80", // Architecture historique
       ],
       [
-        "https://images.unsplash.com/photo-1541417904950-b855846fe074?w=800&h=600&fit=crop&q=80", // Tower
-        "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop&q=80", // Architecture
-        "https://images.unsplash.com/photo-1598755257130-c2aaca1f061c?w=800&h=600&fit=crop&q=80", // Heritage
+        "https://images.unsplash.com/photo-1555921015-5532091f6026?w=800&h=600&fit=crop&q=80", // Château français
+        "https://images.unsplash.com/photo-1564429238535-2a9ca65eb5c2?w=800&h=600&fit=crop&q=80", // Médiéval
+        "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=800&h=600&fit=crop&q=80", // Château
       ],
     ],
   },
   "Nature": {
     featured: [
-      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=800&fit=crop&q=80", // Lake nature
-      "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200&h=800&fit=crop&q=80", // Landscape
-      "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1200&h=800&fit=crop&q=80", // Meadow
-      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1200&h=800&fit=crop&q=80", // Hills
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=800&fit=crop&q=80", // Rivière nature
+      "https://images.unsplash.com/photo-1465056836041-7f43ac27dcb5?w=1200&h=800&fit=crop&q=80", // Lac calme
+      "https://images.unsplash.com/photo-1504567961542-e24d9439a724?w=1200&h=800&fit=crop&q=80", // Vallée verte
+      "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=1200&h=800&fit=crop&q=80", // Prairie
     ],
     gallery: [
       [
-        "https://images.unsplash.com/photo-1465056836041-7f43ac27dcb5?w=800&h=600&fit=crop&q=80", // Lake
-        "https://images.unsplash.com/photo-1504567961542-e24d9439a724?w=800&h=600&fit=crop&q=80", // Valley
-        "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=800&h=600&fit=crop&q=80", // Meadow
+        "https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=800&h=600&fit=crop&q=80", // Étang
+        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&q=80", // Nature lac
+        "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&h=600&fit=crop&q=80", // Prairie verte
       ],
       [
-        "https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=800&h=600&fit=crop&q=80", // Autumn
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=600&fit=crop&q=80", // River
-        "https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=800&h=600&fit=crop&q=80", // Pond
+        "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&h=600&fit=crop&q=80", // Paysage naturel
+        "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&h=600&fit=crop&q=80", // Collines
+        "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=600&fit=crop&q=80", // Nature sauvage
       ],
     ],
   },

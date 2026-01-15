@@ -211,11 +211,11 @@ export function Header() {
         <div
           className={cn(
             "lg:hidden overflow-hidden transition-all duration-300",
-            isOpen ? "max-h-96 mt-4" : "max-h-0"
+            isOpen ? "max-h-[500px] mt-4" : "max-h-0"
           )}
         >
           <nav className="flex flex-col space-y-2 pb-4">
-              {navigation.map((item) => (
+            {navigation.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
@@ -230,6 +230,32 @@ export function Header() {
                 {item.name}
               </Link>
             ))}
+            
+            {/* Legal Section Mobile */}
+            <div className="px-4 py-2">
+              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1">
+                <Scale className="h-3 w-3" />
+                Légal
+              </p>
+              <div className="space-y-1 pl-2">
+                {legalNavigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setIsOpen(false)}
+                    className={cn(
+                      "block px-3 py-2 text-sm rounded-lg transition-all",
+                      location.pathname === item.href
+                        ? "text-primary bg-primary/10"
+                        : "text-foreground/70 hover:text-primary hover:bg-primary/5"
+                    )}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
+            </div>
+
             {user && authNavigation.map((item) => (
               <Link
                 key={item.name}

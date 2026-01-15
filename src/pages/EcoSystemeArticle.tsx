@@ -123,10 +123,25 @@ const EcoSystemeArticle = () => {
     if (!content) return null;
     
     const galleryImages = images || [];
-    
-    // Remplacer les marqueurs [IMAGE_X] par des images
     let processedContent = content;
     
+    // 1. Supprimer tout code HTML brut généré par erreur par l'IA
+    // Pattern pour détecter les balises img en texte brut (non rendues)
+    processedContent = processedContent.replace(
+      /src="[^"]+"\s*\n?\s*alt="[^"]*"\s*\n?\s*class="[^"]*"\s*\n?\s*loading="[^"]*"\s*\n?\s*\/>/gi,
+      ''
+    );
+    processedContent = processedContent.replace(
+      /<img\s+[^>]*src="[^"]*"[^>]*\/?>/gi,
+      ''
+    );
+    // Pattern pour balises figure mal formées
+    processedContent = processedContent.replace(
+      /<figure[^>]*>[\s\S]*?<\/figure>/gi,
+      ''
+    );
+    
+    // 2. Remplacer les marqueurs [IMAGE_X] par des images
     galleryImages.forEach((imageUrl, index) => {
       const marker = `[IMAGE_${index + 1}]`;
       const imageHtml = `
@@ -142,10 +157,10 @@ const EcoSystemeArticle = () => {
       processedContent = processedContent.replace(marker, imageHtml);
     });
     
-    // Nettoyer les marqueurs restants non remplacés
+    // 3. Nettoyer les marqueurs restants non remplacés
     processedContent = processedContent.replace(/\[IMAGE_\d+\]/g, '');
     
-    // Convertir les retours à la ligne en HTML
+    // 4. Convertir les retours à la ligne en HTML
     processedContent = processedContent
       .split('\n\n')
       .map(paragraph => paragraph.trim())
