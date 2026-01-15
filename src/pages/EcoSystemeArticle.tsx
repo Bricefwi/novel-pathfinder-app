@@ -25,6 +25,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import DOMPurify from "dompurify";
 
 import bretagnVillageChevaux from "@/assets/bretagne-village-chevaux.jpg";
 
@@ -196,11 +197,18 @@ const EcoSystemeArticle = () => {
             );
           }
           
+          // XSS Protection: Sanitize HTML content with DOMPurify
+          const sanitizedHtml = DOMPurify.sanitize(block.text, {
+            ALLOWED_TAGS: ['br', 'strong', 'em', 'u', 'b', 'i'],
+            ALLOWED_ATTR: [],
+            KEEP_CONTENT: true
+          });
+          
           return (
             <p 
               key={index} 
               className="text-muted-foreground text-lg leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: block.text }}
+              dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
             />
           );
         })}
