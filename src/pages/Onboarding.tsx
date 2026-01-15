@@ -1,15 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
@@ -18,105 +19,95 @@ import {
   Check, 
   User, 
   Mountain, 
-  MapPin, 
   Heart, 
-  Compass,
+  Camera,
+  Loader2,
+  Info,
   Sparkles
 } from "lucide-react";
 
 const STEPS = [
-  { id: 1, title: "Profil", icon: User },
-  { id: 2, title: "Niveau équestre", icon: Mountain },
-  { id: 3, title: "Destinations", icon: MapPin },
-  { id: 4, title: "Préférences", icon: Heart },
+  { id: 1, title: "Identité", icon: User, description: "Faisons connaissance" },
+  { id: 2, title: "Cavalier", icon: Mountain, description: "Votre profil équestre" },
+  { id: 3, title: "Rêves", icon: Heart, description: "Vos envies de voyage" },
 ];
 
 const RIDING_LEVELS = [
-  { value: "debutant", label: "Débutant", description: "Peu ou pas d'expérience à cheval" },
-  { value: "intermediaire", label: "Intermédiaire", description: "À l'aise aux 3 allures" },
-  { value: "confirme", label: "Confirmé", description: "Cavalier autonome en extérieur" },
-  { value: "expert", label: "Expert", description: "Cavalier expérimenté, toutes situations" },
-];
-
-const RIDING_STYLES = [
-  "Randonnée tranquille",
-  "Randonnée sportive",
-  "Travail en carrière",
-  "Balade en forêt",
-  "Plage et littoral",
-  "Montagne",
-  "Désert",
-  "Travail de bétail",
+  { 
+    value: "debutant", 
+    label: "Débutant", 
+    description: "Peu ou pas d'expérience. Parfait pour découvrir l'équitation !",
+    emoji: "🌱"
+  },
+  { 
+    value: "intermediaire", 
+    label: "Intermédiaire", 
+    description: "À l'aise au pas et au trot, quelques galops en sécurité.",
+    emoji: "🌿"
+  },
+  { 
+    value: "confirme", 
+    label: "Confirmé", 
+    description: "Autonome aux trois allures, expérience de randonnée.",
+    emoji: "🌳"
+  },
+  { 
+    value: "expert", 
+    label: "Expert", 
+    description: "Cavalier très expérimenté, capable de gérer toutes situations.",
+    emoji: "⭐"
+  },
 ];
 
 const DESTINATIONS = [
-  "Bretagne",
-  "Maroc",
-  "Islande",
-  "Irlande",
-  "Espagne",
-  "Portugal",
-  "Mongolie",
-  "Argentine",
-  "Canada",
-  "France (autres régions)",
+  { name: "Bretagne", emoji: "🌊" },
+  { name: "Maroc", emoji: "🏜️" },
+  { name: "Mongolie", emoji: "🏔️" },
+  { name: "Irlande", emoji: "☘️" },
+  { name: "Islande", emoji: "❄️" },
+  { name: "Espagne", emoji: "🌞" },
+  { name: "Portugal", emoji: "🏄" },
+  { name: "Jordanie", emoji: "🏛️" },
+  { name: "Argentine", emoji: "🦙" },
+  { name: "Écosse", emoji: "🏴󠁧󠁢󠁳󠁣󠁴󠁿" },
 ];
 
 const TRIP_TYPES = [
-  "Aventure et découverte",
-  "Romantique en couple",
-  "Voyage en famille",
-  "Solo",
-  "Entre amis",
-  "Séjour détente",
-  "Immersion culturelle",
-  "Défi sportif",
+  { value: "bivouac", label: "Bivouac sauvage", emoji: "🏕️" },
+  { value: "confort", label: "Hôtel confort", emoji: "🏨" },
+  { value: "sportive", label: "Rando sportive", emoji: "🏇" },
+  { value: "culture", label: "Culture & Cheval", emoji: "🏛️" },
+  { value: "famille", label: "En famille", emoji: "👨‍👩‍👧‍👦" },
+  { value: "photo", label: "Photo & Nature", emoji: "📸" },
 ];
 
-const INTERESTS = [
-  "Photographie",
-  "Nature et faune sauvage",
-  "Gastronomie locale",
-  "Histoire et patrimoine",
-  "Bien-être et yoga",
-  "Camping et bivouac",
-  "Rencontres locales",
-  "Légendes et mythologie",
-];
-
-const DURATIONS = [
-  { value: "weekend", label: "Week-end (2-3 jours)" },
-  { value: "semaine", label: "1 semaine" },
-  { value: "10jours", label: "10 jours" },
-  { value: "2semaines", label: "2 semaines ou plus" },
-];
-
-const TRAVEL_STYLES = [
-  { value: "confort", label: "Confort", description: "Hébergements de qualité, transferts organisés" },
-  { value: "aventure", label: "Aventure", description: "Bivouac, yourtes, expérience authentique" },
-  { value: "mixte", label: "Mixte", description: "Un peu des deux selon les étapes" },
-];
+const BUDGET_LABELS: Record<number, string> = {
+  500: "500€ - Week-end",
+  1000: "1 000€ - Semaine courte",
+  1500: "1 500€ - Semaine complète",
+  2000: "2 000€ - Séjour premium",
+  3000: "3 000€+ - Expédition",
+};
 
 const Onboarding = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form data
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
     phone: "",
-    bio: "",
+    avatar_url: "",
     riding_level: "",
-    riding_experience_years: 0,
-    riding_style: [] as string[],
+    height_cm: 170,
+    weight_kg: 70,
     dream_destinations: [] as string[],
-    preferred_trip_types: [] as string[],
-    preferred_duration: "",
-    travel_style: "",
-    interests: [] as string[],
+    travel_preferences: [] as string[],
+    budget_range: "1500",
   });
 
   useEffect(() => {
@@ -130,7 +121,7 @@ const Onboarding = () => {
       return;
     }
     setUserId(session.user.id);
-    
+
     // Load existing profile data
     const { data: profile } = await supabase
       .from("profiles")
@@ -139,19 +130,23 @@ const Onboarding = () => {
       .single();
 
     if (profile) {
+      // If already completed, redirect
+      if (profile.onboarding_completed) {
+        navigate("/mon-espace");
+        return;
+      }
+      
       setFormData({
-        first_name: profile.first_name || "",
-        last_name: profile.last_name || "",
+        first_name: profile.first_name || session.user.user_metadata?.first_name || "",
+        last_name: profile.last_name || session.user.user_metadata?.last_name || "",
         phone: profile.phone || "",
-        bio: profile.bio || "",
+        avatar_url: profile.avatar_url || "",
         riding_level: profile.riding_level || "",
-        riding_experience_years: profile.riding_experience_years || 0,
-        riding_style: profile.riding_style || [],
+        height_cm: profile.height_cm || 170,
+        weight_kg: profile.weight_kg || 70,
         dream_destinations: profile.dream_destinations || [],
-        preferred_trip_types: profile.preferred_trip_types || [],
-        preferred_duration: profile.preferred_duration || "",
-        travel_style: profile.travel_style || "",
-        interests: profile.interests || [],
+        travel_preferences: profile.travel_preferences || [],
+        budget_range: profile.budget_range || "1500",
       });
     }
   };
@@ -170,7 +165,59 @@ const Onboarding = () => {
     });
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userId) return;
+
+    // Validate file
+    if (!file.type.startsWith("image/")) {
+      toast.error("Veuillez sélectionner une image");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("L'image ne doit pas dépasser 2 Mo");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${userId}/avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(fileName);
+
+      updateFormData("avatar_url", publicUrl);
+      toast.success("Photo ajoutée !");
+    } catch (error) {
+      console.error(error);
+      toast.error("Erreur lors de l'upload");
+    }
+    setUploading(false);
+  };
+
   const handleNext = () => {
+    // Validate current step
+    if (currentStep === 1) {
+      if (!formData.first_name.trim() || !formData.last_name.trim()) {
+        toast.error("Veuillez renseigner votre nom et prénom");
+        return;
+      }
+    }
+    if (currentStep === 2) {
+      if (!formData.riding_level) {
+        toast.error("Veuillez sélectionner votre niveau équestre");
+        return;
+      }
+    }
+
     if (currentStep < STEPS.length) {
       setCurrentStep(currentStep + 1);
     }
@@ -192,15 +239,13 @@ const Onboarding = () => {
         first_name: formData.first_name,
         last_name: formData.last_name,
         phone: formData.phone,
-        bio: formData.bio,
+        avatar_url: formData.avatar_url,
         riding_level: formData.riding_level as "debutant" | "intermediaire" | "confirme" | "expert" | null,
-        riding_experience_years: formData.riding_experience_years,
-        riding_style: formData.riding_style,
+        height_cm: formData.height_cm,
+        weight_kg: formData.weight_kg,
         dream_destinations: formData.dream_destinations,
-        preferred_trip_types: formData.preferred_trip_types,
-        preferred_duration: formData.preferred_duration,
-        travel_style: formData.travel_style,
-        interests: formData.interests,
+        travel_preferences: formData.travel_preferences,
+        budget_range: formData.budget_range,
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
       })
@@ -210,37 +255,54 @@ const Onboarding = () => {
       toast.error("Erreur lors de la sauvegarde");
       console.error(error);
     } else {
-      toast.success("Profil complété avec succès !");
+      toast.success("Bienvenue dans la tribu An Arwen ! 🐴");
       navigate("/mon-espace");
     }
     setLoading(false);
+  };
+
+  const getInitials = () => {
+    return `${formData.first_name.charAt(0)}${formData.last_name.charAt(0)}`.toUpperCase() || "?";
   };
 
   const progress = (currentStep / STEPS.length) * 100;
 
   return (
     <Layout>
-      <section className="pt-32 pb-16 min-h-screen">
-        <div className="container mx-auto px-4 max-w-3xl">
-          {/* Progress Header */}
+      <section className="pt-24 pb-16 min-h-screen bg-gradient-to-b from-background to-muted/30">
+        <div className="container mx-auto px-4 max-w-2xl">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <Badge className="mb-4 gap-2">
+              <Sparkles className="w-4 h-4" />
+              Questionnaire de bienvenue
+            </Badge>
+            <h1 className="font-serif text-3xl font-bold mb-2">
+              Préparez votre aventure
+            </h1>
+            <p className="text-muted-foreground">
+              Quelques questions pour personnaliser votre expérience
+            </p>
+          </div>
+
+          {/* Progress */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <Badge variant="outline" className="text-primary border-primary/30">
-                <Sparkles className="w-4 h-4 mr-2" />
-                Questionnaire de bienvenue
-              </Badge>
-              <span className="text-sm text-muted-foreground">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium">
                 Étape {currentStep} sur {STEPS.length}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {Math.round(progress)}%
               </span>
             </div>
             <Progress value={progress} className="h-2" />
             
             {/* Step indicators */}
-            <div className="flex justify-between mt-4">
+            <div className="flex justify-between mt-6">
               {STEPS.map((step) => (
                 <div
                   key={step.id}
-                  className={`flex items-center gap-2 ${
+                  className={`flex flex-col items-center gap-2 flex-1 ${
                     step.id === currentStep
                       ? "text-primary"
                       : step.id < currentStep
@@ -249,81 +311,106 @@ const Onboarding = () => {
                   }`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                       step.id === currentStep
-                        ? "bg-primary text-primary-foreground"
+                        ? "bg-primary text-primary-foreground scale-110"
                         : step.id < currentStep
                         ? "bg-primary/20 text-primary"
                         : "bg-muted"
                     }`}
                   >
                     {step.id < currentStep ? (
-                      <Check className="h-4 w-4" />
+                      <Check className="h-5 w-5" />
                     ) : (
-                      <step.icon className="h-4 w-4" />
+                      <step.icon className="h-5 w-5" />
                     )}
                   </div>
-                  <span className="hidden sm:inline text-sm font-medium">{step.title}</span>
+                  <div className="text-center hidden sm:block">
+                    <p className="text-sm font-medium">{step.title}</p>
+                    <p className="text-xs text-muted-foreground">{step.description}</p>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Step Content */}
-          <Card className="border-border/50">
+          <Card className="border-2">
             <CardHeader>
-              <CardTitle className="font-serif text-2xl flex items-center gap-3">
-                {currentStep === 1 && (
-                  <>
-                    <User className="h-6 w-6 text-primary" />
-                    Parlons de vous
-                  </>
-                )}
-                {currentStep === 2 && (
-                  <>
-                    <Mountain className="h-6 w-6 text-primary" />
-                    Votre expérience équestre
-                  </>
-                )}
-                {currentStep === 3 && (
-                  <>
-                    <MapPin className="h-6 w-6 text-primary" />
-                    Vos destinations de rêve
-                  </>
-                )}
-                {currentStep === 4 && (
-                  <>
-                    <Heart className="h-6 w-6 text-primary" />
-                    Vos préférences de voyage
-                  </>
-                )}
+              <CardTitle className="font-serif text-xl flex items-center gap-3">
+                {currentStep === 1 && <User className="h-5 w-5 text-primary" />}
+                {currentStep === 2 && <Mountain className="h-5 w-5 text-primary" />}
+                {currentStep === 3 && <Heart className="h-5 w-5 text-primary" />}
+                {currentStep === 1 && "Faisons connaissance"}
+                {currentStep === 2 && "Votre profil cavalier"}
+                {currentStep === 3 && "Vos rêves d'évasion"}
               </CardTitle>
+              <CardDescription>
+                {currentStep === 1 && "Ces informations nous permettent de personnaliser votre expérience"}
+                {currentStep === 2 && "Pour vous proposer des séjours adaptés à votre niveau"}
+                {currentStep === 3 && "Aidez-nous à comprendre ce qui vous fait vibrer"}
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Step 1: Profile */}
+              {/* Step 1: Identity & Avatar */}
               {currentStep === 1 && (
                 <>
+                  {/* Avatar Upload */}
+                  <div className="flex flex-col items-center space-y-4">
+                    <div 
+                      className="relative cursor-pointer group"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Avatar className="h-24 w-24 border-4 border-primary/20">
+                        {formData.avatar_url ? (
+                          <AvatarImage src={formData.avatar_url} alt="Avatar" />
+                        ) : null}
+                        <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                          {getInitials()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute inset-0 rounded-full bg-primary/80 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        {uploading ? (
+                          <Loader2 className="h-6 w-6 text-primary-foreground animate-spin" />
+                        ) : (
+                          <Camera className="h-6 w-6 text-primary-foreground" />
+                        )}
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleAvatarUpload}
+                        className="hidden"
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Cliquez pour ajouter une photo (optionnel)
+                    </p>
+                  </div>
+
                   <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="first_name">Prénom *</Label>
                       <Input
                         id="first_name"
                         value={formData.first_name}
                         onChange={(e) => updateFormData("first_name", e.target.value)}
-                        placeholder="Votre prénom"
+                        placeholder="Jean"
                       />
                     </div>
-                    <div>
+                    <div className="space-y-2">
                       <Label htmlFor="last_name">Nom *</Label>
                       <Input
                         id="last_name"
                         value={formData.last_name}
                         onChange={(e) => updateFormData("last_name", e.target.value)}
-                        placeholder="Votre nom"
+                        placeholder="Dupont"
                       />
                     </div>
                   </div>
-                  <div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="phone">Téléphone</Label>
                     <Input
                       id="phone"
@@ -333,201 +420,142 @@ const Onboarding = () => {
                       placeholder="06 12 34 56 78"
                     />
                   </div>
-                  <div>
-                    <Label htmlFor="bio">Présentez-vous en quelques mots</Label>
-                    <Textarea
-                      id="bio"
-                      value={formData.bio}
-                      onChange={(e) => updateFormData("bio", e.target.value)}
-                      placeholder="Ce qui vous passionne, vos motivations pour la randonnée équestre..."
-                      rows={4}
-                    />
-                  </div>
                 </>
               )}
 
-              {/* Step 2: Riding Level */}
+              {/* Step 2: Rider Profile */}
               {currentStep === 2 && (
                 <>
-                  <div>
-                    <Label className="text-base mb-4 block">Quel est votre niveau équestre ?</Label>
+                  <div className="space-y-4">
+                    <Label className="text-base">Votre niveau équestre *</Label>
                     <RadioGroup
                       value={formData.riding_level}
                       onValueChange={(value) => updateFormData("riding_level", value)}
-                      className="space-y-3"
+                      className="grid sm:grid-cols-2 gap-3"
                     >
                       {RIDING_LEVELS.map((level) => (
                         <div
                           key={level.value}
-                          className={`flex items-start space-x-3 p-4 rounded-xl border transition-colors cursor-pointer ${
+                          className={`relative flex items-start p-4 rounded-xl border-2 transition-all cursor-pointer ${
                             formData.riding_level === level.value
                               ? "border-primary bg-primary/5"
-                              : "border-border/50 hover:border-primary/30"
+                              : "border-border hover:border-primary/30"
                           }`}
                           onClick={() => updateFormData("riding_level", level.value)}
                         >
-                          <RadioGroupItem value={level.value} id={level.value} />
-                          <div>
-                            <Label htmlFor={level.value} className="font-medium cursor-pointer">
+                          <RadioGroupItem value={level.value} id={level.value} className="mt-1" />
+                          <div className="ml-3 flex-1">
+                            <Label htmlFor={level.value} className="font-medium cursor-pointer flex items-center gap-2">
+                              <span className="text-lg">{level.emoji}</span>
                               {level.label}
                             </Label>
-                            <p className="text-sm text-muted-foreground">{level.description}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{level.description}</p>
                           </div>
                         </div>
                       ))}
                     </RadioGroup>
                   </div>
 
-                  <div>
-                    <Label htmlFor="experience">Années d'expérience à cheval</Label>
-                    <Input
-                      id="experience"
-                      type="number"
-                      min={0}
-                      max={50}
-                      value={formData.riding_experience_years}
-                      onChange={(e) => updateFormData("riding_experience_years", parseInt(e.target.value) || 0)}
-                    />
-                  </div>
+                  <div className="p-4 bg-muted/50 rounded-xl space-y-4">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-4 w-4 text-primary mt-0.5" />
+                      <p className="text-sm text-muted-foreground">
+                        Pour le bien-être de votre monture et votre sécurité, nous avons besoin de ces informations.
+                        Elles restent strictement confidentielles.
+                      </p>
+                    </div>
 
-                  <div>
-                    <Label className="text-base mb-4 block">
-                      Quels styles d'équitation vous attirent ? (plusieurs choix possibles)
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {RIDING_STYLES.map((style) => (
-                        <Badge
-                          key={style}
-                          variant={formData.riding_style.includes(style) ? "default" : "outline"}
-                          className="cursor-pointer text-sm py-2 px-4"
-                          onClick={() => toggleArrayItem("riding_style", style)}
-                        >
-                          {style}
-                        </Badge>
-                      ))}
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="height">Taille (cm)</Label>
+                        <Input
+                          id="height"
+                          type="number"
+                          min={100}
+                          max={220}
+                          value={formData.height_cm}
+                          onChange={(e) => updateFormData("height_cm", parseInt(e.target.value) || 170)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="weight">Poids (kg)</Label>
+                        <Input
+                          id="weight"
+                          type="number"
+                          min={30}
+                          max={150}
+                          value={formData.weight_kg}
+                          onChange={(e) => updateFormData("weight_kg", parseInt(e.target.value) || 70)}
+                        />
+                      </div>
                     </div>
                   </div>
                 </>
               )}
 
-              {/* Step 3: Destinations */}
+              {/* Step 3: Dreams & Preferences */}
               {currentStep === 3 && (
                 <>
-                  <div>
-                    <Label className="text-base mb-4 block">
-                      Quelles destinations vous font rêver ? (plusieurs choix possibles)
-                    </Label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div className="space-y-4">
+                    <Label className="text-base">Quelles destinations vous font rêver ?</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                       {DESTINATIONS.map((dest) => (
-                        <div
-                          key={dest}
-                          className={`p-4 rounded-xl border text-center cursor-pointer transition-all ${
-                            formData.dream_destinations.includes(dest)
-                              ? "border-primary bg-primary/10 text-primary"
-                              : "border-border/50 hover:border-primary/30"
+                        <button
+                          key={dest.name}
+                          type="button"
+                          className={`p-3 rounded-xl border-2 text-center transition-all ${
+                            formData.dream_destinations.includes(dest.name)
+                              ? "border-primary bg-primary/10"
+                              : "border-border hover:border-primary/30"
                           }`}
-                          onClick={() => toggleArrayItem("dream_destinations", dest)}
+                          onClick={() => toggleArrayItem("dream_destinations", dest.name)}
                         >
-                          <Compass className="h-6 w-6 mx-auto mb-2" />
-                          <span className="text-sm font-medium">{dest}</span>
-                        </div>
+                          <span className="text-2xl block mb-1">{dest.emoji}</span>
+                          <span className="text-xs font-medium">{dest.name}</span>
+                        </button>
                       ))}
                     </div>
                   </div>
 
-                  <div>
-                    <Label className="text-base mb-4 block">
-                      Quels types de séjours vous correspondent ? (plusieurs choix possibles)
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="space-y-4">
+                    <Label className="text-base">Votre style de voyage idéal</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {TRIP_TYPES.map((type) => (
-                        <Badge
-                          key={type}
-                          variant={formData.preferred_trip_types.includes(type) ? "default" : "outline"}
-                          className="cursor-pointer text-sm py-2 px-4"
-                          onClick={() => toggleArrayItem("preferred_trip_types", type)}
+                        <button
+                          key={type.value}
+                          type="button"
+                          className={`p-3 rounded-xl border-2 text-center transition-all ${
+                            formData.travel_preferences.includes(type.value)
+                              ? "border-primary bg-primary/10"
+                              : "border-border hover:border-primary/30"
+                          }`}
+                          onClick={() => toggleArrayItem("travel_preferences", type.value)}
                         >
-                          {type}
-                        </Badge>
+                          <span className="text-xl block mb-1">{type.emoji}</span>
+                          <span className="text-xs font-medium">{type.label}</span>
+                        </button>
                       ))}
                     </div>
                   </div>
-                </>
-              )}
 
-              {/* Step 4: Preferences */}
-              {currentStep === 4 && (
-                <>
-                  <div>
-                    <Label className="text-base mb-4 block">Durée idéale de séjour</Label>
-                    <RadioGroup
-                      value={formData.preferred_duration}
-                      onValueChange={(value) => updateFormData("preferred_duration", value)}
-                      className="grid grid-cols-2 gap-3"
-                    >
-                      {DURATIONS.map((duration) => (
-                        <div
-                          key={duration.value}
-                          className={`flex items-center space-x-3 p-4 rounded-xl border transition-colors cursor-pointer ${
-                            formData.preferred_duration === duration.value
-                              ? "border-primary bg-primary/5"
-                              : "border-border/50 hover:border-primary/30"
-                          }`}
-                          onClick={() => updateFormData("preferred_duration", duration.value)}
-                        >
-                          <RadioGroupItem value={duration.value} id={duration.value} />
-                          <Label htmlFor={duration.value} className="cursor-pointer">
-                            {duration.label}
-                          </Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-
-                  <div>
-                    <Label className="text-base mb-4 block">Votre style de voyage</Label>
-                    <RadioGroup
-                      value={formData.travel_style}
-                      onValueChange={(value) => updateFormData("travel_style", value)}
-                      className="space-y-3"
-                    >
-                      {TRAVEL_STYLES.map((style) => (
-                        <div
-                          key={style.value}
-                          className={`flex items-start space-x-3 p-4 rounded-xl border transition-colors cursor-pointer ${
-                            formData.travel_style === style.value
-                              ? "border-primary bg-primary/5"
-                              : "border-border/50 hover:border-primary/30"
-                          }`}
-                          onClick={() => updateFormData("travel_style", style.value)}
-                        >
-                          <RadioGroupItem value={style.value} id={style.value} />
-                          <div>
-                            <Label htmlFor={style.value} className="font-medium cursor-pointer">
-                              {style.label}
-                            </Label>
-                            <p className="text-sm text-muted-foreground">{style.description}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-
-                  <div>
-                    <Label className="text-base mb-4 block">
-                      Vos centres d'intérêt (plusieurs choix possibles)
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {INTERESTS.map((interest) => (
-                        <Badge
-                          key={interest}
-                          variant={formData.interests.includes(interest) ? "default" : "outline"}
-                          className="cursor-pointer text-sm py-2 px-4"
-                          onClick={() => toggleArrayItem("interests", interest)}
-                        >
-                          {interest}
-                        </Badge>
-                      ))}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-base">Budget estimé</Label>
+                      <span className="text-sm font-medium text-primary">
+                        {BUDGET_LABELS[parseInt(formData.budget_range)] || `${formData.budget_range}€`}
+                      </span>
+                    </div>
+                    <Slider
+                      value={[parseInt(formData.budget_range)]}
+                      onValueChange={([value]) => updateFormData("budget_range", value.toString())}
+                      min={500}
+                      max={3000}
+                      step={500}
+                      className="py-4"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>500€</span>
+                      <span>3 000€+</span>
                     </div>
                   </div>
                 </>
@@ -536,34 +564,39 @@ const Onboarding = () => {
           </Card>
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8">
+          <div className="flex justify-between mt-8 gap-4">
             <Button
               variant="outline"
               onClick={handleBack}
               disabled={currentStep === 1}
+              className="flex-1 sm:flex-none"
             >
               <ChevronLeft className="h-4 w-4 mr-2" />
               Retour
             </Button>
 
             {currentStep < STEPS.length ? (
-              <Button onClick={handleNext}>
+              <Button onClick={handleNext} className="flex-1 sm:flex-none">
                 Suivant
                 <ChevronRight className="h-4 w-4 ml-2" />
               </Button>
             ) : (
-              <Button onClick={handleSubmit} disabled={loading}>
-                {loading ? "Enregistrement..." : "Terminer"}
-                <Check className="h-4 w-4 ml-2" />
+              <Button onClick={handleSubmit} disabled={loading} className="flex-1 sm:flex-none">
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Check className="h-4 w-4 mr-2" />
+                )}
+                Terminer
               </Button>
             )}
           </div>
 
-          {/* Skip Option */}
+          {/* Skip */}
           <div className="text-center mt-4">
             <Button
               variant="ghost"
-              className="text-muted-foreground"
+              className="text-muted-foreground text-sm"
               onClick={() => navigate("/mon-espace")}
             >
               Compléter plus tard

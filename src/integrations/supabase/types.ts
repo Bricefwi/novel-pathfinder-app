@@ -808,9 +808,11 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          budget_range: string | null
           created_at: string
           dream_destinations: string[] | null
           first_name: string | null
+          height_cm: number | null
           id: string
           interests: string[] | null
           last_name: string | null
@@ -823,16 +825,20 @@ export type Database = {
           riding_experience_years: number | null
           riding_level: Database["public"]["Enums"]["riding_level"] | null
           riding_style: string[] | null
+          travel_preferences: string[] | null
           travel_style: string | null
           updated_at: string
           user_id: string
+          weight_kg: number | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          budget_range?: string | null
           created_at?: string
           dream_destinations?: string[] | null
           first_name?: string | null
+          height_cm?: number | null
           id?: string
           interests?: string[] | null
           last_name?: string | null
@@ -845,16 +851,20 @@ export type Database = {
           riding_experience_years?: number | null
           riding_level?: Database["public"]["Enums"]["riding_level"] | null
           riding_style?: string[] | null
+          travel_preferences?: string[] | null
           travel_style?: string | null
           updated_at?: string
           user_id: string
+          weight_kg?: number | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          budget_range?: string | null
           created_at?: string
           dream_destinations?: string[] | null
           first_name?: string | null
+          height_cm?: number | null
           id?: string
           interests?: string[] | null
           last_name?: string | null
@@ -867,9 +877,11 @@ export type Database = {
           riding_experience_years?: number | null
           riding_level?: Database["public"]["Enums"]["riding_level"] | null
           riding_style?: string[] | null
+          travel_preferences?: string[] | null
           travel_style?: string | null
           updated_at?: string
           user_id?: string
+          weight_kg?: number | null
         }
         Relationships: []
       }
