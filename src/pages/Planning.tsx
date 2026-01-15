@@ -118,12 +118,12 @@ const Planning = () => {
 
   const getActivityTypeColor = (type: string) => {
     const colors: Record<string, string> = {
-      randonnee: "bg-primary/20 text-primary border-primary/30",
-      sejour: "bg-accent/20 text-accent-foreground border-accent/30",
-      stage: "bg-secondary/20 text-secondary-foreground border-secondary/30",
-      evenement: "bg-destructive/20 text-destructive border-destructive/30",
+      randonnee: "bg-emerald-500/20 text-emerald-700 border-emerald-500/30",
+      sejour: "bg-blue-500/20 text-blue-700 border-blue-500/30",
+      stage: "bg-amber-500/20 text-amber-700 border-amber-500/30",
+      cours: "bg-purple-500/20 text-purple-700 border-purple-500/30",
     };
-    return colors[type] || "bg-muted text-muted-foreground";
+    return colors[type] || "bg-muted text-muted-foreground border-muted";
   };
 
   const getActivityTypeLabel = (type: string) => {
@@ -131,14 +131,26 @@ const Planning = () => {
       randonnee: "Randonnée",
       sejour: "Séjour",
       stage: "Stage",
-      evenement: "Événement",
+      cours: "Cours",
     };
     return labels[type] || type;
   };
 
+  // Filter out hébergement and get only equestrian activities
+  const filteredActivitySlots = activitySlots.filter(
+    (slot) => slot.activity?.activity_type !== "hebergement"
+  );
+
+  // Get next 3 upcoming activities from today
+  const today = startOfDay(new Date());
+  const upcomingActivities = filteredActivitySlots
+    .filter((slot) => !isBefore(parseISO(slot.end_date), today))
+    .sort((a, b) => parseISO(a.start_date).getTime() - parseISO(b.start_date).getTime())
+    .slice(0, 3);
+
   const getDatesWithActivities = () => {
     const dates: Date[] = [];
-    activitySlots.forEach((slot) => {
+    filteredActivitySlots.forEach((slot) => {
       const start = parseISO(slot.start_date);
       const end = parseISO(slot.end_date);
       let current = new Date(start);
@@ -180,7 +192,7 @@ const Planning = () => {
   };
 
   const getActivitiesForDate = (date: Date) => {
-    return activitySlots.filter((slot) => {
+    return filteredActivitySlots.filter((slot) => {
       const start = parseISO(slot.start_date);
       const end = parseISO(slot.end_date);
       return isWithinInterval(date, { start, end });
@@ -359,6 +371,22 @@ const Planning = () => {
                           day_today: "bg-accent text-accent-foreground",
                         }}
                       />
+                      
+                      {/* Legend */}
+                      <div className="flex flex-wrap gap-3 mt-4 justify-center">
+                        <Badge variant="outline" className="bg-emerald-500/20 text-emerald-700 border-emerald-500/30">
+                          Randonnée
+                        </Badge>
+                        <Badge variant="outline" className="bg-blue-500/20 text-blue-700 border-blue-500/30">
+                          Séjour
+                        </Badge>
+                        <Badge variant="outline" className="bg-amber-500/20 text-amber-700 border-amber-500/30">
+                          Stage
+                        </Badge>
+                        <Badge variant="outline" className="bg-purple-500/20 text-purple-700 border-purple-500/30">
+                          Cours
+                        </Badge>
+                      </div>
                     </TabsContent>
 
                     <TabsContent value="hebergement" className="mt-4">
@@ -428,13 +456,19 @@ const Planning = () => {
                         <div key={i} className="h-24 bg-muted/50 rounded-xl animate-pulse" />
                       ))}
                     </div>
-                  ) : activitySlots.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">
-                      Aucune activité programmée pour le moment. Revenez bientôt !
-                    </p>
+                  ) : upcomingActivities.length === 0 ? (
+                    <div className="text-center py-8">
+                      <CalendarDays className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground mb-4">
+                        Aucune activité programmée pour le moment.
+                      </p>
+                      <Button variant="outline" onClick={() => navigate("/destinations")}>
+                        Découvrez nos destinations
+                      </Button>
+                    </div>
                   ) : (
                     <div className="space-y-4">
-                      {activitySlots.slice(0, 5).map((slot) => (
+                      {upcomingActivities.map((slot) => (
                         <div
                           key={slot.id}
                           className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer group"
