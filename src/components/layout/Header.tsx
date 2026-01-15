@@ -22,6 +22,8 @@ const navigation = [
   { name: "Éco-Système", href: "/eco-systeme" },
   { name: "Carnet de Voyage", href: "/carnet-de-voyage" },
   { name: "Contact", href: "/contact" },
+  { name: "Mentions légales", href: "/mentions-legales" },
+  { name: "CGV", href: "/cgv" },
 ];
 
 const authNavigation = [
