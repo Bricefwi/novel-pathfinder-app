@@ -24,7 +24,8 @@ const navigation = {
   legal: [
     { name: "Mentions légales", href: "/mentions-legales" },
     { name: "CGU", href: "/cgu" },
-    { name: "Politique de confidentialité", href: "/politique-confidentialite" },
+    { name: "CGV", href: "/cgv" },
+    { name: "Confidentialité", href: "/politique-confidentialite" },
     { name: "Cookies", href: "/cookies" },
   ],
 };
