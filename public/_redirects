@@ -1,0 +1,11 @@
+# Redirections SEO vers les Edge Functions dynamiques
+/llms.txt https://fgdskfvmcjdruiguzebd.supabase.co/functions/v1/serve-llms-txt 200
+/sitemap.xml https://fgdskfvmcjdruiguzebd.supabase.co/functions/v1/serve-sitemap-xml 200
+
+# Anciennes URLs (redirections 301)
+/sejours /destinations 301
+/randonnees /destinations 301
+/carnet-voyage/* /carnet-de-voyage/:splat 301
+
+# SPA fallback
+/* /index.html 200
