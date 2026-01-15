@@ -468,8 +468,10 @@ export type Database = {
           distance_from_arwen: string | null
           excerpt: string | null
           featured_image: string | null
+          featured_image_override: string | null
           id: string
           images: string[] | null
+          images_override: string[] | null
           is_published: boolean | null
           location_address: string | null
           location_coordinates: Json | null
@@ -491,8 +493,10 @@ export type Database = {
           distance_from_arwen?: string | null
           excerpt?: string | null
           featured_image?: string | null
+          featured_image_override?: string | null
           id?: string
           images?: string[] | null
+          images_override?: string[] | null
           is_published?: boolean | null
           location_address?: string | null
           location_coordinates?: Json | null
@@ -514,8 +518,10 @@ export type Database = {
           distance_from_arwen?: string | null
           excerpt?: string | null
           featured_image?: string | null
+          featured_image_override?: string | null
           id?: string
           images?: string[] | null
+          images_override?: string[] | null
           is_published?: boolean | null
           location_address?: string | null
           location_coordinates?: Json | null
@@ -531,6 +537,62 @@ export type Database = {
           views_count?: number | null
         }
         Relationships: []
+      }
+      ecosystem_suggestions: {
+        Row: {
+          admin_notes: string | null
+          category: string
+          created_at: string
+          description: string
+          generated_article_id: string | null
+          id: string
+          location_address: string | null
+          location_name: string
+          location_website: string | null
+          reviewed_at: string | null
+          status: string
+          suggester_email: string
+          suggester_name: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          category: string
+          created_at?: string
+          description: string
+          generated_article_id?: string | null
+          id?: string
+          location_address?: string | null
+          location_name: string
+          location_website?: string | null
+          reviewed_at?: string | null
+          status?: string
+          suggester_email: string
+          suggester_name: string
+        }
+        Update: {
+          admin_notes?: string | null
+          category?: string
+          created_at?: string
+          description?: string
+          generated_article_id?: string | null
+          id?: string
+          location_address?: string | null
+          location_name?: string
+          location_website?: string | null
+          reviewed_at?: string | null
+          status?: string
+          suggester_email?: string
+          suggester_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ecosystem_suggestions_generated_article_id_fkey"
+            columns: ["generated_article_id"]
+            isOneToOne: false
+            referencedRelation: "ecosystem_articles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       favorites: {
         Row: {

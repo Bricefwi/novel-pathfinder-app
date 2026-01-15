@@ -315,7 +315,7 @@ const EcoSysteme = () => {
                   Revenez nous voir prochainement !
                 </p>
                 <Button asChild>
-                  <Link to="/contact">
+                  <Link to="/eco-systeme/proposer">
                     Suggérer un lieu
                     <ChevronRight className="ml-2 h-4 w-4" />
                   </Link>
@@ -336,7 +336,7 @@ const EcoSysteme = () => {
               Nous adorons mettre en lumière les acteurs de l'éco-tourisme breton.
             </p>
             <Button asChild size="lg">
-              <Link to="/contact">
+              <Link to="/eco-systeme/proposer">
                 Proposer un lieu
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Link>

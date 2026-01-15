@@ -60,6 +60,11 @@ const categoryConfig: Record<string, { icon: React.ElementType; color: string; l
   "decouverte": { icon: Compass, color: "bg-indigo-500/10 text-indigo-700 border-indigo-500/30", label: "Découverte" },
 };
 
+// Type pour les blocs de contenu
+type ContentBlock = 
+  | { type: 'paragraph'; text: string }
+  | { type: 'image'; src: string; alt: string };
+
 const EcoSystemeArticle = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -118,57 +123,89 @@ const EcoSystemeArticle = () => {
     }
   };
 
-  // Fonction pour insérer les images dans le contenu
-  const renderContentWithImages = (content: string, images: string[] | null) => {
-    if (!content) return null;
+  // Fonction pour parser le contenu en blocs React
+  const parseContentToBlocks = (content: string, images: string[] | null): ContentBlock[] => {
+    if (!content) return [];
     
     const galleryImages = images || [];
-    let processedContent = content;
+    const blocks: ContentBlock[] = [];
     
-    // 1. Supprimer tout code HTML brut généré par erreur par l'IA
-    // Pattern pour détecter les balises img en texte brut (non rendues)
-    processedContent = processedContent.replace(
-      /src="[^"]+"\s*\n?\s*alt="[^"]*"\s*\n?\s*class="[^"]*"\s*\n?\s*loading="[^"]*"\s*\n?\s*\/>/gi,
-      ''
-    );
-    processedContent = processedContent.replace(
-      /<img\s+[^>]*src="[^"]*"[^>]*\/?>/gi,
-      ''
-    );
-    // Pattern pour balises figure mal formées
-    processedContent = processedContent.replace(
-      /<figure[^>]*>[\s\S]*?<\/figure>/gi,
-      ''
-    );
+    // Nettoyer le contenu des balises HTML brutes mal formées
+    let cleanContent = content
+      .replace(/<img\s+[^>]*src="[^"]*"[^>]*\/?>/gi, '')
+      .replace(/<figure[^>]*>[\s\S]*?<\/figure>/gi, '')
+      .replace(/src="[^"]+"\s*\n?\s*alt="[^"]*"\s*\n?\s*class="[^"]*"\s*\n?\s*loading="[^"]*"\s*\n?\s*\/>/gi, '');
     
-    // 2. Remplacer les marqueurs [IMAGE_X] par des images
-    galleryImages.forEach((imageUrl, index) => {
-      const marker = `[IMAGE_${index + 1}]`;
-      const imageHtml = `
-        <figure class="article-image my-8">
-          <img 
-            src="${imageUrl}" 
-            alt="Illustration de l'article" 
-            class="w-full rounded-xl shadow-lg"
-            loading="lazy"
-          />
-        </figure>
-      `;
-      processedContent = processedContent.replace(marker, imageHtml);
+    // Diviser par les marqueurs d'image
+    const parts = cleanContent.split(/(\[IMAGE_\d+\])/g);
+    
+    parts.forEach((part) => {
+      const trimmedPart = part.trim();
+      if (!trimmedPart) return;
+      
+      // Vérifier si c'est un marqueur d'image
+      const imageMatch = trimmedPart.match(/\[IMAGE_(\d+)\]/);
+      if (imageMatch) {
+        const imageIndex = parseInt(imageMatch[1], 10) - 1;
+        if (galleryImages[imageIndex]) {
+          blocks.push({
+            type: 'image',
+            src: galleryImages[imageIndex],
+            alt: `Illustration de l'article`
+          });
+        }
+      } else {
+        // C'est du texte - diviser en paragraphes
+        const paragraphs = trimmedPart
+          .split(/\n\n+/)
+          .map(p => p.trim())
+          .filter(p => p.length > 0);
+        
+        paragraphs.forEach((para) => {
+          blocks.push({
+            type: 'paragraph',
+            text: para.replace(/\n/g, '<br />')
+          });
+        });
+      }
     });
     
-    // 3. Nettoyer les marqueurs restants non remplacés
-    processedContent = processedContent.replace(/\[IMAGE_\d+\]/g, '');
+    return blocks;
+  };
+
+  // Composant pour rendre les blocs
+  const ContentRenderer = ({ content, images }: { content: string; images: string[] | null }) => {
+    const blocks = parseContentToBlocks(content, images);
     
-    // 4. Convertir les retours à la ligne en HTML
-    processedContent = processedContent
-      .split('\n\n')
-      .map(paragraph => paragraph.trim())
-      .filter(paragraph => paragraph.length > 0)
-      .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br />')}</p>`)
-      .join('');
-    
-    return processedContent;
+    return (
+      <div className="space-y-6">
+        {blocks.map((block, index) => {
+          if (block.type === 'image') {
+            return (
+              <figure key={index} className="my-8">
+                <img 
+                  src={block.src} 
+                  alt={block.alt}
+                  className="w-full rounded-xl shadow-lg"
+                  loading="lazy"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </figure>
+            );
+          }
+          
+          return (
+            <p 
+              key={index} 
+              className="text-muted-foreground text-lg leading-relaxed"
+              dangerouslySetInnerHTML={{ __html: block.text }}
+            />
+          );
+        })}
+      </div>
+    );
   };
 
   if (loading) {
@@ -195,7 +232,12 @@ const EcoSystemeArticle = () => {
 
   const config = categoryConfig[article.category || "decouverte"] || categoryConfig["decouverte"];
   const IconComponent = config.icon;
-  const processedContent = renderContentWithImages(article.content || '', article.images);
+  
+  // Utiliser les images override si disponibles
+  const displayFeaturedImage = (article as any).featured_image_override || article.featured_image;
+  const displayGalleryImages = (article as any).images_override?.length > 0 
+    ? (article as any).images_override 
+    : article.images;
 
   return (
     <>
@@ -206,10 +248,9 @@ const EcoSystemeArticle = () => {
       />
       <Layout>
         <article className="pb-16">
-          {/* Hero Image */}
           <div className="relative h-[50vh] min-h-[400px] overflow-hidden">
             <img
-              src={article.featured_image || bretagnVillageChevaux}
+              src={displayFeaturedImage || bretagnVillageChevaux}
               alt={article.title}
               className="w-full h-full object-cover"
               onError={(e) => {
@@ -301,13 +342,8 @@ const EcoSystemeArticle = () => {
                       </p>
                     )}
 
-                    {/* Content with embedded images */}
-                    <div 
-                      className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-foreground prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:mb-6 prose-a:text-primary prose-img:rounded-xl prose-img:shadow-lg prose-figure:my-8"
-                      dangerouslySetInnerHTML={{ 
-                        __html: processedContent || '' 
-                      }}
-                    />
+                    {/* Content with embedded images - React-based rendering */}
+                    <ContentRenderer content={article.content || ''} images={displayGalleryImages} />
 
                     {/* Tags */}
                     {article.tags && article.tags.length > 0 && (
