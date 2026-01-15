@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { FileText, Plus, Download, Send, Eye, Receipt, CheckCircle } from "lucide-react";
+import { FileText, Plus, Download, Send, Eye, Receipt, CheckCircle, Mail, Loader2 } from "lucide-react";
 import { downloadQuotePDF, type QuoteData } from "@/components/pdf/QuotePDFGenerator";
 import { downloadInvoicePDF, type InvoiceData } from "@/components/pdf/InvoicePDFGenerator";
 
@@ -47,6 +47,7 @@ export const AdminQuotesInvoices = () => {
   const [isQuoteDialogOpen, setIsQuoteDialogOpen] = useState(false);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
+  const [sendingEmail, setSendingEmail] = useState<string | null>(null);
 
   // Fetch quotes
   const { data: quotes, isLoading: quotesLoading } = useQuery({
@@ -121,11 +122,47 @@ export const AdminQuotesInvoices = () => {
         .select()
         .single();
       if (error) throw error;
+      
+      // Envoyer automatiquement le devis par email
+      try {
+        const { error: emailError } = await supabase.functions.invoke("send-quote-email", {
+          body: {
+            quote_number: numberData,
+            client_name: quoteData.client_name,
+            client_email: quoteData.client_email,
+            activity_title: quoteData.activity_title,
+            activity_duration: quoteData.activity_duration,
+            start_date: quoteData.start_date,
+            end_date: quoteData.end_date,
+            participants: quoteData.participants,
+            unit_price: quoteData.unit_price,
+            total_price: quoteData.total_price,
+            deposit_amount: quoteData.deposit_amount,
+            deposit_percentage: quoteData.deposit_percentage || 30,
+            valid_until: quoteData.valid_until,
+            notes: quoteData.notes,
+          },
+        });
+        
+        if (emailError) {
+          console.error("Email error:", emailError);
+          toast.warning("Devis créé mais l'email n'a pas pu être envoyé");
+        } else {
+          // Mettre à jour le statut à "sent"
+          await supabase
+            .from("quotes")
+            .update({ status: "sent" })
+            .eq("id", data.id);
+        }
+      } catch (emailErr) {
+        console.error("Email sending failed:", emailErr);
+      }
+      
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-quotes"] });
-      toast.success("Devis créé avec succès");
+      toast.success("Devis créé et envoyé par email");
       setIsQuoteDialogOpen(false);
     },
     onError: () => {
@@ -198,6 +235,46 @@ export const AdminQuotesInvoices = () => {
       created_at: quote.created_at,
     };
     downloadQuotePDF(quoteData);
+  };
+
+  const handleResendQuoteEmail = async (quote: typeof quotes extends (infer T)[] ? T : never) => {
+    setSendingEmail(quote.id);
+    try {
+      const { error } = await supabase.functions.invoke("send-quote-email", {
+        body: {
+          quote_number: quote.quote_number,
+          client_name: quote.client_name,
+          client_email: quote.client_email,
+          activity_title: quote.activity_title,
+          activity_duration: quote.activity_duration,
+          start_date: quote.start_date,
+          end_date: quote.end_date,
+          participants: quote.participants,
+          unit_price: Number(quote.unit_price),
+          total_price: Number(quote.total_price),
+          deposit_amount: Number(quote.deposit_amount),
+          deposit_percentage: Number(quote.deposit_percentage),
+          valid_until: quote.valid_until,
+          notes: quote.notes,
+        },
+      });
+      
+      if (error) throw error;
+      
+      // Mettre à jour le statut
+      await supabase
+        .from("quotes")
+        .update({ status: "sent" })
+        .eq("id", quote.id);
+        
+      queryClient.invalidateQueries({ queryKey: ["admin-quotes"] });
+      toast.success(`Devis renvoyé à ${quote.client_email}`);
+    } catch (err) {
+      console.error("Email error:", err);
+      toast.error("Erreur lors de l'envoi de l'email");
+    } finally {
+      setSendingEmail(null);
+    }
   };
 
   const handleDownloadInvoice = (invoice: typeof invoices extends (infer T)[] ? T : never) => {
@@ -528,7 +605,20 @@ export const AdminQuotesInvoices = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-2">
-                            <Button size="sm" variant="outline" onClick={() => handleDownloadQuote(quote)}>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleResendQuoteEmail(quote)}
+                              disabled={sendingEmail === quote.id}
+                              title="Envoyer par email"
+                            >
+                              {sendingEmail === quote.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Mail className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => handleDownloadQuote(quote)} title="Télécharger PDF">
                               <Download className="h-4 w-4" />
                             </Button>
                             <Button 
@@ -536,6 +626,7 @@ export const AdminQuotesInvoices = () => {
                               variant="outline"
                               onClick={() => createInvoiceFromQuote.mutate(quote.id)}
                               disabled={createInvoiceFromQuote.isPending}
+                              title="Créer une facture"
                             >
                               <Receipt className="h-4 w-4" />
                             </Button>
