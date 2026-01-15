@@ -35,6 +35,7 @@ interface EcosystemArticle {
   excerpt: string | null;
   content: string | null;
   featured_image: string | null;
+  images: string[] | null;
   category: string | null;
   location_name: string | null;
   location_address: string | null;
@@ -49,9 +50,13 @@ interface EcosystemArticle {
 
 const categoryConfig: Record<string, { icon: React.ElementType; color: string; label: string }> = {
   "randonnee": { icon: Mountain, color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30", label: "Randonnée" },
+  "Randonnées": { icon: Mountain, color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30", label: "Randonnées" },
   "ferme-pedagogique": { icon: Leaf, color: "bg-amber-500/10 text-amber-700 border-amber-500/30", label: "Ferme Pédagogique" },
+  "Fermes Pédagogiques": { icon: Leaf, color: "bg-amber-500/10 text-amber-700 border-amber-500/30", label: "Fermes Pédagogiques" },
   "patrimoine": { icon: Castle, color: "bg-rose-500/10 text-rose-700 border-rose-500/30", label: "Patrimoine" },
+  "Patrimoine": { icon: Castle, color: "bg-rose-500/10 text-rose-700 border-rose-500/30", label: "Patrimoine & Culture" },
   "nature": { icon: Trees, color: "bg-teal-500/10 text-teal-700 border-teal-500/30", label: "Nature & Écologie" },
+  "Nature": { icon: Trees, color: "bg-teal-500/10 text-teal-700 border-teal-500/30", label: "Nature & Écologie" },
   "decouverte": { icon: Compass, color: "bg-indigo-500/10 text-indigo-700 border-indigo-500/30", label: "Découverte" },
 };
 
@@ -113,6 +118,44 @@ const EcoSystemeArticle = () => {
     }
   };
 
+  // Fonction pour insérer les images dans le contenu
+  const renderContentWithImages = (content: string, images: string[] | null) => {
+    if (!content) return null;
+    
+    const galleryImages = images || [];
+    
+    // Remplacer les marqueurs [IMAGE_X] par des images
+    let processedContent = content;
+    
+    galleryImages.forEach((imageUrl, index) => {
+      const marker = `[IMAGE_${index + 1}]`;
+      const imageHtml = `
+        <figure class="article-image my-8">
+          <img 
+            src="${imageUrl}" 
+            alt="Illustration de l'article" 
+            class="w-full rounded-xl shadow-lg"
+            loading="lazy"
+          />
+        </figure>
+      `;
+      processedContent = processedContent.replace(marker, imageHtml);
+    });
+    
+    // Nettoyer les marqueurs restants non remplacés
+    processedContent = processedContent.replace(/\[IMAGE_\d+\]/g, '');
+    
+    // Convertir les retours à la ligne en HTML
+    processedContent = processedContent
+      .split('\n\n')
+      .map(paragraph => paragraph.trim())
+      .filter(paragraph => paragraph.length > 0)
+      .map(paragraph => `<p>${paragraph.replace(/\n/g, '<br />')}</p>`)
+      .join('');
+    
+    return processedContent;
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -137,6 +180,7 @@ const EcoSystemeArticle = () => {
 
   const config = categoryConfig[article.category || "decouverte"] || categoryConfig["decouverte"];
   const IconComponent = config.icon;
+  const processedContent = renderContentWithImages(article.content || '', article.images);
 
   return (
     <>
@@ -235,11 +279,18 @@ const EcoSystemeArticle = () => {
                       </Button>
                     </div>
 
-                    {/* Content */}
+                    {/* Excerpt / Chapô */}
+                    {article.excerpt && (
+                      <p className="text-lg text-muted-foreground italic mb-8 leading-relaxed">
+                        {article.excerpt}
+                      </p>
+                    )}
+
+                    {/* Content with embedded images */}
                     <div 
-                      className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-foreground prose-p:text-muted-foreground prose-a:text-primary"
+                      className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-foreground prose-p:text-muted-foreground prose-p:leading-relaxed prose-p:mb-6 prose-a:text-primary prose-img:rounded-xl prose-img:shadow-lg prose-figure:my-8"
                       dangerouslySetInnerHTML={{ 
-                        __html: article.content?.replace(/\n/g, '<br />') || '' 
+                        __html: processedContent || '' 
                       }}
                     />
 

@@ -21,72 +21,101 @@ interface ArticleData {
   image_search_keywords: string[];
 }
 
-// Fonction pour récupérer des images Unsplash pertinentes
-async function fetchUnsplashImages(keywords: string[], count: number = 4): Promise<string[]> {
-  const images: string[] = [];
-  
-  // Combiner les mots-clés pour une recherche pertinente
-  const searchQueries = [
-    keywords.join(" "),
-    keywords[0] || "Bretagne nature",
-    "Bretagne paysage",
-    "France campagne"
-  ];
-
-  for (let i = 0; i < Math.min(count, searchQueries.length); i++) {
-    try {
-      const query = encodeURIComponent(searchQueries[i]);
-      // Utiliser l'API Unsplash Source (gratuit, pas de clé requise)
-      // Format: https://source.unsplash.com/featured/?{query}&{random}
-      const imageUrl = `https://images.unsplash.com/photo-${generateRandomImageId()}?w=1200&h=800&fit=crop&q=80`;
-      
-      // Alternative: utiliser des images Unsplash via leur CDN avec recherche
-      const unsplashSearchUrl = `https://source.unsplash.com/1200x800/?${query}&sig=${Date.now() + i}`;
-      images.push(unsplashSearchUrl);
-    } catch (error) {
-      console.error("Error fetching Unsplash image:", error);
-    }
-  }
-
-  // Si pas assez d'images, ajouter des images par défaut de nature bretonne
-  const defaultImages = [
-    "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200&h=800&fit=crop&q=80", // Landscape
-    "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=800&fit=crop&q=80", // Mountains forest
-    "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&h=800&fit=crop&q=80", // Forest path
-    "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1200&h=800&fit=crop&q=80", // Countryside
-  ];
-
-  while (images.length < count) {
-    images.push(defaultImages[images.length % defaultImages.length]);
-  }
-
-  return images;
-}
-
-function generateRandomImageId(): string {
-  // IDs d'images Unsplash réelles liées à la nature, Bretagne, France
-  const realImageIds = [
-    "1506905925346-21bda4d32df4", // Nature paysage
-    "1441974231531-c6227db76b6e", // Forêt
-    "1472214103451-9374bd1c798e", // Campagne
-    "1501785888041-af3ef285b470", // Paysage vert
-    "1465056836041-7f43ac27dcb5", // Lac
-    "1504567961542-e24d9439a724", // Collines
-    "1475924156734-496f6cac6ec1", // Prairie
-    "1470071459604-3b5ec3a7fe05", // Nature verte
-    "1542202229-7d93c33f5d07", // Château
-    "1558618666-fcd25c85cd64", // Architecture ancienne
-  ];
-  return realImageIds[Math.floor(Math.random() * realImageIds.length)];
-}
-
-// Mapping des catégories vers des mots-clés de recherche d'images
-const categoryImageKeywords: Record<string, string[]> = {
-  "Randonnées": ["hiking trail forest", "Brittany landscape path", "nature walking France"],
-  "Fermes Pédagogiques": ["farm animals countryside", "educational farm France", "rural farm Brittany"],
-  "Patrimoine": ["castle France medieval", "historic chateau Brittany", "french heritage architecture"],
-  "Nature": ["nature reserve lake", "wildlife wetlands France", "natural pond birds"],
+// Images réelles haute qualité par catégorie (Unsplash direct URLs)
+const categoryImages: Record<string, { featured: string[]; gallery: string[][] }> = {
+  "Randonnées": {
+    featured: [
+      "https://images.unsplash.com/photo-1551632811-561732d1e306?w=1200&h=800&fit=crop&q=80", // Hiking trail
+      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=1200&h=800&fit=crop&q=80", // Mountain path
+      "https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=1200&h=800&fit=crop&q=80", // Forest hike
+      "https://images.unsplash.com/photo-1533692328991-08159ff19fca?w=1200&h=800&fit=crop&q=80", // Nature trail
+    ],
+    gallery: [
+      [
+        "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop&q=80", // Forest path
+        "https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&h=600&fit=crop&q=80", // Green forest
+        "https://images.unsplash.com/photo-1476231682828-37e571bc172f?w=800&h=600&fit=crop&q=80", // Misty forest
+      ],
+      [
+        "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&h=600&fit=crop&q=80", // Tree path
+        "https://images.unsplash.com/photo-1425913397330-cf8af2ff40a1?w=800&h=600&fit=crop&q=80", // Deep forest
+        "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=800&h=600&fit=crop&q=80", // Forest light
+      ],
+    ],
+  },
+  "Fermes Pédagogiques": {
+    featured: [
+      "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=1200&h=800&fit=crop&q=80", // Farm animals
+      "https://images.unsplash.com/photo-1605152276897-4f618f831968?w=1200&h=800&fit=crop&q=80", // Goats
+      "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1200&h=800&fit=crop&q=80", // Countryside
+      "https://images.unsplash.com/photo-1569880153113-76e33fc52d5f?w=1200&h=800&fit=crop&q=80", // Farm scene
+    ],
+    gallery: [
+      [
+        "https://images.unsplash.com/photo-1574938730946-16a9c9ca4c77?w=800&h=600&fit=crop&q=80", // Chickens
+        "https://images.unsplash.com/photo-1602081115068-12e10f75fbc7?w=800&h=600&fit=crop&q=80", // Sheep
+        "https://images.unsplash.com/photo-1559628129-67cf63b72248?w=800&h=600&fit=crop&q=80", // Donkey
+      ],
+      [
+        "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=800&h=600&fit=crop&q=80", // Cows
+        "https://images.unsplash.com/photo-1625596275461-46c6f8d01bea?w=800&h=600&fit=crop&q=80", // Piglets
+        "https://images.unsplash.com/photo-1589923188651-268a9765e432?w=800&h=600&fit=crop&q=80", // Farm kid
+      ],
+    ],
+  },
+  "Patrimoine": {
+    featured: [
+      "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=1200&h=800&fit=crop&q=80", // Castle
+      "https://images.unsplash.com/photo-1564429238535-2a9ca65eb5c2?w=1200&h=800&fit=crop&q=80", // Medieval
+      "https://images.unsplash.com/photo-1555921015-5532091f6026?w=1200&h=800&fit=crop&q=80", // French castle
+      "https://images.unsplash.com/photo-1560930950-5cc20e80e392?w=1200&h=800&fit=crop&q=80", // Historic
+    ],
+    gallery: [
+      [
+        "https://images.unsplash.com/photo-1595867818082-083862f3d630?w=800&h=600&fit=crop&q=80", // Stone walls
+        "https://images.unsplash.com/photo-1524397057410-a44a7c4e82c6?w=800&h=600&fit=crop&q=80", // Abbey
+        "https://images.unsplash.com/photo-1565876427310-0695a4ff03b7?w=800&h=600&fit=crop&q=80", // Chapel
+      ],
+      [
+        "https://images.unsplash.com/photo-1541417904950-b855846fe074?w=800&h=600&fit=crop&q=80", // Tower
+        "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=600&fit=crop&q=80", // Architecture
+        "https://images.unsplash.com/photo-1598755257130-c2aaca1f061c?w=800&h=600&fit=crop&q=80", // Heritage
+      ],
+    ],
+  },
+  "Nature": {
+    featured: [
+      "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=800&fit=crop&q=80", // Lake nature
+      "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200&h=800&fit=crop&q=80", // Landscape
+      "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1200&h=800&fit=crop&q=80", // Meadow
+      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1200&h=800&fit=crop&q=80", // Hills
+    ],
+    gallery: [
+      [
+        "https://images.unsplash.com/photo-1465056836041-7f43ac27dcb5?w=800&h=600&fit=crop&q=80", // Lake
+        "https://images.unsplash.com/photo-1504567961542-e24d9439a724?w=800&h=600&fit=crop&q=80", // Valley
+        "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=800&h=600&fit=crop&q=80", // Meadow
+      ],
+      [
+        "https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=800&h=600&fit=crop&q=80", // Autumn
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=600&fit=crop&q=80", // River
+        "https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=800&h=600&fit=crop&q=80", // Pond
+      ],
+    ],
+  },
 };
+
+// Sélectionner des images aléatoires pour une catégorie
+function getRandomImages(category: string): { featured: string; gallery: string[] } {
+  const images = categoryImages[category] || categoryImages["Nature"];
+  const featuredIndex = Math.floor(Math.random() * images.featured.length);
+  const galleryIndex = Math.floor(Math.random() * images.gallery.length);
+  
+  return {
+    featured: images.featured[featuredIndex],
+    gallery: images.gallery[galleryIndex],
+  };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -123,16 +152,22 @@ CONSIGNES DE RÉDACTION IMPÉRATIVES :
 
 STRUCTURE DE L'ARTICLE :
 
+Le contenu doit inclure des marqueurs [IMAGE_1], [IMAGE_2], [IMAGE_3] à des endroits stratégiques dans le texte (après 2-3 paragraphes) pour indiquer où les photos d'illustration doivent être insérées.
+
 TITRE : Un titre évocateur et poétique (sans ponctuation spéciale, sans deux-points)
 
 CHAPÔ (3-4 phrases) : Introduction sensorielle et immersive avec lumière, odeurs, sons, saison. Situe le lieu par rapport à la Ferme An Arwen.
 
-CORPS DE L'ARTICLE (800-1200 mots) :
+CORPS DE L'ARTICLE (1000-1500 mots) :
 Écris en paragraphes fluides séparés par des doubles retours à la ligne.
 - Descriptions détaillées des paysages, faune et flore
 - Mise en scène d'itinéraires ou activités concrètes
 - Engagements éco-touristiques du lieu
 - Suggestions de combinaisons avec un séjour à An Arwen
+
+Insère [IMAGE_1] après les premiers paragraphes d'introduction.
+Insère [IMAGE_2] au milieu de l'article, dans une section descriptive.
+Insère [IMAGE_3] avant la conclusion ou les infos pratiques.
 
 À la fin du corps de l'article, inclure naturellement :
 
@@ -141,9 +176,6 @@ Nom complet et type de structure, adresse postale complète, téléphone, email,
 
 ENCADRÉ "L'ESPRIT ECO-SYSTÈME" (dernier paragraphe, 5-8 lignes) :
 Explique pourquoi ce lieu est cohérent avec l'éco-tourisme et complémentaire à An Arwen. Commence ce paragraphe par "L'esprit Éco-Système".
-
-MOTS-CLÉS POUR IMAGES :
-Fournis 4 mots-clés en anglais décrivant des images qui illustreraient parfaitement cet article (pour recherche sur banque d'images). Par exemple : "forest trail Brittany", "medieval castle France", "farm animals children", "lake wetlands birds".
 
 IMPORTANT :
 - Toutes les informations doivent être VÉRIFIABLES et RÉELLES
@@ -155,7 +187,7 @@ Fournis ta réponse au format JSON suivant :
 {
   "title": "Titre évocateur style magazine (sans caractères spéciaux, sans deux-points)",
   "excerpt": "Chapô immersif de 3-4 phrases (texte pur, sans formatage)",
-  "content": "Article complet de 800-1200 mots en texte fluide avec paragraphes séparés par des retours à la ligne doubles. AUCUN markdown, AUCUN caractère spécial. Inclure naturellement les infos pratiques et l'encadré Esprit Eco-Système à la fin.",
+  "content": "Article complet de 1000-1500 mots en texte fluide avec paragraphes séparés par des retours à la ligne doubles. AUCUN markdown, AUCUN caractère spécial. Inclure les marqueurs [IMAGE_1], [IMAGE_2], [IMAGE_3] aux emplacements stratégiques. Inclure naturellement les infos pratiques et l'encadré Esprit Eco-Système à la fin.",
   "location_name": "Nom exact du lieu",
   "location_address": "Adresse complète avec code postal",
   "location_phone": "Numéro de téléphone réel vérifié",
@@ -163,8 +195,7 @@ Fournis ta réponse au format JSON suivant :
   "location_website": "Site web officiel vérifié",
   "distance_from_arwen": "Distance en km (ex: 12 km, environ 20 minutes)",
   "category": "${category}",
-  "tags": ["tag1", "tag2", "tag3", "tag4"],
-  "image_search_keywords": ["keyword1 in english", "keyword2 in english", "keyword3 in english", "keyword4 in english"]
+  "tags": ["tag1", "tag2", "tag3", "tag4"]
 }`;
 
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
@@ -178,7 +209,7 @@ Fournis ta réponse au format JSON suivant :
         messages: [
           { 
             role: "system", 
-            content: "Tu es un rédacteur-reporter premium de magazine Géo spécialisé en éco-tourisme breton. Tu rédiges des articles immersifs, poétiques et informatifs. Tu ne génères JAMAIS de caractères markdown (**, ##, #, [1]). Tu écris en texte fluide et naturel. Tu vérifies toujours l'exactitude des informations. Réponds uniquement en JSON valide." 
+            content: "Tu es un rédacteur-reporter premium de magazine Géo spécialisé en éco-tourisme breton. Tu rédiges des articles immersifs, poétiques et informatifs. Tu ne génères JAMAIS de caractères markdown (**, ##, #, [1]). Tu écris en texte fluide et naturel. Tu insères des marqueurs [IMAGE_1], [IMAGE_2], [IMAGE_3] pour indiquer les emplacements des photos. Tu vérifies toujours l'exactitude des informations. Réponds uniquement en JSON valide." 
           },
           { role: "user", content: prompt }
         ],
@@ -200,10 +231,9 @@ Fournis ta réponse au format JSON suivant :
                 location_website: { type: "string" },
                 distance_from_arwen: { type: "string" },
                 category: { type: "string" },
-                tags: { type: "array", items: { type: "string" } },
-                image_search_keywords: { type: "array", items: { type: "string" } }
+                tags: { type: "array", items: { type: "string" } }
               },
-              required: ["title", "excerpt", "content", "location_name", "category", "image_search_keywords"]
+              required: ["title", "excerpt", "content", "location_name", "category"]
             }
           }
         }
@@ -242,7 +272,7 @@ Fournis ta réponse au format JSON suivant :
         .replace(/\*/g, '')
         .replace(/`/g, '')
         .replace(/---/g, '')
-        .replace(/\n\s*[-•]\s*/g, '\n') // Remove bullet points
+        .replace(/\n\s*[-•]\s*/g, '\n')
         .trim();
     };
 
@@ -250,25 +280,10 @@ Fournis ta réponse au format JSON suivant :
     articleData.excerpt = cleanContent(articleData.excerpt);
     articleData.content = cleanContent(articleData.content);
 
-    // Récupérer des images Unsplash pertinentes basées sur les mots-clés
-    const imageKeywords = articleData.image_search_keywords || 
-      categoryImageKeywords[category] || 
-      ["Brittany nature landscape"];
-    
-    console.log("Fetching images for keywords:", imageKeywords);
-    
-    // Construire les URLs d'images Unsplash avec les mots-clés spécifiques
-    const featuredImageQuery = encodeURIComponent(imageKeywords[0] || `${category} Brittany France`);
-    const featuredImage = `https://source.unsplash.com/1200x800/?${featuredImageQuery}&sig=${Date.now()}`;
-    
-    const galleryImages: string[] = [];
-    for (let i = 1; i < Math.min(4, imageKeywords.length); i++) {
-      const query = encodeURIComponent(imageKeywords[i]);
-      galleryImages.push(`https://source.unsplash.com/800x600/?${query}&sig=${Date.now() + i}`);
-    }
-
-    console.log("Featured image URL:", featuredImage);
-    console.log("Gallery images:", galleryImages);
+    // Obtenir des images pertinentes pour la catégorie
+    const images = getRandomImages(category);
+    console.log("Selected featured image:", images.featured);
+    console.log("Selected gallery images:", images.gallery);
 
     // Create slug from title
     const slug = articleData.title
@@ -290,8 +305,8 @@ Fournis ta réponse au format JSON suivant :
         slug: slug,
         excerpt: articleData.excerpt,
         content: articleData.content,
-        featured_image: featuredImage,
-        images: galleryImages,
+        featured_image: images.featured,
+        images: images.gallery,
         category: articleData.category,
         location_name: articleData.location_name,
         location_address: articleData.location_address || null,
