@@ -17,3 +17,12 @@ verify_jwt = false
 
 [functions.ask-loic]
 verify_jwt = false
+
+[functions.test-system]
+verify_jwt = false
+
+[functions.serve-llms-txt]
+verify_jwt = false
+
+[functions.serve-sitemap-xml]
+verify_jwt = false
