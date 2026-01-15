@@ -9,6 +9,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Send, Bot, User, Loader2, ArrowLeft } from "lucide-react";
+import avatarLoic from "@/assets/avatar-loic.jpg";
 
 interface Message {
   role: "user" | "assistant";
@@ -217,7 +218,7 @@ export default function AgentFAQ() {
             </Button>
             <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12 border-2 border-primary shrink-0">
-                <AvatarImage src="/placeholder.svg" alt="Loïc" />
+                <AvatarImage src={avatarLoic} alt="Loïc" />
                 <AvatarFallback className="bg-primary text-primary-foreground">
                   <Bot className="h-6 w-6" />
                 </AvatarFallback>
@@ -238,11 +239,14 @@ export default function AgentFAQ() {
                     key={index}
                     className={`flex gap-3 ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}
                   >
-                    <Avatar className={`h-8 w-8 ${message.role === "user" ? "bg-primary" : "bg-muted"}`}>
+                    <Avatar className={`h-8 w-8 shrink-0 ${message.role === "user" ? "bg-primary" : "bg-muted"}`}>
                       {message.role === "assistant" ? (
-                        <AvatarFallback className="bg-primary/10 text-primary">
-                          <Bot className="h-4 w-4" />
-                        </AvatarFallback>
+                        <>
+                          <AvatarImage src={avatarLoic} alt="Loïc" />
+                          <AvatarFallback className="bg-primary/10 text-primary">
+                            <Bot className="h-4 w-4" />
+                          </AvatarFallback>
+                        </>
                       ) : (
                         <AvatarFallback className="bg-primary text-primary-foreground">
                           <User className="h-4 w-4" />
@@ -263,7 +267,8 @@ export default function AgentFAQ() {
 
                 {isLoading && messages[messages.length - 1]?.role === "user" && (
                   <div className="flex gap-3">
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarImage src={avatarLoic} alt="Loïc" />
                       <AvatarFallback className="bg-primary/10 text-primary">
                         <Bot className="h-4 w-4" />
                       </AvatarFallback>
