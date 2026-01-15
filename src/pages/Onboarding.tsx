@@ -95,6 +95,7 @@ const Onboarding = () => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isOAuthImported, setIsOAuthImported] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -122,7 +123,11 @@ const Onboarding = () => {
     }
     setUserId(session.user.id);
 
-    // Load existing profile data
+    // Check if user signed in via OAuth (Google, Facebook, etc.)
+    const provider = session.user.app_metadata?.provider;
+    const isOAuth = provider && provider !== 'email';
+
+    // Load existing profile data (populated by trigger for OAuth users)
     const { data: profile } = await supabase
       .from("profiles")
       .select("*")
@@ -136,11 +141,15 @@ const Onboarding = () => {
         return;
       }
       
+      // Check if data was imported from OAuth
+      const hasOAuthData = !!(isOAuth && (profile.avatar_url || profile.first_name));
+      setIsOAuthImported(hasOAuthData);
+      
       setFormData({
         first_name: profile.first_name || session.user.user_metadata?.first_name || "",
         last_name: profile.last_name || session.user.user_metadata?.last_name || "",
         phone: profile.phone || "",
-        avatar_url: profile.avatar_url || "",
+        avatar_url: profile.avatar_url || session.user.user_metadata?.avatar_url || "",
         riding_level: profile.riding_level || "",
         height_cm: profile.height_cm || 170,
         weight_kg: profile.weight_kg || 70,
@@ -384,9 +393,16 @@ const Onboarding = () => {
                         className="hidden"
                       />
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      Cliquez pour ajouter une photo (optionnel)
-                    </p>
+                    {isOAuthImported && formData.avatar_url ? (
+                      <Badge variant="secondary" className="gap-1.5">
+                        <Check className="h-3 w-3" />
+                        Importé de Google
+                      </Badge>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Cliquez pour ajouter une photo (optionnel)
+                      </p>
+                    )}
                   </div>
 
                   <div className="grid sm:grid-cols-2 gap-4">
