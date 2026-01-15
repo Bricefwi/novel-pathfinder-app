@@ -9,6 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import ChatCommunautaire from "@/components/chat/ChatCommunautaire";
+import { UserDocuments } from "@/components/user/UserDocuments";
 import { 
   User, 
   Heart, 
@@ -26,6 +27,7 @@ import {
   MessageCircle,
   Sparkles,
   TrendingUp,
+  FileText,
   Users
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -381,10 +383,14 @@ const MonEspace = () => {
 
           {/* Main Tabs */}
           <Tabs defaultValue="reservations" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
+            <TabsList className="grid w-full grid-cols-7 lg:w-auto lg:inline-grid">
               <TabsTrigger value="reservations" className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 <span className="hidden sm:inline">Réservations</span>
+              </TabsTrigger>
+              <TabsTrigger value="documents" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                <span className="hidden sm:inline">Documents</span>
               </TabsTrigger>
               <TabsTrigger value="abonnements" className="flex items-center gap-2">
                 <Heart className="h-4 w-4" />
@@ -473,6 +479,11 @@ const MonEspace = () => {
                   )}
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Documents Tab */}
+            <TabsContent value="documents">
+              {user && <UserDocuments userId={user.id} />}
             </TabsContent>
 
             {/* Subscriptions Tab */}

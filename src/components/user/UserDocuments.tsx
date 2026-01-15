@@ -1,14 +1,20 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { FileText, Receipt, Download, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { FileText, Receipt, Download, CheckCircle, Clock, AlertCircle, Shield, PenTool } from "lucide-react";
 import { downloadQuotePDF, type QuoteData } from "@/components/pdf/QuotePDFGenerator";
 import { downloadInvoicePDF, type InvoiceData } from "@/components/pdf/InvoicePDFGenerator";
+import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -39,6 +45,13 @@ interface UserDocumentsProps {
 }
 
 export const UserDocuments = ({ userId }: UserDocumentsProps) => {
+  const queryClient = useQueryClient();
+  const [validationDialogOpen, setValidationDialogOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [cguAccepted, setCguAccepted] = useState(false);
+  const [cgvAccepted, setCgvAccepted] = useState(false);
+  const [signatureConfirmed, setSignatureConfirmed] = useState(false);
+
   // Fetch user quotes
   const { data: quotes, isLoading: quotesLoading } = useQuery({
     queryKey: ["user-quotes", userId],
@@ -69,7 +82,60 @@ export const UserDocuments = ({ userId }: UserDocumentsProps) => {
     enabled: !!userId,
   });
 
-  const handleDownloadQuote = (quote: typeof quotes extends (infer T)[] ? T : never) => {
+  // Mutation for validating invoice
+  const validateInvoiceMutation = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const { data, error } = await supabase
+        .from("invoices")
+        .update({
+          client_validated: true,
+          client_validated_at: new Date().toISOString(),
+          cgu_accepted: true,
+          cgu_accepted_at: new Date().toISOString(),
+          cgv_accepted: true,
+          cgv_accepted_at: new Date().toISOString(),
+          client_signature: `Signature électronique - ${new Date().toISOString()}`,
+        })
+        .eq("id", invoiceId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["user-invoices", userId] });
+      toast.success("Facture validée avec succès !");
+      setValidationDialogOpen(false);
+      resetValidationForm();
+    },
+    onError: () => {
+      toast.error("Erreur lors de la validation de la facture");
+    },
+  });
+
+  const resetValidationForm = () => {
+    setCguAccepted(false);
+    setCgvAccepted(false);
+    setSignatureConfirmed(false);
+    setSelectedInvoice(null);
+  };
+
+  const openValidationDialog = (invoice: any) => {
+    setSelectedInvoice(invoice);
+    setValidationDialogOpen(true);
+  };
+
+  const handleValidateInvoice = () => {
+    if (!cguAccepted || !cgvAccepted || !signatureConfirmed) {
+      toast.error("Veuillez accepter toutes les conditions");
+      return;
+    }
+    if (selectedInvoice) {
+      validateInvoiceMutation.mutate(selectedInvoice.id);
+    }
+  };
+
+  const handleDownloadQuote = (quote: any) => {
     const quoteData: QuoteData = {
       quote_number: quote.quote_number,
       client_name: quote.client_name,
@@ -93,7 +159,7 @@ export const UserDocuments = ({ userId }: UserDocumentsProps) => {
     downloadQuotePDF(quoteData);
   };
 
-  const handleDownloadInvoice = (invoice: typeof invoices extends (infer T)[] ? T : never) => {
+  const handleDownloadInvoice = (invoice: any) => {
     const invoiceData: InvoiceData = {
       invoice_number: invoice.invoice_number,
       client_name: invoice.client_name,
@@ -242,6 +308,12 @@ export const UserDocuments = ({ userId }: UserDocumentsProps) => {
                         {statusLabels[invoice.payment_status || "pending"]}
                       </Badge>
                     </div>
+                    {!invoice.client_validated && invoice.payment_status === "paid" && (
+                      <Button variant="default" size="sm" onClick={() => openValidationDialog(invoice)}>
+                        <Shield className="h-4 w-4 mr-2" />
+                        Valider
+                      </Button>
+                    )}
                     <Button variant="outline" size="sm" onClick={() => handleDownloadInvoice(invoice)}>
                       <Download className="h-4 w-4 mr-2" />
                       PDF
@@ -259,6 +331,55 @@ export const UserDocuments = ({ userId }: UserDocumentsProps) => {
           </TabsContent>
         </Tabs>
       </CardContent>
+
+      {/* Validation Dialog */}
+      <Dialog open={validationDialogOpen} onOpenChange={setValidationDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              Valider la facture
+            </DialogTitle>
+            <DialogDescription>
+              Pour valider votre facture, veuillez accepter les conditions générales.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="flex items-start space-x-3">
+              <Checkbox id="cgu" checked={cguAccepted} onCheckedChange={(checked) => setCguAccepted(!!checked)} />
+              <Label htmlFor="cgu" className="text-sm leading-relaxed">
+                J'accepte les <Link to="/cgu" target="_blank" className="text-primary underline">Conditions Générales d'Utilisation</Link>
+              </Label>
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <Checkbox id="cgv" checked={cgvAccepted} onCheckedChange={(checked) => setCgvAccepted(!!checked)} />
+              <Label htmlFor="cgv" className="text-sm leading-relaxed">
+                J'accepte les <Link to="/cgv" target="_blank" className="text-primary underline">Conditions Générales de Vente</Link>
+              </Label>
+            </div>
+
+            <div className="flex items-start space-x-3">
+              <Checkbox id="signature" checked={signatureConfirmed} onCheckedChange={(checked) => setSignatureConfirmed(!!checked)} />
+              <Label htmlFor="signature" className="text-sm leading-relaxed flex items-center gap-1">
+                <PenTool className="h-4 w-4" />
+                Je confirme ma signature électronique
+              </Label>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setValidationDialogOpen(false)}>Annuler</Button>
+            <Button 
+              onClick={handleValidateInvoice} 
+              disabled={!cguAccepted || !cgvAccepted || !signatureConfirmed || validateInvoiceMutation.isPending}
+            >
+              {validateInvoiceMutation.isPending ? "Validation..." : "Valider la facture"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
