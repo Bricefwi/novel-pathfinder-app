@@ -10,6 +10,9 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const baseUrl = "https://www.ferme-equestre-an-arwen.com";
 
+const CACHE_KEY = "sitemap-xml";
+const CACHE_TTL_MINUTES = 60; // Cache valide 1 heure
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -17,48 +20,61 @@ Deno.serve(async (req) => {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const url = new URL(req.url);
+    const forceRefresh = url.searchParams.get('refresh') === 'true';
 
-    // Récupérer toutes les activités actives
-    const { data: activities, error: activitiesError } = await supabase
-      .from('activities')
-      .select('slug, updated_at, is_featured')
-      .eq('is_active', true);
+    // Vérifier le cache
+    if (!forceRefresh) {
+      const { data: cached } = await supabase
+        .from('seo_cache')
+        .select('content, expires_at')
+        .eq('id', CACHE_KEY)
+        .single();
 
-    if (activitiesError) {
-      console.error('Erreur activités:', activitiesError);
+      if (cached && new Date(cached.expires_at) > new Date()) {
+        console.log('Cache hit pour sitemap.xml');
+        return new Response(cached.content, {
+          headers: {
+            ...corsHeaders,
+            "X-Cache": "HIT",
+            "Cache-Control": "public, max-age=3600",
+          },
+        });
+      }
     }
 
-    // Récupérer tous les articles publiés
-    const { data: articles, error: articlesError } = await supabase
-      .from('articles')
-      .select('slug, updated_at')
-      .eq('is_published', true);
+    console.log('Cache miss - Génération sitemap.xml');
 
-    if (articlesError) {
-      console.error('Erreur articles:', articlesError);
-    }
+    // Récupérer les données en parallèle
+    const [activitiesResult, articlesResult, ecoResult] = await Promise.all([
+      supabase.from('activities').select('slug, updated_at, is_featured').eq('is_active', true),
+      supabase.from('articles').select('slug, updated_at').eq('is_published', true),
+      supabase.from('ecosystem_articles').select('slug, updated_at').eq('is_published', true)
+    ]);
 
-    // Récupérer tous les articles éco-système
-    const { data: ecoArticles, error: ecoError } = await supabase
-      .from('ecosystem_articles')
-      .select('slug, updated_at')
-      .eq('is_published', true);
-
-    if (ecoError) {
-      console.error('Erreur éco-articles:', ecoError);
-    }
-
-    // Générer le sitemap
     const sitemap = generateSitemap(
-      activities || [],
-      articles || [],
-      ecoArticles || []
+      activitiesResult.data || [],
+      articlesResult.data || [],
+      ecoResult.data || []
     );
+
+    // Sauvegarder dans le cache
+    const expiresAt = new Date(Date.now() + CACHE_TTL_MINUTES * 60 * 1000).toISOString();
+    await supabase
+      .from('seo_cache')
+      .upsert({
+        id: CACHE_KEY,
+        content: sitemap,
+        content_type: 'application/xml',
+        expires_at: expiresAt,
+        updated_at: new Date().toISOString()
+      });
 
     return new Response(sitemap, {
       headers: {
         ...corsHeaders,
-        "Cache-Control": "public, max-age=3600", // Cache 1 heure
+        "X-Cache": "MISS",
+        "Cache-Control": "public, max-age=3600",
       },
     });
   } catch (error) {
@@ -70,14 +86,9 @@ Deno.serve(async (req) => {
   }
 });
 
-function generateSitemap(
-  activities: any[],
-  articles: any[],
-  ecoArticles: any[]
-): string {
+function generateSitemap(activities: any[], articles: any[], ecoArticles: any[]): string {
   const today = new Date().toISOString().split('T')[0];
 
-  // Routes statiques avec leurs priorités
   const staticRoutes = [
     { url: '/', priority: 1.0, changefreq: 'weekly' },
     { url: '/destinations', priority: 0.9, changefreq: 'weekly' },
@@ -100,51 +111,36 @@ function generateSitemap(
 
   let xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:xhtml="http://www.w3.org/1999/xhtml"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
 `;
 
-  // Ajouter les routes statiques
   staticRoutes.forEach(route => {
     xml += `  <url>
     <loc>${baseUrl}${route.url}</loc>
     <lastmod>${today}</lastmod>
     <changefreq>${route.changefreq}</changefreq>
     <priority>${route.priority}</priority>
-    <xhtml:link rel="alternate" hreflang="fr" href="${baseUrl}${route.url}"/>
-    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}${route.url}"/>
   </url>
 `;
   });
 
-  // Ajouter les activités dynamiques
-  activities.forEach(activity => {
-    if (!activity.slug) return;
-    
-    const lastmod = activity.updated_at 
-      ? new Date(activity.updated_at).toISOString().split('T')[0] 
-      : today;
-    const priority = activity.is_featured ? 0.85 : 0.7;
-
+  activities.forEach(a => {
+    if (!a.slug) return;
+    const lastmod = a.updated_at ? new Date(a.updated_at).toISOString().split('T')[0] : today;
     xml += `  <url>
-    <loc>${baseUrl}/destinations/${activity.slug}</loc>
+    <loc>${baseUrl}/destinations/${a.slug}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>weekly</changefreq>
-    <priority>${priority}</priority>
+    <priority>${a.is_featured ? 0.85 : 0.7}</priority>
   </url>
 `;
   });
 
-  // Ajouter les articles du blog
-  articles.forEach(article => {
-    if (!article.slug) return;
-    
-    const lastmod = article.updated_at 
-      ? new Date(article.updated_at).toISOString().split('T')[0] 
-      : today;
-
+  articles.forEach(a => {
+    if (!a.slug) return;
+    const lastmod = a.updated_at ? new Date(a.updated_at).toISOString().split('T')[0] : today;
     xml += `  <url>
-    <loc>${baseUrl}/carnet-de-voyage/${article.slug}</loc>
+    <loc>${baseUrl}/carnet-de-voyage/${a.slug}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -152,16 +148,11 @@ function generateSitemap(
 `;
   });
 
-  // Ajouter les articles éco-système
-  ecoArticles.forEach(article => {
-    if (!article.slug) return;
-    
-    const lastmod = article.updated_at 
-      ? new Date(article.updated_at).toISOString().split('T')[0] 
-      : today;
-
+  ecoArticles.forEach(a => {
+    if (!a.slug) return;
+    const lastmod = a.updated_at ? new Date(a.updated_at).toISOString().split('T')[0] : today;
     xml += `  <url>
-    <loc>${baseUrl}/eco-systeme/${article.slug}</loc>
+    <loc>${baseUrl}/eco-systeme/${a.slug}</loc>
     <lastmod>${lastmod}</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -170,6 +161,5 @@ function generateSitemap(
   });
 
   xml += `</urlset>`;
-
   return xml;
 }

@@ -992,6 +992,33 @@ export type Database = {
           },
         ]
       }
+      seo_cache: {
+        Row: {
+          content: string
+          content_type: string
+          created_at: string
+          expires_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          content_type?: string
+          created_at?: string
+          expires_at: string
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          content_type?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       testimonials: {
         Row: {
           activity_id: string | null
@@ -1109,6 +1136,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_seo_cache: { Args: never; Returns: undefined }
       generate_invoice_number: { Args: never; Returns: string }
       generate_quote_number: { Args: never; Returns: string }
       has_role: {
