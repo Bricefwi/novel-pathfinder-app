@@ -25,6 +25,7 @@ import EcoSysteme from "./pages/EcoSysteme";
 import EcoSystemeArticle from "./pages/EcoSystemeArticle";
 import ProposerLieu from "./pages/ProposerLieu";
 import NotFound from "./pages/NotFound";
+import AgentFAQ from "./pages/AgentFAQ";
 
 const queryClient = new QueryClient();
 
@@ -56,6 +57,7 @@ const App = () => (
           <Route path="/eco-systeme" element={<EcoSysteme />} />
           <Route path="/eco-systeme/proposer" element={<ProposerLieu />} />
           <Route path="/eco-systeme/:slug" element={<EcoSystemeArticle />} />
+          <Route path="/agent-faq" element={<AgentFAQ />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

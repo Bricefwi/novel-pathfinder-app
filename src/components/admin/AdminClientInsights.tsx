@@ -13,7 +13,10 @@ import {
   Heart,
   MessageSquare,
   FileText,
-  Loader2
+  Loader2,
+  Lightbulb,
+  Target,
+  Sparkles
 } from "lucide-react";
 
 interface DestinationStats {
@@ -54,6 +57,21 @@ interface DevisRequest {
   subject: string | null;
 }
 
+interface MarketingOpportunity {
+  clientName: string;
+  clientEmail: string;
+  interests: string[];
+  matchingActivities: { title: string; matchScore: number }[];
+}
+
+interface Activity {
+  id: string;
+  title: string;
+  activity_type: string;
+  region: string | null;
+  country: string | null;
+}
+
 export function AdminClientInsights() {
   const [loading, setLoading] = useState(true);
   const [totalProfiles, setTotalProfiles] = useState(0);
@@ -64,6 +82,8 @@ export function AdminClientInsights() {
   const [interestStats, setInterestStats] = useState<InterestStats[]>([]);
   const [recentDevis, setRecentDevis] = useState<DevisRequest[]>([]);
   const [chatTopics, setChatTopics] = useState<{ topic: string; count: number }[]>([]);
+  const [marketingOpportunities, setMarketingOpportunities] = useState<MarketingOpportunity[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
 
   useEffect(() => {
     fetchAllData();
@@ -74,9 +94,116 @@ export function AdminClientInsights() {
     await Promise.all([
       fetchProfileStats(),
       fetchDevisRequests(),
-      fetchChatTopics()
+      fetchChatTopics(),
+      fetchActivities(),
+      fetchMarketingOpportunities()
     ]);
     setLoading(false);
+  };
+
+  const fetchActivities = async () => {
+    const { data, error } = await supabase
+      .from("activities")
+      .select("id, title, activity_type, region, country")
+      .eq("is_active", true);
+    
+    if (!error && data) {
+      setActivities(data);
+    }
+  };
+
+  const fetchMarketingOpportunities = async () => {
+    // Get profiles with their interests and destinations
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("first_name, last_name, user_id, dream_destinations, interests, preferred_trip_types, riding_level");
+
+    if (profilesError || !profiles) return;
+
+    // Get activities for matching
+    const { data: allActivities, error: activitiesError } = await supabase
+      .from("activities")
+      .select("id, title, activity_type, region, country")
+      .eq("is_active", true);
+
+    if (activitiesError || !allActivities) return;
+
+    // Get user emails from quotes for contact
+    const { data: quotes } = await supabase
+      .from("quotes")
+      .select("user_id, client_email, client_name, activity_title");
+
+    const emailMap = new Map<string, { email: string; name: string }>();
+    quotes?.forEach(q => {
+      if (q.user_id && q.client_email) {
+        emailMap.set(q.user_id, { email: q.client_email, name: q.client_name });
+      }
+    });
+
+    // Calculate opportunities
+    const opportunities: MarketingOpportunity[] = [];
+
+    for (const profile of profiles) {
+      const interests = [
+        ...(profile.dream_destinations || []),
+        ...(profile.interests || []),
+        ...(profile.preferred_trip_types || [])
+      ];
+
+      if (interests.length === 0) continue;
+
+      // Match activities based on interests
+      const matchingActivities = allActivities
+        .map(activity => {
+          let score = 0;
+          const activityKeywords = [
+            activity.title.toLowerCase(),
+            activity.region?.toLowerCase() || "",
+            activity.country?.toLowerCase() || "",
+            activity.activity_type.toLowerCase()
+          ].join(" ");
+
+          interests.forEach(interest => {
+            if (activityKeywords.includes(interest.toLowerCase())) {
+              score += 30;
+            }
+            // Partial matches
+            if (interest.toLowerCase().includes("bretagne") && activityKeywords.includes("bretagne")) {
+              score += 20;
+            }
+            if (interest.toLowerCase().includes("maroc") && activityKeywords.includes("maroc")) {
+              score += 20;
+            }
+            if (interest.toLowerCase().includes("randonnée") && activity.activity_type === "randonnee") {
+              score += 15;
+            }
+          });
+
+          return { title: activity.title, matchScore: score };
+        })
+        .filter(a => a.matchScore > 0)
+        .sort((a, b) => b.matchScore - a.matchScore)
+        .slice(0, 3);
+
+      if (matchingActivities.length > 0) {
+        const contact = emailMap.get(profile.user_id);
+        opportunities.push({
+          clientName: contact?.name || `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "Client",
+          clientEmail: contact?.email || "Non disponible",
+          interests: interests.slice(0, 5),
+          matchingActivities
+        });
+      }
+    }
+
+    // Sort by best match score
+    opportunities.sort((a, b) => {
+      const maxA = Math.max(...a.matchingActivities.map(m => m.matchScore));
+      const maxB = Math.max(...b.matchingActivities.map(m => m.matchScore));
+      return maxB - maxA;
+    });
+
+    setMarketingOpportunities(opportunities.slice(0, 10));
   };
 
   const fetchProfileStats = async () => {
@@ -306,6 +433,10 @@ export function AdminClientInsights() {
             <FileText className="h-4 w-4" />
             Demandes récentes
           </TabsTrigger>
+          <TabsTrigger value="marketing" className="flex items-center gap-2">
+            <Lightbulb className="h-4 w-4" />
+            Opportunités
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="destinations">
@@ -517,6 +648,58 @@ export function AdminClientInsights() {
                       <p className="text-sm text-muted-foreground line-clamp-3">
                         {devis.message}
                       </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="marketing">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-amber-500" />
+                Opportunités Marketing
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {marketingOpportunities.length === 0 ? (
+                <p className="text-muted-foreground">Aucune opportunité détectée. Les recommandations apparaîtront lorsque des profils clients auront des intérêts correspondant à vos activités.</p>
+              ) : (
+                <div className="space-y-4">
+                  {marketingOpportunities.map((opp, idx) => (
+                    <div key={idx} className="p-4 border rounded-lg space-y-3 bg-gradient-to-r from-amber-50/50 to-transparent dark:from-amber-950/20">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="font-semibold flex items-center gap-2">
+                            <Target className="h-4 w-4 text-primary" />
+                            {opp.clientName}
+                          </p>
+                          <p className="text-sm text-muted-foreground">{opp.clientEmail}</p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {opp.interests.map((interest, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs">
+                            {interest}
+                          </Badge>
+                        ))}
+                      </div>
+                      <div className="pt-2 border-t">
+                        <p className="text-xs text-muted-foreground mb-2">Produits recommandés :</p>
+                        <div className="space-y-1">
+                          {opp.matchingActivities.map((activity, i) => (
+                            <div key={i} className="flex items-center justify-between text-sm">
+                              <span>{activity.title}</span>
+                              <Badge variant="outline" className="text-xs">
+                                Score: {activity.matchScore}%
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
