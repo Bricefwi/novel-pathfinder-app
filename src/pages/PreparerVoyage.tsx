@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import videoPlage from "@/assets/video-plage-cheval.mp4";
+import videoPreparerVoyage from "@/assets/video-preparer-voyage.mp4";
 import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
 
 const PreparerVoyage = () => {
@@ -280,7 +280,7 @@ const PreparerVoyage = () => {
         <div className="relative h-[60vh] min-h-[400px] overflow-hidden">
           <video 
             ref={videoRef}
-            src={videoPlage} 
+            src={videoPreparerVoyage} 
             autoPlay 
             muted 
             loop 
