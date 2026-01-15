@@ -1,4 +1,6 @@
 import { Layout } from "@/components/layout/Layout";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Wifi, Car, Coffee, TreePine, Users, Bed, ArrowRight, Star, Check, Home, Leaf, Heart, MapPin, Phone, Mail, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
@@ -29,42 +31,6 @@ const features = [
   { icon: Heart, label: "Expérience unique", description: "Déconnexion totale garantie" },
 ];
 
-// Avis Airbnb
-const airbnbReviews = [
-  {
-    name: "Charles",
-    years: "4 ans sur Airbnb",
-    date: "août 2025",
-    type: "Séjour d'une nuit",
-    rating: 5,
-    content: "Merci à Arwen et sa famille pour son accueil dans ce lieu atypique."
-  },
-  {
-    name: "Karine Isabelle",
-    years: "11 ans sur Airbnb",
-    date: "juillet 2025",
-    type: "Séjour d'une nuit",
-    rating: 5,
-    content: "Belle découverte ! La yourte est très belle et Arwen est adorable ! Nous avons fait aussi une balade a cheval avec elle. Tout ses animaux sont adorables. Nous avons passé un excellent séjour"
-  },
-  {
-    name: "Charlotte",
-    years: "12 ans sur Airbnb",
-    date: "août 2025",
-    type: "Séjour d'une nuit",
-    rating: 4,
-    content: "Nous avons été très bien accueillis dans un cadre insolite! Merci à ce très gentil couple."
-  },
-  {
-    name: "Léo",
-    years: "10 ans sur Airbnb",
-    date: "août 2025",
-    type: "Séjour d'une nuit",
-    rating: 5,
-    content: "Tout s'est bien passé. Merci à Arwen pour sa dispo et gentillesse endroit idéal pour les enfants :)"
-  }
-];
-
 const ratingCategories = [
   { label: "Propreté", score: 4.7 },
   { label: "Précision", score: 4.8 },
@@ -75,6 +41,19 @@ const ratingCategories = [
 ];
 
 const Hebergement = () => {
+  // Charger les avis dynamiquement depuis la base de données
+  const { data: airbnbReviews } = useQuery({
+    queryKey: ["airbnb-reviews"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("airbnb_reviews")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
   return (
     <Layout>
       <SEOHead {...seoConfigs.hebergement} />
@@ -277,17 +256,17 @@ const Hebergement = () => {
                   Ce que disent nos voyageurs
                 </h2>
                 <div className="space-y-8">
-                  {airbnbReviews.map((review, index) => (
-                    <div key={index} className="bg-background p-6 rounded-2xl border border-border">
+                  {airbnbReviews && airbnbReviews.map((review, index) => (
+                    <div key={review.id || index} className="bg-background p-6 rounded-2xl border border-border">
                       <div className="flex items-start gap-4 mb-4">
                         <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
                           <span className="text-lg font-semibold text-primary">
-                            {review.name.charAt(0)}
+                            {review.reviewer_name.charAt(0)}
                           </span>
                         </div>
                         <div>
-                          <h4 className="font-semibold text-foreground">{review.name}</h4>
-                          <p className="text-sm text-muted-foreground">{review.years}</p>
+                          <h4 className="font-semibold text-foreground">{review.reviewer_name}</h4>
+                          <p className="text-sm text-muted-foreground">{review.reviewer_years}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 mb-3">
@@ -299,7 +278,7 @@ const Hebergement = () => {
                             />
                           ))}
                         </div>
-                        <span className="text-sm text-muted-foreground">· {review.date} · {review.type}</span>
+                        <span className="text-sm text-muted-foreground">· {review.review_date} · {review.stay_type}</span>
                       </div>
                       <p className="text-foreground leading-relaxed">{review.content}</p>
                     </div>
