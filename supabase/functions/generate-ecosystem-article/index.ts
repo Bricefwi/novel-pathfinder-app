@@ -19,6 +19,7 @@ interface ArticleData {
   category: string;
   tags: string[];
   featured_image: string;
+  gallery_images: string[];
 }
 
 serve(async (req) => {
@@ -34,34 +35,79 @@ serve(async (req) => {
       throw new Error("PERPLEXITY_API_KEY is not configured");
     }
 
-    // Generate article content with Perplexity
-    const prompt = `Tu es un rédacteur de magazine Géo spécialisé en éco-tourisme breton. Recherche et rédige un article RÉEL et DÉTAILLÉ sur "${topic}" dans la catégorie "${category}".
+    // Prompt maître premium style magazine Géo
+    const prompt = `Tu es un rédacteur-reporter premium spécialisé en éco-tourisme, nature, patrimoine et tourisme responsable en Bretagne.
+Ta mission est de rédiger un article de type magazine Géo, en français, pour une rubrique appelée "Eco-Système", liée à la Ferme Équestre An Arwen (5 Le Bignon, 35360 La Chapelle du Lou du Lac, Bretagne).
 
-LOCALISATION DE RÉFÉRENCE: Ferme Équestre An Arwen, 5 Le Bignon, 35360 La Chapelle du Lou du Lac, Bretagne, France.
+SUJET DE L'ARTICLE : "${topic}" dans la catégorie "${category}"
 
-L'article doit porter sur un lieu RÉEL existant dans un rayon de 50km autour de cette adresse (région Bretagne uniquement).
+PÉRIMÈTRE GÉOGRAPHIQUE :
+- Centre : Ferme Équestre An Arwen, 5 Le Bignon, 35360 La Chapelle du Lou du Lac
+- Cercle 1 (0-15 km) : sites très proches
+- Cercle 2 (15-50 km) : Brocéliande, Ille-et-Vilaine
+- Cercle 3 : Bretagne entière (escapades d'une journée depuis An Arwen)
 
-Fournis les informations au format JSON suivant:
+CONSIGNES DE RÉDACTION IMPÉRATIVES :
+1. AUCUN caractère markdown : pas de **, ##, #, [1], *** ou autre formatage technique
+2. Rédige en texte fluide et naturel, comme un vrai journaliste de magazine
+3. Utilise des paragraphes aérés avec des retours à la ligne simples
+4. Le texte doit sembler écrit par un humain passionné, pas par une IA
+5. Style narratif, contemplatif, sensoriel, jamais publicitaire
+6. Intègre des touches de culture locale : légendes, histoire, patrimoine
+
+STRUCTURE DE L'ARTICLE :
+
+TITRE : Un titre évocateur et poétique (sans ponctuation spéciale)
+
+CHAPÔ (3-4 phrases) : Introduction sensorielle et immersive avec lumière, odeurs, sons, saison. Situe le lieu par rapport à la Ferme An Arwen.
+
+CORPS DE L'ARTICLE (800-1200 mots) :
+- Descriptions détaillées des paysages, faune et flore
+- Mise en scène d'itinéraires ou activités concrètes
+- Engagements éco-touristiques du lieu
+- Suggestions de combinaisons avec un séjour à An Arwen
+
+INFOS PRATIQUES (intégrées naturellement) :
+- Nom complet et type de structure
+- Adresse postale complète
+- Téléphone, email, site web officiels (VÉRIFIE que ces coordonnées sont réelles)
+- Horaires et saisonnalité
+- Distance et temps de trajet depuis An Arwen
+- Conseils pratiques (équipement, niveau de difficulté)
+
+ENCADRÉ "L'ESPRIT ECO-SYSTÈME" (5-8 lignes) :
+Explique pourquoi ce lieu est cohérent avec l'éco-tourisme et complémentaire à An Arwen.
+
+PHOTOS RÉELLES :
+Pour featured_image et gallery_images, fournis des URLs d'images RÉELLES trouvées sur :
+- Wikimedia Commons
+- Sites officiels des offices de tourisme
+- Sites officiels des lieux présentés
+- Flickr (photos libres de droits)
+Les images doivent être des photos authentiques du lieu exact décrit, pas des images génériques.
+
+IMPORTANT :
+- Toutes les informations doivent être VÉRIFIABLES et RÉELLES
+- Les coordonnées (téléphone, email, site web) doivent être EXACTES et ACTUELLES
+- Les distances depuis An Arwen doivent être PRÉCISES
+- Le lieu doit RÉELLEMENT EXISTER en Bretagne
+
+Fournis ta réponse au format JSON suivant :
 {
-  "title": "Titre accrocheur style magazine",
-  "excerpt": "Résumé attractif de 2-3 phrases",
-  "content": "Article complet de 500-800 mots en markdown avec sections, descriptions immersives et informations pratiques",
-  "location_name": "Nom exact du lieu/établissement",
+  "title": "Titre évocateur style magazine (sans caractères spéciaux)",
+  "excerpt": "Chapô immersif de 3-4 phrases (texte pur, sans formatage)",
+  "content": "Article complet de 800-1200 mots en texte fluide avec paragraphes séparés par des retours à la ligne doubles. AUCUN markdown, AUCUN caractère spécial. Inclure naturellement les infos pratiques et l'encadré Esprit Eco-Système à la fin.",
+  "location_name": "Nom exact du lieu",
   "location_address": "Adresse complète avec code postal",
-  "location_phone": "Numéro de téléphone réel",
-  "location_email": "Email de contact réel",
-  "location_website": "Site web officiel",
-  "distance_from_arwen": "Distance approximative depuis An Arwen (ex: '12 km')",
+  "location_phone": "Numéro de téléphone réel vérifié",
+  "location_email": "Email de contact réel vérifié",
+  "location_website": "Site web officiel vérifié",
+  "distance_from_arwen": "Distance en km (ex: 12 km, environ 20 minutes)",
   "category": "${category}",
-  "tags": ["tag1", "tag2", "tag3"],
-  "featured_image": "URL d'une image réelle du lieu depuis Wikipedia, site officiel ou autre source libre de droits"
-}
-
-IMPORTANT: 
-- Utilise UNIQUEMENT des informations vérifiables et réelles
-- Les coordonnées doivent être exactes et actuelles
-- L'image doit être une URL réelle et accessible
-- Le contenu doit être original et engageant`;
+  "tags": ["tag1", "tag2", "tag3", "tag4"],
+  "featured_image": "URL réelle d'une photo authentique du lieu (Wikimedia, site officiel, etc.)",
+  "gallery_images": ["URL photo 2", "URL photo 3", "URL photo 4"]
+}`;
 
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
       method: "POST",
@@ -72,10 +118,13 @@ IMPORTANT:
       body: JSON.stringify({
         model: "sonar-pro",
         messages: [
-          { role: "system", content: "Tu es un expert en éco-tourisme breton. Réponds uniquement en JSON valide." },
+          { 
+            role: "system", 
+            content: "Tu es un rédacteur-reporter premium de magazine Géo spécialisé en éco-tourisme breton. Tu rédiges des articles immersifs, poétiques et informatifs. Tu ne génères JAMAIS de caractères markdown (**, ##, #, [1]). Tu écris en texte fluide et naturel. Tu vérifies toujours l'exactitude des informations. Réponds uniquement en JSON valide." 
+          },
           { role: "user", content: prompt }
         ],
-        temperature: 0.3,
+        temperature: 0.4,
         response_format: {
           type: "json_schema",
           json_schema: {
@@ -94,7 +143,8 @@ IMPORTANT:
                 distance_from_arwen: { type: "string" },
                 category: { type: "string" },
                 tags: { type: "array", items: { type: "string" } },
-                featured_image: { type: "string" }
+                featured_image: { type: "string" },
+                gallery_images: { type: "array", items: { type: "string" } }
               },
               required: ["title", "excerpt", "content", "location_name", "category"]
             }
@@ -123,6 +173,23 @@ IMPORTANT:
       console.error("Failed to parse article JSON:", articleContent);
       throw new Error("Invalid JSON response from Perplexity");
     }
+
+    // Nettoyer le contenu des éventuels caractères markdown résiduels
+    const cleanContent = (text: string): string => {
+      return text
+        .replace(/\*\*/g, '')
+        .replace(/##/g, '')
+        .replace(/#/g, '')
+        .replace(/\[(\d+)\]/g, '')
+        .replace(/\*\*\*/g, '')
+        .replace(/\*/g, '')
+        .replace(/`/g, '')
+        .trim();
+    };
+
+    articleData.title = cleanContent(articleData.title);
+    articleData.excerpt = cleanContent(articleData.excerpt);
+    articleData.content = cleanContent(articleData.content);
 
     // Create slug from title
     const slug = articleData.title
