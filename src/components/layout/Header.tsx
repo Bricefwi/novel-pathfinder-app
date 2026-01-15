@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, User, Heart, LogOut, ChevronDown, Scale } from "lucide-react";
+import { Menu, X, User, Heart, LogOut, ChevronDown, Scale, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +30,7 @@ const navigation = [
   { name: "Éco-Système", href: "/eco-systeme" },
   { name: "Carnet de Voyage", href: "/carnet-de-voyage" },
   { name: "Contact", href: "/contact" },
+  { name: "FAQ", href: "/agent-faq", icon: MessageCircle },
 ];
 
 const legalNavigation = [
@@ -108,12 +109,13 @@ export function Header() {
                 key={item.name}
                 to={item.href}
                 className={cn(
-                  "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300",
+                  "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-1",
                   location.pathname === item.href
                     ? "text-primary bg-primary/10"
                     : "text-foreground/80 hover:text-primary hover:bg-primary/5"
                 )}
               >
+                {'icon' in item && item.icon && <item.icon className="h-4 w-4" />}
                 {item.name}
               </Link>
             ))}
