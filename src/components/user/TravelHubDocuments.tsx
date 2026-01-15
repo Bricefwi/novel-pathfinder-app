@@ -1,14 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Sheet,
   SheetContent,
@@ -28,8 +26,6 @@ import {
   FileText, 
   Download, 
   Check, 
-  Clock, 
-  AlertCircle,
   Euro,
   Upload,
   FolderLock,
@@ -130,73 +126,70 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
 
   const handleDownloadQuote = (quote: any) => {
     const quoteData: QuoteData = {
-      quoteNumber: quote.quote_number,
-      date: format(new Date(quote.created_at), 'dd/MM/yyyy'),
-      validUntil: quote.valid_until ? format(new Date(quote.valid_until), 'dd/MM/yyyy') : undefined,
-      client: {
-        name: quote.client_name,
-        email: quote.client_email,
-        phone: quote.client_phone || '',
-        address: quote.client_address || '',
-      },
-      activity: {
-        title: quote.activity_title,
-        duration: quote.activity_duration || '',
-        startDate: quote.start_date ? format(new Date(quote.start_date), 'dd/MM/yyyy') : undefined,
-        endDate: quote.end_date ? format(new Date(quote.end_date), 'dd/MM/yyyy') : undefined,
-      },
-      pricing: {
-        unitPrice: quote.unit_price,
-        quantity: quote.participants,
-        subtotal: quote.subtotal,
-        taxRate: quote.tax_rate || 0,
-        taxAmount: quote.tax_amount || 0,
-        totalAmount: quote.total_amount,
-      },
+      quote_number: quote.quote_number,
+      client_name: quote.client_name,
+      client_email: quote.client_email,
+      client_phone: quote.client_phone || '',
+      client_address: quote.client_address || '',
+      activity_title: quote.activity_title,
+      activity_duration: quote.activity_duration || '',
+      start_date: quote.start_date || undefined,
+      end_date: quote.end_date || undefined,
+      unit_price: quote.unit_price,
+      participants: quote.participants,
+      total_price: quote.total_price,
+      deposit_amount: quote.deposit_amount || 0,
+      deposit_percentage: quote.deposit_percentage || 30,
+      payment_option: quote.payment_option || 'deposit',
+      valid_until: quote.valid_until || undefined,
       notes: quote.notes,
+      created_at: quote.created_at,
     };
     downloadQuotePDF(quoteData);
   };
 
   const handleDownloadInvoice = (invoice: any) => {
     const invoiceData: InvoiceData = {
-      invoiceNumber: invoice.invoice_number,
-      date: format(new Date(invoice.created_at), 'dd/MM/yyyy'),
-      dueDate: invoice.due_date ? format(new Date(invoice.due_date), 'dd/MM/yyyy') : undefined,
-      client: {
-        name: invoice.client_name,
-        email: invoice.client_email,
-        phone: invoice.client_phone || '',
-        address: invoice.client_address || '',
-      },
-      activity: {
-        title: invoice.activity_title,
-        duration: invoice.activity_duration || '',
-        startDate: invoice.start_date ? format(new Date(invoice.start_date), 'dd/MM/yyyy') : undefined,
-        endDate: invoice.end_date ? format(new Date(invoice.end_date), 'dd/MM/yyyy') : undefined,
-      },
-      pricing: {
-        unitPrice: invoice.unit_price,
-        quantity: invoice.participants,
-        subtotal: invoice.subtotal,
-        taxRate: invoice.tax_rate || 0,
-        taxAmount: invoice.tax_amount || 0,
-        totalAmount: invoice.total_amount,
-      },
-      paymentStatus: invoice.payment_status,
-      amountPaid: invoice.amount_paid || 0,
+      invoice_number: invoice.invoice_number,
+      quote_number: invoice.quote_id ? undefined : undefined,
+      client_name: invoice.client_name,
+      client_email: invoice.client_email,
+      client_phone: invoice.client_phone || '',
+      client_address: invoice.client_address || '',
+      activity_title: invoice.activity_title,
+      activity_duration: invoice.activity_duration || '',
+      start_date: invoice.start_date || undefined,
+      end_date: invoice.end_date || undefined,
+      unit_price: invoice.unit_price,
+      participants: invoice.participants,
+      subtotal: invoice.subtotal,
+      tax_rate: invoice.tax_rate || 0,
+      tax_amount: invoice.tax_amount || 0,
+      total_amount: invoice.total_amount,
+      amount_paid: invoice.amount_paid || 0,
+      payment_status: invoice.payment_status,
+      payment_date: invoice.payment_date || undefined,
+      payment_method: invoice.payment_method || undefined,
+      due_date: invoice.due_date || undefined,
+      client_validated: invoice.client_validated || false,
+      client_validated_at: invoice.client_validated_at || undefined,
+      cgu_accepted: invoice.cgu_accepted || false,
+      cgv_accepted: invoice.cgv_accepted || false,
       notes: invoice.notes,
+      created_at: invoice.created_at,
     };
     downloadInvoicePDF(invoiceData);
   };
 
   const getQuoteStatusBadge = (status: string) => {
     switch (status) {
+      case 'draft':
       case 'pending':
       case 'sent':
         return <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-500/30">À valider</Badge>;
       case 'accepted':
-        return <Badge className="bg-green-500/10 text-green-700 border-green-500/30">Accepté</Badge>;
+      case 'validated':
+        return <Badge className="bg-green-500/10 text-green-700 border-green-500/30">Validé</Badge>;
       case 'expired':
         return <Badge className="bg-muted text-muted-foreground">Expiré</Badge>;
       case 'rejected':
@@ -264,7 +257,7 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-lg font-bold text-primary">{quote.total_amount}€</span>
+                      <span className="text-lg font-bold text-primary">{quote.total_price}€</span>
                       <Button 
                         variant="outline" 
                         size="sm"
@@ -431,7 +424,7 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
                   </div>
                   <div className="flex justify-between font-bold text-lg pt-2 border-t">
                     <span>Total</span>
-                    <span className="text-primary">{selectedQuote.total_amount}€</span>
+                    <span className="text-primary">{selectedQuote.total_price}€</span>
                   </div>
                 </div>
                 <div className="flex gap-3">
@@ -439,7 +432,7 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
                     <Download className="h-4 w-4 mr-2" />
                     Télécharger PDF
                   </Button>
-                  {(selectedQuote.status === 'pending' || selectedQuote.status === 'sent') && (
+                  {(selectedQuote.status === 'pending' || selectedQuote.status === 'sent' || selectedQuote.status === 'draft') && (
                     <Button variant="default" className="flex-1">
                       <CreditCard className="h-4 w-4 mr-2" />
                       Accepter & Payer
