@@ -56,7 +56,14 @@ const Auth = () => {
       },
     });
     if (error) {
-      toast.error("Erreur de connexion Google : " + error.message);
+      const msg = (error.message || "").toLowerCase();
+      if (msg.includes("provider is not enabled") || msg.includes("unsupported provider")) {
+        toast.error(
+          "Connexion Google indisponible pour l’instant : activez Google dans le backend (Users → Auth Settings → Google Settings), ou créez un compte par email."
+        );
+      } else {
+        toast.error("Erreur de connexion Google : " + error.message);
+      }
       setGoogleLoading(false);
     }
   };
