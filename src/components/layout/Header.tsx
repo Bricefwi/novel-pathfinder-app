@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, User, Heart, LogOut } from "lucide-react";
+import { Menu, X, User, Heart, LogOut, ChevronDown, Scale } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,6 +12,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 
 const navigation = [
   { name: "Accueil", href: "/" },
@@ -22,8 +30,14 @@ const navigation = [
   { name: "Éco-Système", href: "/eco-systeme" },
   { name: "Carnet de Voyage", href: "/carnet-de-voyage" },
   { name: "Contact", href: "/contact" },
+];
+
+const legalNavigation = [
   { name: "Mentions légales", href: "/mentions-legales" },
+  { name: "CGU", href: "/cgu" },
   { name: "CGV", href: "/cgv" },
+  { name: "Confidentialité", href: "/politique-confidentialite" },
+  { name: "Cookies", href: "/cookies" },
 ];
 
 const authNavigation = [
@@ -103,6 +117,25 @@ export function Header() {
                 {item.name}
               </Link>
             ))}
+            
+            {/* Legal Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="px-4 py-2 text-sm font-medium text-foreground/80 hover:text-primary hover:bg-primary/5">
+                  <Scale className="h-4 w-4 mr-1" />
+                  Légal
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                {legalNavigation.map((item) => (
+                  <DropdownMenuItem key={item.name} asChild>
+                    <Link to={item.href}>{item.name}</Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {user && authNavigation.map((item) => (
               <Link
                 key={item.name}

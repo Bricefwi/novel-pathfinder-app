@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, LayoutDashboard, MapPin, FileText, Image, MessageSquare, Home, Star, Lightbulb } from "lucide-react";
+import { Loader2, LayoutDashboard, MapPin, FileText, Image, MessageSquare, Home, Star, Lightbulb, Receipt } from "lucide-react";
 import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { AdminActivities } from "@/components/admin/AdminActivities";
 import { AdminArticles } from "@/components/admin/AdminArticles";
@@ -12,6 +12,7 @@ import { AdminChat } from "@/components/admin/AdminChat";
 import { AdminAccommodation } from "@/components/admin/AdminAccommodation";
 import { AdminReviews } from "@/components/admin/AdminReviews";
 import { AdminClientInsights } from "@/components/admin/AdminClientInsights";
+import { AdminQuotesInvoices } from "@/components/admin/AdminQuotesInvoices";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -107,6 +108,10 @@ const Admin = () => {
                 <Lightbulb className="h-4 w-4" />
                 <span className="hidden sm:inline">Insights clients</span>
               </TabsTrigger>
+              <TabsTrigger value="quotes" className="flex items-center gap-2">
+                <Receipt className="h-4 w-4" />
+                <span className="hidden sm:inline">Devis & Factures</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="dashboard">
@@ -132,6 +137,9 @@ const Admin = () => {
             </TabsContent>
             <TabsContent value="insights">
               <AdminClientInsights />
+            </TabsContent>
+            <TabsContent value="quotes">
+              <AdminQuotesInvoices />
             </TabsContent>
           </Tabs>
         </div>
