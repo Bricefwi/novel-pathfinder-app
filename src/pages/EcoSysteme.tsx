@@ -6,10 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { z } from "zod";
 import { 
   MapPin, 
   Phone, 
-  Mail, 
   Globe, 
   Navigation,
   Leaf,
@@ -19,7 +25,9 @@ import {
   Compass,
   ChevronRight,
   Calendar,
-  Eye
+  Eye,
+  Send,
+  Lightbulb
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -47,6 +55,16 @@ interface EcosystemArticle {
   created_at: string;
 }
 
+// Validation schema for suggestion form
+const suggestionSchema = z.object({
+  suggester_name: z.string().trim().min(2, "Le nom doit contenir au moins 2 caractères").max(100),
+  suggester_email: z.string().trim().email("Email invalide").max(255),
+  location_name: z.string().trim().min(3, "Le nom du lieu doit contenir au moins 3 caractères").max(200),
+  location_website: z.string().trim().url("URL invalide").optional().or(z.literal("")),
+  category: z.enum(["randonnee", "ferme-pedagogique", "patrimoine", "nature"]),
+  description: z.string().trim().min(20, "La description doit contenir au moins 20 caractères").max(2000),
+});
+
 const categoryConfig: Record<string, { icon: React.ElementType; color: string; label: string }> = {
   "randonnee": { icon: Mountain, color: "bg-emerald-500/10 text-emerald-700 border-emerald-500/30", label: "Randonnée" },
   "ferme-pedagogique": { icon: Leaf, color: "bg-amber-500/10 text-amber-700 border-amber-500/30", label: "Ferme Pédagogique" },
@@ -63,13 +81,19 @@ const categories = [
   { id: "nature", label: "Nature & Écologie", icon: Trees },
 ];
 
+const suggestionCategories = [
+  { id: "randonnee", label: "Randonnée / Sentier", icon: Mountain },
+  { id: "ferme-pedagogique", label: "Ferme Pédagogique", icon: Leaf },
+  { id: "patrimoine", label: "Patrimoine & Culture", icon: Castle },
+  { id: "nature", label: "Nature & Écologie", icon: Trees },
+];
+
 const ArticleCard = ({ article }: { article: EcosystemArticle }) => {
   const config = categoryConfig[article.category || "decouverte"] || categoryConfig["decouverte"];
   const IconComponent = config.icon;
   
   return (
     <Card className="group overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-xl">
-      {/* Image */}
       <div className="relative aspect-[16/10] overflow-hidden">
         <img
           src={article.featured_image || bretagnVillageChevaux}
@@ -98,12 +122,10 @@ const ArticleCard = ({ article }: { article: EcosystemArticle }) => {
       </div>
       
       <CardContent className="p-6">
-        {/* Title */}
         <h3 className="font-serif text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors line-clamp-2">
           {article.title}
         </h3>
         
-        {/* Location */}
         {article.location_name && (
           <p className="text-primary font-medium text-sm mb-2 flex items-center gap-1.5">
             <MapPin className="h-4 w-4" />
@@ -111,12 +133,10 @@ const ArticleCard = ({ article }: { article: EcosystemArticle }) => {
           </p>
         )}
         
-        {/* Excerpt */}
         <p className="text-muted-foreground text-sm leading-relaxed mb-4 line-clamp-3">
           {article.excerpt}
         </p>
         
-        {/* Contact info preview */}
         <div className="flex flex-wrap gap-2 mb-4">
           {article.location_phone && (
             <a 
@@ -140,7 +160,6 @@ const ArticleCard = ({ article }: { article: EcosystemArticle }) => {
           )}
         </div>
         
-        {/* Tags */}
         {article.tags && article.tags.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-4">
             {article.tags.slice(0, 3).map((tag, idx) => (
@@ -151,7 +170,6 @@ const ArticleCard = ({ article }: { article: EcosystemArticle }) => {
           </div>
         )}
         
-        {/* Footer */}
         <div className="flex items-center justify-between pt-4 border-t border-border">
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             {article.published_at && (
@@ -184,10 +202,158 @@ const ArticleCard = ({ article }: { article: EcosystemArticle }) => {
   );
 };
 
+// Suggestion Form Component
+const SuggestionForm = ({ onSuccess }: { onSuccess: () => void }) => {
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({
+    suggester_name: "",
+    suggester_email: "",
+    location_name: "",
+    location_website: "",
+    category: "",
+    description: "",
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const result = suggestionSchema.safeParse(form);
+    if (!result.success) {
+      const firstError = result.error.errors[0];
+      toast.error(firstError.message);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("ecosystem_suggestions")
+        .insert({
+          suggester_name: form.suggester_name.trim(),
+          suggester_email: form.suggester_email.trim(),
+          location_name: form.location_name.trim(),
+          location_website: form.location_website.trim() || null,
+          category: form.category,
+          description: form.description.trim(),
+          status: "pending",
+        });
+
+      if (error) throw error;
+
+      toast.success("Merci pour votre suggestion ! Notre équipe l'examinera prochainement.");
+      onSuccess();
+    } catch (err) {
+      console.error("Error submitting suggestion:", err);
+      toast.error("Une erreur est survenue. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-2">
+          <Label htmlFor="suggester_name">Votre nom *</Label>
+          <Input
+            id="suggester_name"
+            value={form.suggester_name}
+            onChange={(e) => setForm(prev => ({ ...prev, suggester_name: e.target.value }))}
+            placeholder="Jean Dupont"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="suggester_email">Votre email *</Label>
+          <Input
+            id="suggester_email"
+            type="email"
+            value={form.suggester_email}
+            onChange={(e) => setForm(prev => ({ ...prev, suggester_email: e.target.value }))}
+            placeholder="jean@email.com"
+          />
+        </div>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="location_name">Nom du lieu *</Label>
+        <div className="relative">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            id="location_name"
+            value={form.location_name}
+            onChange={(e) => setForm(prev => ({ ...prev, location_name: e.target.value }))}
+            placeholder="Ex: Forêt de Brocéliande"
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="location_website">Site web (optionnel)</Label>
+        <div className="relative">
+          <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            id="location_website"
+            type="url"
+            value={form.location_website}
+            onChange={(e) => setForm(prev => ({ ...prev, location_website: e.target.value }))}
+            placeholder="https://..."
+            className="pl-10"
+          />
+        </div>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Catégorie *</Label>
+        <Select value={form.category} onValueChange={(value) => setForm(prev => ({ ...prev, category: value }))}>
+          <SelectTrigger>
+            <SelectValue placeholder="Sélectionnez une catégorie" />
+          </SelectTrigger>
+          <SelectContent>
+            {suggestionCategories.map((cat) => {
+              const Icon = cat.icon;
+              return (
+                <SelectItem key={cat.id} value={cat.id}>
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-4 w-4" />
+                    {cat.label}
+                  </div>
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="description">Pourquoi ce lieu ? *</Label>
+        <Textarea
+          id="description"
+          value={form.description}
+          onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+          placeholder="Décrivez ce qui rend ce lieu spécial..."
+          rows={4}
+        />
+        <p className="text-xs text-muted-foreground">Minimum 20 caractères</p>
+      </div>
+
+      <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? "Envoi en cours..." : (
+          <>
+            <Send className="mr-2 h-4 w-4" />
+            Envoyer ma suggestion
+          </>
+        )}
+      </Button>
+    </form>
+  );
+};
+
 const EcoSysteme = () => {
   const [articles, setArticles] = useState<EcosystemArticle[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [suggestionDialogOpen, setSuggestionDialogOpen] = useState(false);
 
   useEffect(() => {
     fetchArticles();
@@ -314,12 +480,26 @@ const EcoSysteme = () => {
                   Nos premiers articles sur l'éco-tourisme breton arrivent bientôt. 
                   Revenez nous voir prochainement !
                 </p>
-                <Button asChild>
-                  <Link to="/eco-systeme/proposer">
-                    Suggérer un lieu
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
+                <Dialog open={suggestionDialogOpen} onOpenChange={setSuggestionDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      Suggérer un lieu
+                      <ChevronRight className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <Lightbulb className="h-5 w-5 text-primary" />
+                        Proposer un lieu
+                      </DialogTitle>
+                      <DialogDescription>
+                        Partagez vos découvertes éco-touristiques en Bretagne !
+                      </DialogDescription>
+                    </DialogHeader>
+                    <SuggestionForm onSuccess={() => setSuggestionDialogOpen(false)} />
+                  </DialogContent>
+                </Dialog>
               </div>
             )}
           </div>
@@ -335,12 +515,26 @@ const EcoSysteme = () => {
               Partagez vos bonnes adresses ! Fermes, sentiers, sites culturels... 
               Nous adorons mettre en lumière les acteurs de l'éco-tourisme breton.
             </p>
-            <Button asChild size="lg">
-              <Link to="/eco-systeme/proposer">
-                Proposer un lieu
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
+            <Dialog open={suggestionDialogOpen} onOpenChange={setSuggestionDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg">
+                  Proposer un lieu
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Lightbulb className="h-5 w-5 text-primary" />
+                    Proposer un lieu
+                  </DialogTitle>
+                  <DialogDescription>
+                    Partagez vos découvertes éco-touristiques en Bretagne !
+                  </DialogDescription>
+                </DialogHeader>
+                <SuggestionForm onSuccess={() => setSuggestionDialogOpen(false)} />
+              </DialogContent>
+            </Dialog>
           </div>
         </section>
       </Layout>
