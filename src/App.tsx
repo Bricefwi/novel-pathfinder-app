@@ -17,6 +17,7 @@ import Onboarding from "./pages/Onboarding";
 import CGU from "./pages/CGU";
 import PolitiqueConfidentialite from "./pages/PolitiqueConfidentialite";
 import Cookies from "./pages/Cookies";
+import MentionsLegales from "./pages/MentionsLegales";
 import Admin from "./pages/Admin";
 import PreparerVoyage from "./pages/PreparerVoyage";
 import EcoSysteme from "./pages/EcoSysteme";
@@ -46,6 +47,7 @@ const App = () => (
           <Route path="/cgu" element={<CGU />} />
           <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
           <Route path="/cookies" element={<Cookies />} />
+          <Route path="/mentions-legales" element={<MentionsLegales />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/preparer-voyage" element={<PreparerVoyage />} />
           <Route path="/eco-systeme" element={<EcoSysteme />} />

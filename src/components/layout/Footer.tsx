@@ -22,6 +22,7 @@ const navigation = {
     { name: "FAQ", href: "/contact#faq" },
   ],
   legal: [
+    { name: "Mentions légales", href: "/mentions-legales" },
     { name: "CGU", href: "/cgu" },
     { name: "Politique de confidentialité", href: "/politique-confidentialite" },
     { name: "Cookies", href: "/cookies" },
@@ -60,8 +61,8 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-6">
             <Link to="/" className="flex items-center space-x-3 group">
-              <div className="w-14 h-14 rounded-full bg-background/10 flex items-center justify-center overflow-hidden">
-                <img src={logoCheval} alt="Logo Ferme Équestre An Arwen" className="w-12 h-12 object-contain" />
+              <div className="w-20 h-20 rounded-full bg-background/10 flex items-center justify-center overflow-hidden">
+                <img src={logoCheval} alt="Logo Ferme Équestre An Arwen" className="w-18 h-18 object-contain" />
               </div>
               <div>
                 <h2 className="font-serif text-xl font-bold">An Arwen</h2>

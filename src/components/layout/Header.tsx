@@ -76,7 +76,7 @@ export function Header() {
             <img 
               src="/logo-an-arwen.png" 
               alt="Ferme Équestre An Arwen" 
-              className="h-14 w-auto"
+              className="h-20 w-auto"
             />
             <div className="hidden sm:block">
               <h1 className="font-serif text-xl font-bold text-foreground">
