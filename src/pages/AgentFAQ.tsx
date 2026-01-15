@@ -203,19 +203,20 @@ export default function AgentFAQ() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 pt-28 pb-8">
+      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 pt-32 pb-8">
         <div className="container max-w-3xl mx-auto px-4">
-          {/* Header */}
-          <div className="flex items-center gap-4 mb-6">
+          {/* Page Header */}
+          <div className="flex items-center gap-4 mb-6 bg-card/80 backdrop-blur-sm rounded-xl p-4 shadow-sm border">
             <Button 
               variant="ghost" 
               size="icon"
               onClick={() => navigate(-1)}
+              className="shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12 border-2 border-primary">
+              <Avatar className="h-12 w-12 border-2 border-primary shrink-0">
                 <AvatarImage src="/placeholder.svg" alt="Loïc" />
                 <AvatarFallback className="bg-primary text-primary-foreground">
                   <Bot className="h-6 w-6" />
