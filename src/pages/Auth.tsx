@@ -14,12 +14,35 @@ const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [showResendButton, setShowResendButton] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      toast.error("Veuillez entrer votre email");
+      return;
+    }
+    setResendLoading(true);
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth`,
+      },
+    });
+    if (error) {
+      toast.error("Erreur lors de l'envoi : " + error.message);
+    } else {
+      toast.success("Email de confirmation renvoyé ! Vérifiez votre boîte de réception.");
+    }
+    setResendLoading(false);
+  };
 
   useEffect(() => {
     checkSessionAndRedirect();
@@ -77,12 +100,16 @@ const Auth = () => {
       if (error) {
         if (error.message.includes("Invalid login credentials")) {
           toast.error("Email ou mot de passe incorrect");
+          setShowResendButton(false);
         } else if (error.message.includes("Email not confirmed")) {
           toast.error("Veuillez confirmer votre email avant de vous connecter");
+          setShowResendButton(true);
         } else {
           toast.error(error.message);
+          setShowResendButton(false);
         }
       } else if (data.user) {
+        setShowResendButton(false);
         toast.success("Connexion réussie !");
         await handlePostLoginRedirect(data.user.id);
       }
@@ -273,6 +300,24 @@ const Auth = () => {
                   "Créer mon compte"
                 )}
               </Button>
+
+              {/* Resend confirmation email button */}
+              {isLogin && showResendButton && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full h-10 text-sm gap-2 border-primary/50 text-primary hover:bg-primary/10"
+                  onClick={handleResendConfirmation}
+                  disabled={resendLoading}
+                >
+                  {resendLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Mail className="h-4 w-4" />
+                  )}
+                  Renvoyer l'email de confirmation
+                </Button>
+              )}
             </form>
 
             {/* Toggle Login/Signup */}
