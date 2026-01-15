@@ -26,6 +26,7 @@ import EcoSystemeArticle from "./pages/EcoSystemeArticle";
 import ProposerLieu from "./pages/ProposerLieu";
 import NotFound from "./pages/NotFound";
 import AgentFAQ from "./pages/AgentFAQ";
+import SystemDiagnostics from "./pages/admin/SystemDiagnostics";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
           <Route path="/cookies" element={<Cookies />} />
           <Route path="/mentions-legales" element={<MentionsLegales />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/diagnostics" element={<SystemDiagnostics />} />
           <Route path="/preparer-voyage" element={<PreparerVoyage />} />
           <Route path="/eco-systeme" element={<EcoSysteme />} />
           <Route path="/eco-systeme/proposer" element={<ProposerLieu />} />
