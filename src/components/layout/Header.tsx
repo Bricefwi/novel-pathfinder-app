@@ -191,8 +191,9 @@ export function Header() {
               </DropdownMenu>
             ) : (
               <Link to="/auth">
-                <Button variant="default" size="sm" className="hidden sm:flex">
-                  Connexion
+                <Button variant="default" size="sm" className="flex">
+                  <User className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Connexion</span>
                 </Button>
               </Link>
             )}
