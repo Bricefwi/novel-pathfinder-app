@@ -11,6 +11,7 @@ import { TravelHubTrips } from "@/components/user/TravelHubTrips";
 import { TravelHubDocuments } from "@/components/user/TravelHubDocuments";
 import { TravelHubProfile } from "@/components/user/TravelHubProfile";
 import { FloatingHelpButton } from "@/components/user/FloatingHelpButton";
+import { useQuoteRealtime } from "@/hooks/use-quote-realtime";
 import { 
   Home, 
   Plane, 
@@ -57,7 +58,7 @@ interface Booking {
 interface Quote {
   id: string;
   status: string;
-  total_amount: number;
+  total_price: number;
   activity_title: string;
   created_at: string;
 }
@@ -70,6 +71,16 @@ const MonEspace = () => {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("accueil");
+
+  // Realtime hook for quotes
+  useQuoteRealtime({
+    userEmail: user?.email || '',
+    onQuoteUpdate: (updatedQuote) => {
+      setQuotes(prev => prev.map(q => 
+        q.id === updatedQuote.id ? { ...q, ...updatedQuote } : q
+      ));
+    },
+  });
 
   useEffect(() => {
     checkAuth();
@@ -109,10 +120,10 @@ const MonEspace = () => {
 
     if (bookingsData) setBookings(bookingsData as Booking[]);
 
-    // Fetch quotes
+    // Fetch quotes - using total_price (correct column name)
     const { data: quotesData } = await supabase
       .from("quotes")
-      .select("id, status, total_amount, activity_title, created_at")
+      .select("id, status, total_price, activity_title, created_at")
       .eq("client_email", email)
       .order("created_at", { ascending: false });
 

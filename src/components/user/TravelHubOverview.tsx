@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Calendar, 
@@ -11,7 +10,6 @@ import {
   MessageCircle, 
   Compass, 
   FileText, 
-  Clock,
   ChevronRight,
   Plane,
   Sparkles
@@ -37,7 +35,7 @@ interface Booking {
 interface Quote {
   id: string;
   status: string;
-  total_amount: number;
+  total_price: number;
   activity_title: string;
   created_at: string;
 }
@@ -72,7 +70,7 @@ export const TravelHubOverview = ({
   );
   
   // Pending quotes
-  const pendingQuotes = quotes.filter(q => q.status === 'pending' || q.status === 'sent');
+  const pendingQuotes = quotes.filter(q => q.status === 'pending' || q.status === 'sent' || q.status === 'draft');
   
   // Determine user state
   const userState = nextTrip 
@@ -275,19 +273,19 @@ export const TravelHubOverview = ({
       <div className="grid md:grid-cols-2 gap-6">
         {/* Recent Bookings */}
         <Card className="border-border/50">
-          <CardHeader className="pb-3">
+          <div className="p-4 pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-serif flex items-center gap-2">
+              <h3 className="text-lg font-serif font-semibold flex items-center gap-2">
                 <Calendar className="h-5 w-5 text-primary" />
                 Mes Voyages
-              </CardTitle>
+              </h3>
               <Button variant="ghost" size="sm" onClick={() => onTabChange("voyages")}>
                 Voir tout
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <CardContent className="pt-0">
             {bookings.length === 0 ? (
               <EmptyState 
                 icon={Compass}
@@ -340,19 +338,19 @@ export const TravelHubOverview = ({
 
         {/* Pending Quotes */}
         <Card className="border-border/50">
-          <CardHeader className="pb-3">
+          <div className="p-4 pb-3">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-serif flex items-center gap-2">
+              <h3 className="text-lg font-serif font-semibold flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary" />
                 Devis en attente
-              </CardTitle>
+              </h3>
               <Button variant="ghost" size="sm" onClick={() => onTabChange("documents")}>
                 Voir tout
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+          <CardContent className="pt-0">
             {pendingQuotes.length === 0 ? (
               <EmptyState 
                 icon={FileText}
@@ -378,7 +376,7 @@ export const TravelHubOverview = ({
                         {format(new Date(quote.created_at), 'dd MMM yyyy', { locale: fr })}
                       </p>
                     </div>
-                    <span className="font-semibold text-primary">{quote.total_amount}€</span>
+                    <span className="font-semibold text-primary">{quote.total_price}€</span>
                   </div>
                 ))}
               </div>
