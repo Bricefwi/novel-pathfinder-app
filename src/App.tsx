@@ -23,6 +23,7 @@ import Admin from "./pages/Admin";
 import PreparerVoyage from "./pages/PreparerVoyage";
 import EcoSysteme from "./pages/EcoSysteme";
 import EcoSystemeArticle from "./pages/EcoSystemeArticle";
+import ProposerLieu from "./pages/ProposerLieu";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +54,7 @@ const App = () => (
           <Route path="/admin" element={<Admin />} />
           <Route path="/preparer-voyage" element={<PreparerVoyage />} />
           <Route path="/eco-systeme" element={<EcoSysteme />} />
+          <Route path="/eco-systeme/proposer" element={<ProposerLieu />} />
           <Route path="/eco-systeme/:slug" element={<EcoSystemeArticle />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
