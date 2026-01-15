@@ -41,16 +41,19 @@ export default function AgentFAQ() {
   const [userName, setUserName] = useState<string | undefined>();
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  const [isInitialized, setIsInitialized] = useState(false);
+
   useEffect(() => {
     checkUserRole();
   }, []);
 
   useEffect(() => {
-    // Add welcome message when role is determined
-    if (messages.length === 0) {
+    // Add welcome message when role is determined (only once)
+    if (!isInitialized) {
       setMessages([{ role: "assistant", content: getWelcomeMessage(userRole, userName) }]);
+      setIsInitialized(true);
     }
-  }, [userRole, userName]);
+  }, [userRole, userName, isInitialized]);
 
   useEffect(() => {
     // Scroll to bottom when messages change
