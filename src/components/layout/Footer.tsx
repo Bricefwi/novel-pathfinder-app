@@ -58,7 +58,7 @@ export function Footer() {
     <footer className="bg-secondary text-secondary-foreground">
       {/* Main Footer */}
       <div className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
           {/* Brand */}
           <div className="space-y-6">
             <Link to="/" className="flex items-center space-x-3 group">
@@ -112,6 +112,23 @@ export function Footer() {
             <h3 className="font-serif text-lg font-semibold mb-6">Informations</h3>
             <ul className="space-y-3">
               {navigation.informations.map((item) => (
+                <li key={item.name}>
+                  <Link
+                    to={item.href}
+                    className="text-sm text-secondary-foreground/70 hover:text-primary transition-colors"
+                  >
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Informations légales */}
+          <div>
+            <h3 className="font-serif text-lg font-semibold mb-6">Informations légales</h3>
+            <ul className="space-y-3">
+              {navigation.legal.map((item) => (
                 <li key={item.name}>
                   <Link
                     to={item.href}
