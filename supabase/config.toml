@@ -14,3 +14,6 @@ verify_jwt = true
 
 [functions.check-unread-quotes]
 verify_jwt = false
+
+[functions.ask-loic]
+verify_jwt = false
