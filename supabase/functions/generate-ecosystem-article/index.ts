@@ -25,81 +25,81 @@ interface ArticleData {
 const categoryImages: Record<string, { featured: string[]; gallery: string[][] }> = {
   "Randonnées": {
     featured: [
-      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=800&fit=crop&q=80", // Forêt de Brocéliande style
-      "https://images.unsplash.com/photo-1476231682828-37e571bc172f?w=1200&h=800&fit=crop&q=80", // Forêt brumeuse
-      "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200&h=800&fit=crop&q=80", // Forêt verte dense
-      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&h=800&fit=crop&q=80", // Sentier forestier
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=800&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1476231682828-37e571bc172f?w=1200&h=800&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200&h=800&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&h=800&fit=crop&q=80",
     ],
     gallery: [
       [
-        "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=800&h=600&fit=crop&q=80", // Lumière en forêt
-        "https://images.unsplash.com/photo-1425913397330-cf8af2ff40a1?w=800&h=600&fit=crop&q=80", // Forêt profonde
-        "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&h=600&fit=crop&q=80", // Chemin arboré
+        "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1425913397330-cf8af2ff40a1?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&h=600&fit=crop&q=80",
       ],
       [
-        "https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=800&h=600&fit=crop&q=80", // Automne forêt
-        "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=800&h=600&fit=crop&q=80", // Forêt brumeuse automne
-        "https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?w=800&h=600&fit=crop&q=80", // Forêt mystique
+        "https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?w=800&h=600&fit=crop&q=80",
       ],
     ],
   },
   "Fermes Pédagogiques": {
     featured: [
-      "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=1200&h=800&fit=crop&q=80", // Animaux ferme
-      "https://images.unsplash.com/photo-1605152276897-4f618f831968?w=1200&h=800&fit=crop&q=80", // Chèvres
-      "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1200&h=800&fit=crop&q=80", // Campagne
-      "https://images.unsplash.com/photo-1569880153113-76e33fc52d5f?w=1200&h=800&fit=crop&q=80", // Scène ferme
+      "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=1200&h=800&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1605152276897-4f618f831968?w=1200&h=800&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1200&h=800&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1569880153113-76e33fc52d5f?w=1200&h=800&fit=crop&q=80",
     ],
     gallery: [
       [
-        "https://images.unsplash.com/photo-1574938730946-16a9c9ca4c77?w=800&h=600&fit=crop&q=80", // Poules
-        "https://images.unsplash.com/photo-1602081115068-12e10f75fbc7?w=800&h=600&fit=crop&q=80", // Moutons
-        "https://images.unsplash.com/photo-1559628129-67cf63b72248?w=800&h=600&fit=crop&q=80", // Âne
+        "https://images.unsplash.com/photo-1574938730946-16a9c9ca4c77?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1602081115068-12e10f75fbc7?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1559628129-67cf63b72248?w=800&h=600&fit=crop&q=80",
       ],
       [
-        "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=800&h=600&fit=crop&q=80", // Vaches
-        "https://images.unsplash.com/photo-1625596275461-46c6f8d01bea?w=800&h=600&fit=crop&q=80", // Porcelets
-        "https://images.unsplash.com/photo-1589923188651-268a9765e432?w=800&h=600&fit=crop&q=80", // Enfant ferme
+        "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1625596275461-46c6f8d01bea?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1589923188651-268a9765e432?w=800&h=600&fit=crop&q=80",
       ],
     ],
   },
   "Patrimoine": {
     featured: [
-      "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=1200&h=800&fit=crop&q=80", // Château médiéval France
-      "https://images.unsplash.com/photo-1595867818082-083862f3d630?w=1200&h=800&fit=crop&q=80", // Murailles médiévales
-      "https://images.unsplash.com/photo-1524397057410-a44a7c4e82c6?w=1200&h=800&fit=crop&q=80", // Abbaye
-      "https://images.unsplash.com/photo-1565876427310-0695a4ff03b7?w=1200&h=800&fit=crop&q=80", // Chapelle
+      "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=1200&h=800&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1595867818082-083862f3d630?w=1200&h=800&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1524397057410-a44a7c4e82c6?w=1200&h=800&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1565876427310-0695a4ff03b7?w=1200&h=800&fit=crop&q=80",
     ],
     gallery: [
       [
-        "https://images.unsplash.com/photo-1541417904950-b855846fe074?w=800&h=600&fit=crop&q=80", // Tour médiévale
-        "https://images.unsplash.com/photo-1598755257130-c2aaca1f061c?w=800&h=600&fit=crop&q=80", // Patrimoine
-        "https://images.unsplash.com/photo-1560930950-5cc20e80e392?w=800&h=600&fit=crop&q=80", // Architecture historique
+        "https://images.unsplash.com/photo-1541417904950-b855846fe074?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1598755257130-c2aaca1f061c?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1560930950-5cc20e80e392?w=800&h=600&fit=crop&q=80",
       ],
       [
-        "https://images.unsplash.com/photo-1555921015-5532091f6026?w=800&h=600&fit=crop&q=80", // Château français
-        "https://images.unsplash.com/photo-1564429238535-2a9ca65eb5c2?w=800&h=600&fit=crop&q=80", // Médiéval
-        "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=800&h=600&fit=crop&q=80", // Château
+        "https://images.unsplash.com/photo-1555921015-5532091f6026?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1564429238535-2a9ca65eb5c2?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1533929736458-ca588d08c8be?w=800&h=600&fit=crop&q=80",
       ],
     ],
   },
   "Nature": {
     featured: [
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=800&fit=crop&q=80", // Rivière nature
-      "https://images.unsplash.com/photo-1465056836041-7f43ac27dcb5?w=1200&h=800&fit=crop&q=80", // Lac calme
-      "https://images.unsplash.com/photo-1504567961542-e24d9439a724?w=1200&h=800&fit=crop&q=80", // Vallée verte
-      "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=1200&h=800&fit=crop&q=80", // Prairie
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=1200&h=800&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1465056836041-7f43ac27dcb5?w=1200&h=800&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1504567961542-e24d9439a724?w=1200&h=800&fit=crop&q=80",
+      "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=1200&h=800&fit=crop&q=80",
     ],
     gallery: [
       [
-        "https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=800&h=600&fit=crop&q=80", // Étang
-        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&q=80", // Nature lac
-        "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&h=600&fit=crop&q=80", // Prairie verte
+        "https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&h=600&fit=crop&q=80",
       ],
       [
-        "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&h=600&fit=crop&q=80", // Paysage naturel
-        "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&h=600&fit=crop&q=80", // Collines
-        "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=600&fit=crop&q=80", // Nature sauvage
+        "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=600&fit=crop&q=80",
       ],
     ],
   },
@@ -123,6 +123,49 @@ serve(async (req) => {
   }
 
   try {
+    // SECURITY: Verify authentication and admin role
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("[generate-ecosystem-article] No authorization header");
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+    if (authError || !user) {
+      console.error("[generate-ecosystem-article] Invalid token:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired token" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Check admin role
+    const { data: roles, error: roleError } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .single();
+
+    if (roleError || !roles) {
+      console.error("[generate-ecosystem-article] User is not admin:", user.id);
+      return new Response(
+        JSON.stringify({ error: "Admin access required" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    console.log(`[generate-ecosystem-article] Authenticated admin: ${user.id}`);
+
     const { topic, category } = await req.json();
 
     const perplexityApiKey = Deno.env.get("PERPLEXITY_API_KEY");
@@ -292,11 +335,6 @@ Fournis ta réponse au format JSON suivant :
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
-
-    // Save to Supabase
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { data: insertedArticle, error: insertError } = await supabase
       .from("ecosystem_articles")
