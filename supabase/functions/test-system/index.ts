@@ -192,8 +192,8 @@ const handler = async (req: Request): Promise<Response> => {
             "Authorization": authHeader,
           },
           body: JSON.stringify({
-            message: "Ping système - réponds brièvement que tu es opérationnel",
-            role: "admin"
+            question: "Ping système - réponds brièvement que tu es opérationnel",
+            userRole: "admin"
           }),
         });
 
