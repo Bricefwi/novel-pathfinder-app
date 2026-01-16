@@ -284,6 +284,7 @@ serve(async (req) => {
       { role: "user", content: question }
     ];
 
+    // Appel avec streaming désactivé pour éviter les problèmes de parsing SSE dans Deno
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -293,13 +294,19 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages,
-        stream: true,
+        stream: false, // SOLUTION CRITIQUE : Désactive le SSE pour éviter les artefacts de streaming
         max_tokens: 1024,
         temperature: 0.7,
       }),
     });
 
+    // Gestion défensive de la réponse brute
+    const rawText = await response.text();
+
+    // Vérification du statut HTTP avant parsing
     if (!response.ok) {
+      console.error(`Erreur API IA (${response.status}):`, rawText);
+      
       if (response.status === 429) {
         return new Response(
           JSON.stringify({ error: "Loïc a besoin d'une pause ! Réessayez dans quelques instants." }),
@@ -313,23 +320,47 @@ serve(async (req) => {
         );
       }
       
-      const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
       return new Response(
-        JSON.stringify({ error: "Loïc a un petit souci technique..." }),
+        JSON.stringify({ error: "Loïc a un petit souci technique...", details: rawText }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Return streaming response
-    return new Response(response.body, {
-      headers: { 
-        ...corsHeaders, 
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive"
-      },
-    });
+    // Parsing sécurisé avec nettoyage préventif
+    let data;
+    try {
+      // Supprime les espaces blancs ou sauts de ligne parasites
+      const cleanText = rawText.trim();
+      
+      // Barrière de sécurité : si un artefact SSE persiste, lever une erreur explicite
+      if (cleanText.startsWith(":")) {
+        throw new Error("Format SSE détecté malgré la désactivation du stream.");
+      }
+      
+      data = JSON.parse(cleanText);
+    } catch (parseError) {
+      console.error("Échec du parsing JSON:", parseError);
+      console.error("Contenu reçu (500 premiers caractères):", rawText.substring(0, 500));
+      return new Response(
+        JSON.stringify({ error: "Réponse invalide du fournisseur d'IA" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Extraction de la réponse de l'IA
+    const aiContent = data.choices?.[0]?.message?.content || "Demat ! Je n'ai pas pu formuler une réponse.";
+    
+    console.log(`Loïc responded successfully (${aiContent.length} chars)`);
+
+    // Retour de la réponse normalisée
+    return new Response(
+      JSON.stringify({ 
+        response: aiContent,
+        model: data.model,
+        usage: data.usage
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
 
   } catch (error) {
     console.error("ask-loic error:", error);
