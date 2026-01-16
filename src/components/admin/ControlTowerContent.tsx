@@ -19,6 +19,7 @@ import { CRM360 } from "./modules/CRM360";
 import { UnifiedInbox } from "./modules/UnifiedInbox";
 import { MarketingAutomation } from "./modules/MarketingAutomation";
 import { AnalyticsDashboard } from "./modules/AnalyticsDashboard";
+import { TrafficAnalytics } from "./modules/TrafficAnalytics";
 
 interface ControlTowerContentProps {
   activeModule: AdminModule;
@@ -45,6 +46,8 @@ export function ControlTowerContent({ activeModule, onModuleChange }: ControlTow
         return <MarketingAutomation />;
       case "analytics":
         return <AnalyticsDashboard />;
+      case "traffic":
+        return <TrafficAnalytics />;
       
       // Legacy modules
       case "dashboard":
