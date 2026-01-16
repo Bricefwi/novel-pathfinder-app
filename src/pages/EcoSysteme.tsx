@@ -42,6 +42,7 @@ interface EcosystemArticle {
   excerpt: string | null;
   content: string | null;
   featured_image: string | null;
+  featured_image_override: string | null;
   category: string | null;
   location_name: string | null;
   location_address: string | null;
@@ -92,11 +93,14 @@ const ArticleCard = ({ article }: { article: EcosystemArticle }) => {
   const config = categoryConfig[article.category || "decouverte"] || categoryConfig["decouverte"];
   const IconComponent = config.icon;
   
+  // Utiliser l'image override si disponible
+  const displayImage = article.featured_image_override || article.featured_image || bretagnVillageChevaux;
+  
   return (
     <Card className="group overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-xl">
       <div className="relative aspect-[16/10] overflow-hidden">
         <img
-          src={article.featured_image || bretagnVillageChevaux}
+          src={displayImage}
           alt={article.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
