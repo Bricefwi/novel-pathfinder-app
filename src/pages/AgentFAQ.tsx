@@ -96,7 +96,7 @@ export default function AgentFAQ() {
     }
   };
 
-  const streamChat = async (userMessage: string) => {
+  const sendChat = async (userMessage: string) => {
     const conversationHistory = messages.map(m => ({
       role: m.role,
       content: m.content
@@ -116,63 +116,16 @@ export default function AgentFAQ() {
       }),
     });
 
+    const data = await resp.json();
+
     if (!resp.ok) {
-      const errorData = await resp.json().catch(() => ({}));
-      throw new Error(errorData.error || "Erreur de connexion avec Loïc");
+      throw new Error(data.error || "Erreur de connexion avec Loïc");
     }
 
-    if (!resp.body) {
-      throw new Error("Pas de réponse");
-    }
-
-    const reader = resp.body.getReader();
-    const decoder = new TextDecoder();
-    let textBuffer = "";
-    let assistantSoFar = "";
-
-    const updateAssistant = (content: string) => {
-      assistantSoFar = content;
-      setMessages(prev => {
-        const last = prev[prev.length - 1];
-        if (last?.role === "assistant" && prev.length > 1) {
-          return prev.map((m, i) => i === prev.length - 1 ? { ...m, content } : m);
-        }
-        return [...prev, { role: "assistant", content }];
-      });
-    };
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      textBuffer += decoder.decode(value, { stream: true });
-
-      let newlineIndex: number;
-      while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-        let line = textBuffer.slice(0, newlineIndex);
-        textBuffer = textBuffer.slice(newlineIndex + 1);
-
-        if (line.endsWith("\r")) line = line.slice(0, -1);
-        if (line.startsWith(":") || line.trim() === "") continue;
-        if (!line.startsWith("data: ")) continue;
-
-        const jsonStr = line.slice(6).trim();
-        if (jsonStr === "[DONE]") break;
-
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const content = parsed.choices?.[0]?.delta?.content;
-          if (content) {
-            assistantSoFar += content;
-            updateAssistant(assistantSoFar);
-          }
-        } catch {
-          // Incomplete JSON, wait for more data
-          textBuffer = line + "\n" + textBuffer;
-          break;
-        }
-      }
-    }
+    // Gestion de la réponse JSON standard (non-streaming)
+    const assistantContent = data.response || data.choices?.[0]?.message?.content || "Demat ! Je n'ai pas pu formuler une réponse.";
+    
+    setMessages(prev => [...prev, { role: "assistant", content: assistantContent }]);
   };
 
   const handleSend = async () => {
@@ -184,7 +137,7 @@ export default function AgentFAQ() {
     setIsLoading(true);
 
     try {
-      await streamChat(userMessage);
+      await sendChat(userMessage);
     } catch (error) {
       console.error("Chat error:", error);
       toast.error(error instanceof Error ? error.message : "Loïc a un petit souci...");
