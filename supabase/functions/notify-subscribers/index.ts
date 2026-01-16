@@ -219,7 +219,7 @@ const handler = async (req: Request): Promise<Response> => {
           Authorization: `Bearer ${RESEND_API_KEY}`,
         },
         body: JSON.stringify({
-          from: "Ferme Équestre An Arwen <onboarding@resend.dev>",
+          from: "Ferme An Arwen <onboarding@resend.dev>",
           to: batch,
           subject: subject,
           html: htmlContent,
