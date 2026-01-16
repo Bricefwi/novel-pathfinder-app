@@ -98,7 +98,7 @@ const ArticleCard = ({ article }: { article: EcosystemArticle }) => {
   
   return (
     <Card className="group overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-xl">
-      <div className="relative aspect-[16/10] overflow-hidden">
+      <div className="relative aspect-[4/3] overflow-hidden max-h-48">
         <img
           src={displayImage}
           alt={article.title}

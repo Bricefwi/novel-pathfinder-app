@@ -183,11 +183,11 @@ const EcoSystemeArticle = () => {
         {blocks.map((block, index) => {
           if (block.type === 'image') {
             return (
-              <figure key={index} className="my-8">
+              <figure key={index} className="my-8 flex justify-center">
                 <img 
                   src={block.src} 
                   alt={block.alt}
-                  className="w-full rounded-xl shadow-lg"
+                  className="max-w-md w-full h-auto rounded-xl shadow-lg"
                   loading="lazy"
                   onError={(e) => {
                     (e.target as HTMLImageElement).style.display = 'none';
@@ -256,7 +256,7 @@ const EcoSystemeArticle = () => {
       />
       <Layout>
         <article className="pb-16">
-          <div className="relative h-[50vh] min-h-[400px] overflow-hidden">
+          <div className="relative h-[35vh] min-h-[280px] max-h-[350px] overflow-hidden">
             <img
               src={displayFeaturedImage || bretagnVillageChevaux}
               alt={article.title}
