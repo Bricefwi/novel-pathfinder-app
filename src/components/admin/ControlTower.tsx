@@ -28,6 +28,7 @@ export type AdminModule =
   | "inbox"
   | "marketing"
   | "analytics"
+  | "traffic"
   | "activities"
   | "articles"
   | "gallery"
