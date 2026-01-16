@@ -77,7 +77,7 @@ const handler = async (req: Request): Promise<Response> => {
             Authorization: `Bearer ${RESEND_API_KEY}`,
           },
           body: JSON.stringify({
-            from: "An Arwen <notifications@an-arwen.fr>",
+            from: "Ferme Équestre An Arwen <onboarding@resend.dev>",
             to: [adminEmail || user.email],
             subject: "🔧 Test System - Email Fonctionnel",
             html: `
@@ -124,14 +124,25 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       case "storage": {
-        const testFileName = `test-${Date.now()}.txt`;
-        const testContent = "Test upload from System Diagnostics";
+        const testFileName = `test-diagnostic-${Date.now()}.png`;
+        // Create a minimal valid PNG (1x1 transparent pixel)
+        const pngBytes = new Uint8Array([
+          0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, // PNG signature
+          0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52, // IHDR chunk
+          0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, // 1x1
+          0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4, 0x89,
+          0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41, 0x54, // IDAT chunk
+          0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00, 0x05, 0x00, 0x01,
+          0x0D, 0x0A, 0x2D, 0xB4,
+          0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, // IEND chunk
+          0xAE, 0x42, 0x60, 0x82
+        ]);
         
         // Upload test file
         const { error: uploadError } = await supabase.storage
           .from("avatars")
-          .upload(`test/${testFileName}`, testContent, {
-            contentType: "text/plain",
+          .upload(`test/${testFileName}`, pngBytes, {
+            contentType: "image/png",
             upsert: true,
           });
 
