@@ -45,7 +45,7 @@ interface ControlTowerSidebarProps {
 }
 
 const CORE_MODULES = [
-  { id: "dashboard" as const, label: "Tableau de bord", icon: LayoutDashboard },
+  { id: "dashboard" as const, label: "Vue d'ensemble", icon: LayoutDashboard },
   { id: "stocks" as const, label: "Gestion des Stocks", icon: Package, badge: "NEW" },
   { id: "crm" as const, label: "CRM 360°", icon: Users, badge: "NEW" },
   { id: "inbox" as const, label: "Inbox Unifiée", icon: Inbox, badge: "NEW" },
@@ -161,6 +161,12 @@ export function ControlTowerSidebar({ activeModule, onModuleChange, onOpenComman
 
       <SidebarFooter className="border-t pt-2">
         <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton onClick={() => navigate("/admin/diagnostics")} tooltip="Diagnostics Système">
+              <Settings className="h-4 w-4" />
+              <span>Diagnostics</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={() => navigate("/")} tooltip="Voir le site">
               <ExternalLink className="h-4 w-4" />
