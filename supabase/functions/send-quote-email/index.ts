@@ -1,15 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
-};
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { authenticateRequest, verifyAdminRole, verifyOwnershipOrAdmin, createAuthErrorResponse } from "../_shared/rbac.ts";
+import { sendEmailWithAudit } from "../_shared/email-audit.ts";
 
 interface QuoteEmailRequest {
+  quote_id?: string;
   quote_number: string;
   client_name: string;
   client_email: string;
@@ -24,6 +20,7 @@ interface QuoteEmailRequest {
   deposit_percentage: number;
   valid_until?: string;
   notes?: string;
+  user_id?: string;
 }
 
 const formatDate = (dateString?: string): string => {
@@ -45,57 +42,38 @@ const formatPrice = (price: number): string => {
 };
 
 const handler = async (req: Request): Promise<Response> => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreflightRequest(origin);
   }
 
   try {
-    // SECURITY: Verify authentication and admin role
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      console.error("[send-quote-email] No authorization header");
-      return new Response(
-        JSON.stringify({ error: "Authentication required" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+    // Authentification
+    const auth = await authenticateRequest(req);
+    if (!auth) {
+      console.error("[send-quote-email] Authentication failed");
+      return createAuthErrorResponse("Authentication required", 401, corsHeaders);
     }
-
-    const token = authHeader.replace("Bearer ", "");
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-
-    if (authError || !user) {
-      console.error("[send-quote-email] Invalid token:", authError?.message);
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired token" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    // Check admin role
-    const { data: roles, error: roleError } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "admin")
-      .single();
-
-    if (roleError || !roles) {
-      console.error("[send-quote-email] User is not admin:", user.id);
-      return new Response(
-        JSON.stringify({ error: "Admin access required" }),
-        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
-    }
-
-    console.log(`[send-quote-email] Authenticated admin: ${user.id}`);
 
     const quoteData: QuoteEmailRequest = await req.json();
-    console.log("[send-quote-email] Sending to:", quoteData.client_email);
+    console.log("[send-quote-email] Processing quote:", quoteData.quote_number);
+
+    // Vérifier les permissions : admin ou propriétaire du devis
+    const isAdmin = await verifyAdminRole(auth.supabase, auth.user.id);
+    const isOwner = quoteData.user_id ? auth.user.id === quoteData.user_id : false;
+
+    if (!isAdmin && !isOwner) {
+      console.error("[send-quote-email] Permission denied for user:", auth.user.id);
+      return createAuthErrorResponse("Admin access or ownership required", 403, corsHeaders);
+    }
+
+    console.log(`[send-quote-email] Authorized (admin: ${isAdmin}, owner: ${isOwner})`);
+
+    // Récupérer les secrets
+    const systemSenderEmail = Deno.env.get("SYSTEM_SENDER_EMAIL") || "Ferme An Arwen <onboarding@resend.dev>";
+    const appUrl = Deno.env.get("APP_URL") || "https://novel-pathfinder-app.lovable.app";
 
     const emailHtml = `
 <!DOCTYPE html>
@@ -199,8 +177,8 @@ const handler = async (req: Request): Promise<Response> => {
               <table role="presentation" style="width: 100%;">
                 <tr>
                   <td align="center">
-                    <a href="https://novel-pathfinder-app.lovable.app/contact" style="display: inline-block; background-color: #6B8E7F; color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: 600;">
-                      Répondre à ce devis
+                    <a href="${appUrl}/mon-espace" style="display: inline-block; background-color: #6B8E7F; color: #ffffff; text-decoration: none; padding: 15px 40px; border-radius: 8px; font-size: 16px; font-weight: 600;">
+                      Voir mon devis dans Mon Espace
                     </a>
                   </td>
                 </tr>
@@ -212,7 +190,7 @@ const handler = async (req: Request): Promise<Response> => {
           <tr>
             <td style="padding: 25px 30px; background-color: #f9f9f9; border-top: 1px solid #eee;">
               <p style="margin: 0 0 10px 0; color: #666; font-size: 12px; line-height: 1.5;">
-                <strong>Conditions de réservation :</strong> En acceptant ce devis, vous acceptez nos <a href="https://novel-pathfinder-app.lovable.app/cgv" style="color: #6B8E7F;">Conditions Générales de Vente</a> et nos <a href="https://novel-pathfinder-app.lovable.app/cgu" style="color: #6B8E7F;">Conditions Générales d'Utilisation</a>.
+                <strong>Conditions de réservation :</strong> En acceptant ce devis, vous acceptez nos <a href="${appUrl}/cgv" style="color: #6B8E7F;">Conditions Générales de Vente</a> et nos <a href="${appUrl}/cgu" style="color: #6B8E7F;">Conditions Générales d'Utilisation</a>.
               </p>
               <p style="margin: 0; color: #999; font-size: 11px;">
                 L'acompte de ${quoteData.deposit_percentage}% est requis pour confirmer votre réservation. Le solde devra être réglé avant le départ.
@@ -226,7 +204,7 @@ const handler = async (req: Request): Promise<Response> => {
               <p style="margin: 0 0 10px 0; color: #fff; font-size: 14px; font-weight: 600;">Ferme Équestre An Arwen</p>
               <p style="margin: 0 0 5px 0; color: rgba(255,255,255,0.7); font-size: 12px;">5 Le Bignon, 35360 La Chapelle du Lou du Lac</p>
               <p style="margin: 0 0 5px 0; color: rgba(255,255,255,0.7); font-size: 12px;">📞 02 99 06 68 68 | 📱 06 59 22 62 70</p>
-              <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 12px;">✉️ contact@ferme-equestre-an-arwen.com</p>
+              <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 12px;">✉️ contact@an-arwen.fr</p>
             </td>
           </tr>
 
@@ -238,40 +216,39 @@ const handler = async (req: Request): Promise<Response> => {
 </html>
     `;
 
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: "Ferme An Arwen <onboarding@resend.dev>",
-        to: [quoteData.client_email],
-        subject: `Votre devis ${quoteData.quote_number} - ${quoteData.activity_title}`,
-        html: emailHtml,
-      }),
+    // Créer un client service pour le logging
+    const supabaseService = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Envoyer l'email avec audit
+    const result = await sendEmailWithAudit({
+      supabase: supabaseService,
+      to: quoteData.client_email,
+      from: systemSenderEmail,
+      subject: `Votre devis ${quoteData.quote_number} - ${quoteData.activity_title}`,
+      html: emailHtml,
+      type: "quote",
+      userId: auth.user.id,
+      referenceId: quoteData.quote_id,
     });
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("[send-quote-email] Resend API error:", errorText);
-      throw new Error(`Resend API error: ${errorText}`);
+    if (!result.success) {
+      throw new Error(result.error);
     }
 
-    const emailResponse = await res.json();
-    console.log("[send-quote-email] Email sent successfully:", emailResponse);
+    console.log("[send-quote-email] Email sent successfully to:", quoteData.client_email);
 
-    return new Response(JSON.stringify({ success: true, ...emailResponse }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        ...corsHeaders,
-      },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
     });
-  } catch (error: any) {
-    console.error("[send-quote-email] Error:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("[send-quote-email] Error:", errorMessage);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
