@@ -121,7 +121,7 @@ const Contact = () => {
                 <div className="space-y-4">
                   <div className="flex items-start space-x-4"><MapPin className="h-6 w-6 text-primary flex-shrink-0" /><div><p className="font-semibold">Adresse</p><p className="text-muted-foreground">5 Le Bignon, 35360 La Chapelle du Lou du Lac</p></div></div>
                   <div className="flex items-start space-x-4"><Phone className="h-6 w-6 text-primary flex-shrink-0" /><div><p className="font-semibold">Téléphone</p><a href="tel:+33299066868" className="text-muted-foreground hover:text-primary">02 99 06 68 68</a></div></div>
-                  <div className="flex items-start space-x-4"><Mail className="h-6 w-6 text-primary flex-shrink-0" /><div><p className="font-semibold">Email</p><a href="mailto:contact@ferme-equestre-an-arwen.com" className="text-muted-foreground hover:text-primary">contact@ferme-equestre-an-arwen.com</a></div></div>
+                  <div className="flex items-start space-x-4"><Mail className="h-6 w-6 text-primary flex-shrink-0" /><div><p className="font-semibold">Email</p><a href="mailto:contact@ferme-equestre-arwen.com" className="text-muted-foreground hover:text-primary">contact@ferme-equestre-arwen.com</a></div></div>
                 </div>
               </div>
               <div className="rounded-3xl overflow-hidden aspect-video">

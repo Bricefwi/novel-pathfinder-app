@@ -104,7 +104,7 @@ const sendReminderEmail = async (quote: Quote): Promise<boolean> => {
               <p style="margin: 0 0 10px 0; color: #fff; font-size: 14px; font-weight: 600;">Ferme Équestre An Arwen</p>
               <p style="margin: 0 0 5px 0; color: rgba(255,255,255,0.7); font-size: 12px;">5 Le Bignon, 35360 La Chapelle du Lou du Lac</p>
               <p style="margin: 0 0 5px 0; color: rgba(255,255,255,0.7); font-size: 12px;">📞 02 99 06 68 68 | 📱 06 59 22 62 70</p>
-              <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 12px;">✉️ contact@ferme-equestre-an-arwen.com</p>
+              <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 12px;">✉️ contact@ferme-equestre-arwen.com</p>
             </td>
           </tr>
 
@@ -124,7 +124,7 @@ const sendReminderEmail = async (quote: Quote): Promise<boolean> => {
         Authorization: `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Ferme Équestre An Arwen <onboarding@resend.dev>",
+        from: "Rappels An Arwen <relance@ferme-equestre-arwen.com>",
         to: [quote.client_email],
         subject: `Bonne nouvelle ! Votre voyage en ${quote.activity_title} se concrétise 🐎`,
         html: emailHtml,

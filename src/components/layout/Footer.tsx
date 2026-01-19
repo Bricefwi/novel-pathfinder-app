@@ -164,10 +164,10 @@ export function Footer() {
               <li className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-primary flex-shrink-0" />
                 <a
-                  href="mailto:contact@ferme-equestre-an-arwen.com"
+                  href="mailto:contact@ferme-equestre-arwen.com"
                   className="text-sm text-secondary-foreground/70 hover:text-primary transition-colors"
                 >
-                  contact@ferme-equestre-an-arwen.com
+                  contact@ferme-equestre-arwen.com
                 </a>
               </li>
             </ul>
