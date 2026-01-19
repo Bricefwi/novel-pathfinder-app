@@ -201,7 +201,7 @@ export const generateQuotePDF = (data: QuoteData): string => {
       <p>RAUBER Arwen</p>
       <p>Guide Équestre Indépendant</p>
       <p>Bretagne, France</p>
-      <p>contact@ferme-equestre-an-arwen.com</p>
+      <p>contact@ferme-equestre-arwen.com</p>
     </div>
   </div>
 
@@ -322,7 +322,7 @@ export const generateQuotePDF = (data: QuoteData): string => {
   <div class="footer">
     <p>Ferme Équestre An Arwen – RAUBER Arwen – Guide Équestre Indépendant</p>
     <p>SIRET : [À compléter] – TVA non applicable, art. 293 B du CGI</p>
-    <p>contact@ferme-equestre-an-arwen.com – www.ferme-equestre-an-arwen.com</p>
+    <p>contact@ferme-equestre-arwen.com – www.ferme-equestre-arwen.com</p>
   </div>
 </body>
 </html>

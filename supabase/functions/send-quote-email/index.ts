@@ -72,7 +72,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`[send-quote-email] Authorized (admin: ${isAdmin}, owner: ${isOwner})`);
 
     // Récupérer les secrets
-    const systemSenderEmail = Deno.env.get("SYSTEM_SENDER_EMAIL") || "Ferme An Arwen <contact@ferme-equestre-arwen.com>";
+    const systemSenderEmail = Deno.env.get("EMAIL_FROM_QUOTES") || "Devis An Arwen <devis@ferme-equestre-arwen.com>";
     const appUrl = Deno.env.get("APP_URL") || "https://novel-pathfinder-app.lovable.app";
 
     const emailHtml = `

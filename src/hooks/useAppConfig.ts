@@ -7,18 +7,12 @@ export interface AppConfig {
     phone: string;
     website: string;
   };
-  email_from_system: {
-    email: string;
-    name: string;
-  };
-  email_from_admin: {
-    email: string;
-    name: string;
-  };
-  email_from_newsletter: {
-    email: string;
-    name: string;
-  };
+  email_from_system: string;
+  email_from_admin: string;
+  email_from_newsletter: string;
+  email_from_quotes: string;
+  email_from_invoices: string;
+  email_from_relance: string;
   company_name: string;
   company_address: {
     street: string;
@@ -39,20 +33,14 @@ const DEFAULT_CONFIG: AppConfig = {
   contact_main: {
     email: "contact@ferme-equestre-arwen.com",
     phone: "06 21 49 60 00",
-    website: "https://www.ferme-equestre-an-arwen.com"
+    website: "https://www.ferme-equestre-arwen.com"
   },
-  email_from_system: {
-    email: "contact@ferme-equestre-arwen.com",
-    name: "An Arwen"
-  },
-  email_from_admin: {
-    email: "contact@ferme-equestre-arwen.com",
-    name: "Direction An Arwen"
-  },
-  email_from_newsletter: {
-    email: "contact@ferme-equestre-arwen.com",
-    name: "Newsletter An Arwen"
-  },
+  email_from_system: "Notifications An Arwen <notifications@ferme-equestre-arwen.com>",
+  email_from_admin: "Direction An Arwen <contact@ferme-equestre-arwen.com>",
+  email_from_newsletter: "Newsletter An Arwen <newsletter@ferme-equestre-arwen.com>",
+  email_from_quotes: "Devis An Arwen <devis@ferme-equestre-arwen.com>",
+  email_from_invoices: "Factures An Arwen <factures@ferme-equestre-arwen.com>",
+  email_from_relance: "Rappels An Arwen <relance@ferme-equestre-arwen.com>",
   company_name: "Ferme Équestre An Arwen",
   company_address: {
     street: "Le Bignon",
@@ -60,7 +48,7 @@ const DEFAULT_CONFIG: AppConfig = {
     zip: "35360",
     country: "France"
   },
-  website_url: "https://www.ferme-equestre-an-arwen.com",
+  website_url: "https://www.ferme-equestre-arwen.com",
   app_url: "https://novel-pathfinder-app.lovable.app",
   auto_invoice_on_booking: true,
   auto_send_invoice_on_creation: true,
@@ -73,6 +61,9 @@ const CONFIG_KEYS = [
   "email_from_system",
   "email_from_admin",
   "email_from_newsletter",
+  "email_from_quotes",
+  "email_from_invoices",
+  "email_from_relance",
   "company_name",
   "company_address",
   "website_url",

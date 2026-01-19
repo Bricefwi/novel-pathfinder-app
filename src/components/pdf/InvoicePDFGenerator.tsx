@@ -237,7 +237,7 @@ export const generateInvoicePDF = (data: InvoiceData): string => {
       <p>RAUBER Arwen</p>
       <p>Guide Équestre Indépendant</p>
       <p>Bretagne, France</p>
-      <p>contact@ferme-equestre-an-arwen.com</p>
+      <p>contact@ferme-equestre-arwen.com</p>
     </div>
   </div>
 
@@ -380,7 +380,7 @@ export const generateInvoicePDF = (data: InvoiceData): string => {
   <div class="footer">
     <p>Ferme Équestre An Arwen – RAUBER Arwen – Guide Équestre Indépendant</p>
     <p>SIRET : [À compléter] – TVA non applicable, art. 293 B du CGI</p>
-    <p>contact@ferme-equestre-an-arwen.com – www.ferme-equestre-an-arwen.com</p>
+    <p>contact@ferme-equestre-arwen.com – www.ferme-equestre-arwen.com</p>
     <p style="margin-top: 10px;">En cas de litige, les tribunaux du ressort du domicile professionnel de RAUBER Arwen sont compétents.</p>
   </div>
 </body>

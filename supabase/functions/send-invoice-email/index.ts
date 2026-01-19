@@ -66,7 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const systemSenderEmail = Deno.env.get("SYSTEM_SENDER_EMAIL") || "Ferme An Arwen <contact@ferme-equestre-arwen.com>";
+    const systemSenderEmail = Deno.env.get("EMAIL_FROM_INVOICES") || "Factures An Arwen <factures@ferme-equestre-arwen.com>";
     const appUrl = Deno.env.get("APP_URL") || "https://novel-pathfinder-app.lovable.app";
 
     const emailHtml = `
