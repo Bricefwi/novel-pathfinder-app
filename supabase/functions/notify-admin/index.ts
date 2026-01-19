@@ -41,8 +41,8 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`[notify-admin] Received request type: ${type}`, data);
 
     // Récupérer l'email admin depuis les secrets
-    const adminEmail = Deno.env.get("ADMIN_NOTIFICATION_EMAIL") || "contact@an-arwen.fr";
-    const systemSenderEmail = Deno.env.get("SYSTEM_SENDER_EMAIL") || "Ferme An Arwen <onboarding@resend.dev>";
+    const adminEmail = Deno.env.get("ADMIN_NOTIFICATION_EMAIL") || "contact@ferme-equestre-arwen.com";
+    const systemSenderEmail = Deno.env.get("SYSTEM_SENDER_EMAIL") || "Ferme An Arwen <contact@ferme-equestre-arwen.com>";
 
     let subject = "";
     let htmlContent = "";

@@ -52,7 +52,7 @@ const handler = async (req: Request): Promise<Response> => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const newsletterSenderEmail = Deno.env.get("NEWSLETTER_SENDER_EMAIL") || "Newsletter An Arwen <onboarding@resend.dev>";
+    const newsletterSenderEmail = Deno.env.get("NEWSLETTER_SENDER_EMAIL") || "Newsletter An Arwen <contact@ferme-equestre-arwen.com>";
 
     // Mode test : envoyer uniquement à l'email de test
     if (test_mode && test_email) {
