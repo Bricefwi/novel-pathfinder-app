@@ -66,7 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const systemSenderEmail = Deno.env.get("SYSTEM_SENDER_EMAIL") || "Ferme An Arwen <onboarding@resend.dev>";
+    const systemSenderEmail = Deno.env.get("SYSTEM_SENDER_EMAIL") || "Ferme An Arwen <contact@ferme-equestre-arwen.com>";
     const appUrl = Deno.env.get("APP_URL") || "https://novel-pathfinder-app.lovable.app";
 
     const emailHtml = `
@@ -202,7 +202,7 @@ const handler = async (req: Request): Promise<Response> => {
               <p style="margin: 0 0 10px 0; color: #fff; font-size: 14px; font-weight: 600;">Ferme Équestre An Arwen</p>
               <p style="margin: 0 0 5px 0; color: rgba(255,255,255,0.7); font-size: 12px;">5 Le Bignon, 35360 La Chapelle du Lou du Lac</p>
               <p style="margin: 0 0 5px 0; color: rgba(255,255,255,0.7); font-size: 12px;">📞 02 99 06 68 68 | 📱 06 59 22 62 70</p>
-              <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 12px;">✉️ contact@an-arwen.fr</p>
+              <p style="margin: 0; color: rgba(255,255,255,0.7); font-size: 12px;">✉️ contact@ferme-equestre-arwen.com</p>
             </td>
           </tr>
 

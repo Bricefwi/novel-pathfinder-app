@@ -37,20 +37,20 @@ export interface AppConfig {
 // Valeurs par défaut (fallback)
 const DEFAULT_CONFIG: AppConfig = {
   contact_main: {
-    email: "contact@an-arwen.fr",
+    email: "contact@ferme-equestre-arwen.com",
     phone: "06 21 49 60 00",
     website: "https://www.ferme-equestre-an-arwen.com"
   },
   email_from_system: {
-    email: "notifications@an-arwen.fr",
+    email: "contact@ferme-equestre-arwen.com",
     name: "An Arwen"
   },
   email_from_admin: {
-    email: "direction@an-arwen.fr",
+    email: "contact@ferme-equestre-arwen.com",
     name: "Direction An Arwen"
   },
   email_from_newsletter: {
-    email: "newsletter@an-arwen.fr",
+    email: "contact@ferme-equestre-arwen.com",
     name: "Newsletter An Arwen"
   },
   company_name: "Ferme Équestre An Arwen",
