@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, User, Heart, LogOut, ChevronDown, Scale, MessageCircle } from "lucide-react";
+import { Menu, X, User, Heart, LogOut, ChevronDown, Scale, MessageCircle, Shield, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -49,6 +49,7 @@ export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -61,13 +62,34 @@ export function Header() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_, session) => {
+      async (_, session) => {
         setUser(session?.user ?? null);
+        if (session?.user) {
+          // Check admin role
+          const { data } = await supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", session.user.id)
+            .eq("role", "admin")
+            .single();
+          setIsAdmin(!!data);
+        } else {
+          setIsAdmin(false);
+        }
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        const { data } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .eq("role", "admin")
+          .single();
+        setIsAdmin(!!data);
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -75,6 +97,7 @@ export function Header() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    setIsAdmin(false);
   };
 
   return (
@@ -171,17 +194,28 @@ export function Header() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/mes-reservations" className="flex items-center">
-                      <Heart className="mr-2 h-4 w-4" />
+                    <Link to="/mon-espace" className="flex items-center">
+                      <CalendarDays className="mr-2 h-4 w-4" />
                       Mes Réservations
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/mes-favoris" className="flex items-center">
+                    <Link to="/mon-espace" className="flex items-center">
                       <Heart className="mr-2 h-4 w-4" />
                       Mes Favoris
                     </Link>
                   </DropdownMenuItem>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin" className="flex items-center text-primary font-medium">
+                          <Shield className="mr-2 h-4 w-4" />
+                          Administration
+                        </Link>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4" />
