@@ -1,4 +1,5 @@
 import { Layout } from "@/components/layout/Layout";
+import { COMPANY_CONFIG } from "@/config/constants";
 
 const CGU = () => {
   return (
@@ -15,13 +16,13 @@ const CGU = () => {
                 1. Présentation du site
               </h2>
               <p>
-                Le site <strong>Ferme Équestre An Arwen</strong> est édité par la Ferme Équestre An Arwen, 
-                située au 5 Le Bignon, 35360 La Chapelle du Lou du Lac, France.
+                Le site <strong>{COMPANY_CONFIG.name}</strong> est édité par {COMPANY_CONFIG.name}, 
+                située au {COMPANY_CONFIG.address.full}.
               </p>
               <p>
-                <strong>Responsable de publication :</strong> Ferme Équestre An Arwen<br />
-                <strong>Contact :</strong> contact@ferme-equestre-an-arwen.com<br />
-                <strong>Téléphone :</strong> 02 99 06 68 68
+                <strong>Responsable de publication :</strong> {COMPANY_CONFIG.name}<br />
+                <strong>Contact :</strong> {COMPANY_CONFIG.email}<br />
+                <strong>Téléphone :</strong> {COMPANY_CONFIG.phone}
               </p>
             </section>
 
@@ -58,7 +59,7 @@ const CGU = () => {
               </h2>
               <p>
                 L'ensemble des éléments constituant ce site (textes, graphismes, photographies, 
-                logos, etc.) est la propriété exclusive de la Ferme Équestre An Arwen, sauf 
+                logos, etc.) est la propriété exclusive de {COMPANY_CONFIG.name}, sauf 
                 mentions contraires. Toute reproduction, représentation, modification ou adaptation 
                 de ces éléments est interdite sans autorisation préalable.
               </p>
@@ -69,7 +70,7 @@ const CGU = () => {
                 5. Responsabilité
               </h2>
               <p>
-                La Ferme Équestre An Arwen s'efforce d'assurer l'exactitude et la mise à jour 
+                {COMPANY_CONFIG.name} s'efforce d'assurer l'exactitude et la mise à jour 
                 des informations diffusées sur ce site. Toutefois, elle ne saurait garantir 
                 l'exactitude, la précision ou l'exhaustivité des informations mises à disposition.
               </p>
