@@ -1,38 +1,42 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import galerieDesertCavaliers from "@/assets/galerie-desert-cavaliers.png";
-import galerieChevauxDesert from "@/assets/galerie-chevaux-desert.png";
+import galerieBretagneEglise from "@/assets/galerie-bretagne-eglise.jpg";
+import galerieMarocDunes from "@/assets/galerie-maroc-dunes.jpg";
+import galerieBretagnePanorama from "@/assets/galerie-bretagne-panorama.jpg";
+import galerieMarocCoucherSoleil from "@/assets/galerie-maroc-coucher-soleil.jpg";
+import galerieMarocPlage from "@/assets/galerie-maroc-plage.jpg";
+import galerieMarocDesert from "@/assets/galerie-maroc-desert.jpg";
 
 const galleryImages = [
   {
-    src: "https://images.unsplash.com/photo-1553284965-83fd3e82fa5a?w=800&q=80",
-    alt: "Randonnée sur la plage en Bretagne",
+    src: galerieMarocCoucherSoleil,
+    alt: "Cavaliers au coucher de soleil sur la plage au Maroc",
     span: "col-span-2 row-span-2",
   },
   {
-    src: "https://images.unsplash.com/photo-1598974357801-cbca100e65d3?w=600&q=80",
-    alt: "Cavaliers en forêt",
+    src: galerieBretagneEglise,
+    alt: "Randonnée équestre près d'une église en Bretagne",
     span: "col-span-1 row-span-1",
   },
   {
-    src: galerieDesertCavaliers,
-    alt: "Chevaux au galop",
+    src: galerieMarocDunes,
+    alt: "Cavaliers dans les dunes du désert marocain",
     span: "col-span-1 row-span-1",
   },
   {
-    src: "https://images.unsplash.com/photo-1489493887464-892be6d1daae?w=600&q=80",
-    alt: "Coucher de soleil équestre",
+    src: galerieMarocPlage,
+    alt: "Randonnée à cheval sur la plage marocaine",
     span: "col-span-1 row-span-2",
   },
   {
-    src: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&q=80",
-    alt: "Paysage breton",
+    src: galerieBretagnePanorama,
+    alt: "Chevaux admirant le panorama breton",
     span: "col-span-1 row-span-1",
   },
   {
-    src: galerieChevauxDesert,
-    alt: "Chevaux dans le désert marocain",
+    src: galerieMarocDesert,
+    alt: "Cavaliers traversant le désert marocain",
     span: "col-span-1 row-span-1",
   },
 ];
