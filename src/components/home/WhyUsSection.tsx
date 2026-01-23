@@ -5,7 +5,7 @@ const features = [
     icon: Heart,
     title: "Passion & Expertise",
     description:
-      "25 ans d'expérience dans l'organisation de randonnées équestres, avec une équipe passionnée.",
+      "Depuis plus de 10 ans d'expérience dans l'organisation de randonnées équestres, avec une équipe passionnée.",
   },
   {
     icon: Mountain,
@@ -52,7 +52,7 @@ export function WhyUsSection() {
             L'excellence au service de votre aventure
           </h2>
           <p className="text-muted-foreground text-lg">
-            Depuis 25 ans, nous créons des expériences équestres uniques qui
+            Depuis plus de 10 ans, nous créons des expériences équestres uniques qui
             allient passion, authenticité et respect de la nature.
           </p>
         </div>

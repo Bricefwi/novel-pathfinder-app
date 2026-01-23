@@ -11,14 +11,12 @@ const TikTokIcon = () => (
 
 const navigation = {
   destinations: [
-    { name: "Randonnées Bretagne", href: "/destinations?region=bretagne" },
-    { name: "Séjours Maroc", href: "/destinations?region=maroc" },
-    { name: "Cours d'équitation", href: "/destinations?type=cours" },
-    { name: "Stages", href: "/destinations?type=stage" },
+    { name: "Randonnées Bretagne", href: "/destinations" },
+    { name: "Séjours Maroc", href: "/destinations" },
   ],
   informations: [
     { name: "Hébergement", href: "/hebergement" },
-    { name: "Tarifs", href: "/tarifs" },
+    { name: "Planning", href: "/planning" },
     { name: "Préparer son voyage", href: "/preparer-voyage" },
     { name: "FAQ", href: "/agent-faq" },
   ],
@@ -148,15 +146,20 @@ export function Footer() {
             <ul className="space-y-4">
               <li className="flex items-start space-x-3">
                 <MapPin className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                <span className="text-sm text-secondary-foreground/70">
+                <a
+                  href={COMPANY_CONFIG.maps.googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-secondary-foreground/70 hover:text-primary transition-colors"
+                >
                   {COMPANY_CONFIG.address.street}<br />
                   {COMPANY_CONFIG.address.postalCode} {COMPANY_CONFIG.address.city}
-                </span>
+                </a>
               </li>
               <li className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-primary flex-shrink-0" />
                 <a
-                  href={`tel:+33${COMPANY_CONFIG.phone.replace(/\s/g, '').slice(1)}`}
+                  href={`tel:${COMPANY_CONFIG.phoneInternational}`}
                   className="text-sm text-secondary-foreground/70 hover:text-primary transition-colors"
                 >
                   {COMPANY_CONFIG.phone}

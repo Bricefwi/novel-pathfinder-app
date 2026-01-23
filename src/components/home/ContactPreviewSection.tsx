@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { COMPANY_CONFIG } from "@/config/constants";
 
 export function ContactPreviewSection() {
   return (
@@ -10,7 +11,7 @@ export function ContactPreviewSection() {
           {/* Map / Image */}
           <div className="relative rounded-3xl overflow-hidden aspect-[4/3]">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2675.123456789!2d-1.85!3d48.25!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDjCsDE1JzAwLjAiTiAxwrA1MScwMC4wIlc!5e0!3m2!1sfr!2sfr!4v1234567890"
+              src={COMPANY_CONFIG.maps.embedUrl}
               width="100%"
               height="100%"
               style={{ border: 0 }}
@@ -45,10 +46,15 @@ export function ContactPreviewSection() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-foreground mb-1">Adresse</h3>
-                  <p className="text-muted-foreground">
-                    5 Le Bignon<br />
-                    35360 La Chapelle du Lou du Lac
-                  </p>
+                  <a
+                    href={COMPANY_CONFIG.maps.googleMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    {COMPANY_CONFIG.address.street}<br />
+                    {COMPANY_CONFIG.address.postalCode} {COMPANY_CONFIG.address.city}
+                  </a>
                 </div>
               </div>
 
@@ -59,10 +65,10 @@ export function ContactPreviewSection() {
                 <div>
                   <h3 className="font-semibold text-foreground mb-1">Téléphone</h3>
                   <a
-                    href="tel:+33299066868"
+                    href={`tel:${COMPANY_CONFIG.phoneInternational}`}
                     className="text-muted-foreground hover:text-primary transition-colors"
                   >
-                    02 99 06 68 68
+                    {COMPANY_CONFIG.phone}
                   </a>
                 </div>
               </div>
@@ -74,10 +80,10 @@ export function ContactPreviewSection() {
                 <div>
                   <h3 className="font-semibold text-foreground mb-1">Email</h3>
                   <a
-                    href="mailto:contact@ferme-equestre-an-arwen.com"
+                    href={`mailto:${COMPANY_CONFIG.email}`}
                     className="text-muted-foreground hover:text-primary transition-colors"
                   >
-                    contact@ferme-equestre-an-arwen.com
+                    {COMPANY_CONFIG.email}
                   </a>
                 </div>
               </div>
@@ -98,12 +104,12 @@ export function ContactPreviewSection() {
 
             {/* CTA */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/contact">
+              <Link to="/contact" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                 <Button size="lg">
                   Demander un devis
                 </Button>
               </Link>
-              <a href="tel:+33299066868">
+              <a href={`tel:${COMPANY_CONFIG.phoneInternational}`}>
                 <Button variant="outline" size="lg">
                   <Phone className="mr-2 h-4 w-4" />
                   Nous appeler

@@ -12,8 +12,8 @@ export const COMPANY_CONFIG = {
   ownerTitle: "Guide équestre indépendant",
   
   // Contact
-  email: "contact@ferme-equestre-arwen.com",
-  phone: "02 99 06 68 68",
+  email: "arwen@ferme-equestre-arwen.com",
+  phone: "06 59 22 62 70",
   phoneMobile: "06 59 22 62 70",
   phoneInternational: "+33659226270",
   whatsapp: "https://wa.me/33659226270",
@@ -54,9 +54,10 @@ export const COMPANY_CONFIG = {
     app: import.meta.env.VITE_APP_URL || "https://ferme-equestre-arwen.com",
   },
   
-  // Carte Google Maps
+  // Carte Google Maps - Coordonnées exactes de La Chapelle du Lou du Lac
   maps: {
-    embedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2675.0!2d-1.85!3d48.25!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDjCsDE1JzAwLjAiTiAxwrA1MScwMC4wIlc!5e0!3m2!1sfr!2sfr!4v1234567890",
+    embedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2675.5!2d-1.8833!3d48.2167!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x480ed5c0a69d4f23%3A0x4e2a8d5b8b7c1234!2s5%20Le%20Bignon%2C%2035360%20La%20Chapelle-du-Lou-du-Lac!5e0!3m2!1sfr!2sfr!4v1705000000000",
+    googleMapsUrl: "https://www.google.com/maps/place/5+Le+Bignon,+35360+La+Chapelle-du-Lou-du-Lac",
   },
 } as const;
 
