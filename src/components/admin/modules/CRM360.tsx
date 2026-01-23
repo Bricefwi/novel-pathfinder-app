@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
+import { toast } from "sonner";
 import {
   Users,
   Search,
@@ -24,7 +26,20 @@ import {
   Phone,
   MapPin,
   Calendar,
+  BrainCircuit,
+  Loader2,
+  Sparkles,
+  Target,
+  ShoppingBag,
 } from "lucide-react";
+
+interface ProspectAnalysis {
+  budget_probable: string;
+  intention_principale: string;
+  confiance: string;
+  produits_suggeres: Array<{ nom: string; raison: string }>;
+  analyse_resume: string;
+}
 
 interface ClientProfile {
   id: string;
@@ -49,6 +64,13 @@ export function CRM360() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClient, setSelectedClient] = useState<ClientProfile | null>(null);
   const [activeSegment, setActiveSegment] = useState<string>("all");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<{
+    status: string;
+    analysis?: ProspectAnalysis;
+    events_analyzed?: number;
+    message?: string;
+  } | null>(null);
 
   // Fetch all profiles with related data
   const { data: clients, isLoading } = useQuery({
@@ -136,10 +158,10 @@ export function CRM360() {
 
   const getSegmentBadge = (segment: string) => {
     const styles = {
-      vip: "bg-amber-100 text-amber-800 border-amber-200",
-      hot: "bg-red-100 text-red-800 border-red-200",
-      dormant: "bg-gray-100 text-gray-600 border-gray-200",
-      new: "bg-blue-100 text-blue-800 border-blue-200",
+      vip: "bg-primary/20 text-primary border-primary/30",
+      hot: "bg-destructive/20 text-destructive border-destructive/30",
+      dormant: "bg-muted text-muted-foreground border-border",
+      new: "bg-accent text-accent-foreground border-accent",
     };
     const labels = { vip: "VIP", hot: "Prospect Chaud", dormant: "Dormant", new: "Nouveau" };
     return (
@@ -147,6 +169,40 @@ export function CRM360() {
         {labels[segment as keyof typeof labels]}
       </Badge>
     );
+  };
+
+  // Analyze prospect behavior with AI
+  const analyzeProspect = async (userId: string) => {
+    setIsAnalyzing(true);
+    setAnalysisResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke("analyze-prospect", {
+        body: { user_id: userId },
+      });
+      
+      if (error) throw error;
+      
+      setAnalysisResult(data);
+      if (data.status === "insufficient_data") {
+        toast.info("Pas assez de données pour analyser ce prospect.");
+      } else if (data.status === "success") {
+        toast.success("Analyse IA terminée !");
+      }
+    } catch (err) {
+      console.error("Erreur analyse prospect:", err);
+      toast.error("Erreur lors de l'analyse IA");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const getBudgetColor = (budget: string) => {
+    switch (budget) {
+      case "Élevé": return "bg-chart-1/20 text-chart-1 border-chart-1/30";
+      case "Moyen": return "bg-chart-2/20 text-chart-2 border-chart-2/30";
+      case "Éco": return "bg-chart-3/20 text-chart-3 border-chart-3/30";
+      default: return "bg-muted text-muted-foreground";
+    }
   };
 
   if (isLoading) {
@@ -323,21 +379,21 @@ export function CRM360() {
                   </Card>
                   <Card>
                     <CardContent className="pt-4 text-center">
-                      <FileText className="h-5 w-5 mx-auto text-blue-500 mb-1" />
+                      <FileText className="h-5 w-5 mx-auto text-chart-2 mb-1" />
                       <p className="text-2xl font-bold">{selectedClient.totalQuotes}</p>
                       <p className="text-xs text-muted-foreground">Devis</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="pt-4 text-center">
-                      <Clock className="h-5 w-5 mx-auto text-orange-500 mb-1" />
+                      <Clock className="h-5 w-5 mx-auto text-chart-4 mb-1" />
                       <p className="text-2xl font-bold">{selectedClient.pendingQuotes}</p>
                       <p className="text-xs text-muted-foreground">En attente</p>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="pt-4 text-center">
-                      <MessageSquare className="h-5 w-5 mx-auto text-green-500 mb-1" />
+                      <MessageSquare className="h-5 w-5 mx-auto text-chart-3 mb-1" />
                       <p className="text-2xl font-bold">
                         {selectedClient.lastActivity
                           ? differenceInDays(new Date(), new Date(selectedClient.lastActivity))
@@ -347,6 +403,90 @@ export function CRM360() {
                     </CardContent>
                   </Card>
                 </div>
+
+                {/* AI Analysis Button */}
+                <div className="border-t pt-4">
+                  <Button 
+                    onClick={() => analyzeProspect(selectedClient.user_id)}
+                    disabled={isAnalyzing}
+                    className="w-full gap-2"
+                    variant="outline"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Analyse en cours...
+                      </>
+                    ) : (
+                      <>
+                        <BrainCircuit className="h-4 w-4" />
+                        Analyser le comportement avec l'IA
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* AI Analysis Results */}
+                {analysisResult && (
+                  <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      Analyse IA
+                      {analysisResult.events_analyzed && (
+                        <span className="text-muted-foreground font-normal">
+                          ({analysisResult.events_analyzed} événements analysés)
+                        </span>
+                      )}
+                    </div>
+
+                    {analysisResult.status === "insufficient_data" ? (
+                      <p className="text-sm text-muted-foreground">{analysisResult.message}</p>
+                    ) : analysisResult.analysis && (
+                      <>
+                        <div className="grid grid-cols-3 gap-3">
+                          {/* Budget */}
+                          <div className="text-center p-3 rounded-lg bg-background">
+                            <ShoppingBag className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+                            <p className="text-xs text-muted-foreground mb-1">Budget</p>
+                            <Badge className={getBudgetColor(analysisResult.analysis.budget_probable)}>
+                              {analysisResult.analysis.budget_probable}
+                            </Badge>
+                          </div>
+                          {/* Intention */}
+                          <div className="text-center p-3 rounded-lg bg-background">
+                            <Target className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+                            <p className="text-xs text-muted-foreground mb-1">Intention</p>
+                            <Badge variant="outline">{analysisResult.analysis.intention_principale}</Badge>
+                          </div>
+                          {/* Confiance */}
+                          <div className="text-center p-3 rounded-lg bg-background">
+                            <Star className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
+                            <p className="text-xs text-muted-foreground mb-1">Confiance</p>
+                            <Badge variant="secondary">{analysisResult.analysis.confiance}</Badge>
+                          </div>
+                        </div>
+
+                        {/* Produits suggérés */}
+                        <div>
+                          <p className="text-xs font-medium mb-2">Produits suggérés</p>
+                          <div className="space-y-2">
+                            {analysisResult.analysis.produits_suggeres.map((produit, idx) => (
+                              <div key={idx} className="flex items-start gap-2 text-sm p-2 rounded bg-background">
+                                <span className="font-medium">{produit.nom}</span>
+                                <span className="text-muted-foreground">— {produit.raison}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Résumé */}
+                        <p className="text-sm text-muted-foreground italic">
+                          "{analysisResult.analysis.analyse_resume}"
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {/* Dream Destinations */}
                 {(selectedClient.dream_destinations || []).length > 0 && (
