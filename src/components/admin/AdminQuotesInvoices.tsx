@@ -48,6 +48,40 @@ export const AdminQuotesInvoices = () => {
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
+
+  // Send test email function
+  const handleSendTestEmail = async () => {
+    setSendingTestEmail(true);
+    try {
+      const { error } = await supabase.functions.invoke("send-quote-email", {
+        body: {
+          quote_number: "DEV-TEST-001",
+          client_name: "Test Resend",
+          client_email: "patrice.simion@gmail.com",
+          activity_title: "🧪 Email de test - Configuration Resend",
+          activity_duration: "3 jours / 2 nuits",
+          start_date: "2026-03-15",
+          end_date: "2026-03-17",
+          participants: 2,
+          unit_price: 450,
+          total_price: 900,
+          deposit_amount: 180,
+          deposit_percentage: 20,
+          valid_until: "2026-02-15",
+          notes: "Ceci est un email de test pour valider la configuration Resend. Si vous recevez cet email, la configuration fonctionne correctement !",
+        },
+      });
+      
+      if (error) throw error;
+      toast.success("✅ Email de test envoyé à patrice.simion@gmail.com");
+    } catch (err) {
+      console.error("Test email error:", err);
+      toast.error("Erreur lors de l'envoi de l'email de test");
+    } finally {
+      setSendingTestEmail(false);
+    }
+  };
 
   // Fetch quotes
   const { data: quotes, isLoading: quotesLoading } = useQuery({
@@ -549,23 +583,37 @@ export const AdminQuotesInvoices = () => {
                 <CardTitle>Gestion des devis</CardTitle>
                 <CardDescription>Créez et gérez les devis clients</CardDescription>
               </div>
-              <Dialog open={isQuoteDialogOpen} onOpenChange={setIsQuoteDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Nouveau devis
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Créer un nouveau devis</DialogTitle>
-                    <DialogDescription>
-                      Remplissez les informations pour générer un devis professionnel.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <QuoteForm />
-                </DialogContent>
-              </Dialog>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={handleSendTestEmail}
+                  disabled={sendingTestEmail}
+                >
+                  {sendingTestEmail ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Mail className="mr-2 h-4 w-4" />
+                  )}
+                  {sendingTestEmail ? "Envoi..." : "Test Email"}
+                </Button>
+                <Dialog open={isQuoteDialogOpen} onOpenChange={setIsQuoteDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Nouveau devis
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle>Créer un nouveau devis</DialogTitle>
+                      <DialogDescription>
+                        Remplissez les informations pour générer un devis professionnel.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <QuoteForm />
+                  </DialogContent>
+                </Dialog>
+              </div>
             </CardHeader>
             <CardContent>
               {quotesLoading ? (
