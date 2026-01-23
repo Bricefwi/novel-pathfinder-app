@@ -167,10 +167,20 @@ const MonEspace = () => {
               </p>
             </div>
             <div className="flex gap-2 mt-4 md:mt-0">
-              <Button variant="ghost" size="icon">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setActiveTab("documents")}
+                title="Notifications et documents"
+              >
                 <Bell className="h-5 w-5" />
               </Button>
-              <Button variant="ghost" size="icon">
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setActiveTab("profil")}
+                title="Paramètres du profil"
+              >
                 <Settings className="h-5 w-5" />
               </Button>
             </div>
