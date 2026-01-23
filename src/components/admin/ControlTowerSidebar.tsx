@@ -102,13 +102,16 @@ export function ControlTowerSidebar({ activeModule, onModuleChange, onOpenComman
   return (
     <Sidebar collapsible="icon" className="border-r">
       <SidebarHeader className="border-b pb-4">
-        <div className="flex items-center gap-3 px-2">
+        <button 
+          onClick={() => navigate("/")}
+          className="flex items-center gap-3 px-2 hover:opacity-80 transition-opacity cursor-pointer w-full"
+        >
           <img src={logoAnArwen} alt="An Arwen" className="h-10 w-10 rounded-lg object-cover" />
-          <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+          <div className="flex flex-col group-data-[collapsible=icon]:hidden text-left">
             <span className="font-serif font-semibold text-sm">Control Tower</span>
             <span className="text-xs text-muted-foreground">An Arwen</span>
           </div>
-        </div>
+        </button>
       </SidebarHeader>
       
       <SidebarContent>
