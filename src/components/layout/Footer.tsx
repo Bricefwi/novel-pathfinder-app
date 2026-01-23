@@ -11,14 +11,14 @@ const TikTokIcon = () => (
 
 const navigation = {
   destinations: [
-    { name: "Randonnées Bretagne", href: "/destinations" },
-    { name: "Séjours Maroc", href: "/destinations" },
+    { name: "Randonnées Bretagne", href: "/destinations", scrollTop: true },
+    { name: "Séjours Maroc", href: "/destinations?region=maroc", scrollTop: true },
   ],
   informations: [
-    { name: "Hébergement", href: "/hebergement" },
-    { name: "Planning", href: "/planning" },
-    { name: "Préparer son voyage", href: "/preparer-voyage" },
-    { name: "FAQ", href: "/agent-faq" },
+    { name: "Hébergement", href: "/hebergement", scrollTop: true },
+    { name: "Planning", href: "/planning", scrollTop: true },
+    { name: "Préparer son voyage", href: "/preparer-voyage", scrollTop: true },
+    { name: "FAQ", href: "/agent-faq", scrollTop: true },
   ],
   legal: [
     { name: "Mentions légales", href: "/mentions-legales" },
@@ -97,6 +97,7 @@ export function Footer() {
                 <li key={item.name}>
                   <Link
                     to={item.href}
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                     className="text-sm text-secondary-foreground/70 hover:text-primary transition-colors"
                   >
                     {item.name}
@@ -114,6 +115,7 @@ export function Footer() {
                 <li key={item.name}>
                   <Link
                     to={item.href}
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                     className="text-sm text-secondary-foreground/70 hover:text-primary transition-colors"
                   >
                     {item.name}
