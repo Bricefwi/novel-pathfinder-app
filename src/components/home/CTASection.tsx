@@ -26,13 +26,13 @@ export function CTASection() {
             Maroc. Votre prochaine aventure commence ici.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/destinations">
+            <Link to="/destinations" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
               <Button size="lg" className="min-w-[200px]">
                 Explorer nos randonnées
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Link to="/contact">
+            <Link to="/contact" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
               <Button
                 size="lg"
                 variant="outline"

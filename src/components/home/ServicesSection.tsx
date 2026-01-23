@@ -1,8 +1,7 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Compass, GraduationCap, Home, Calendar } from "lucide-react";
+import { ArrowRight, Compass, Home, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
-import marocCavalierCote from "@/assets/maroc-cavalier-cote.jpg";
 import yourteInterieur from "@/assets/yourte-interieur.jpg";
 import bretagneVillageChevaux from "@/assets/bretagne-village-chevaux.jpg";
 
@@ -15,15 +14,6 @@ const services = [
     image: cavaliersPlageCoucherSoleil,
     href: "/destinations",
     accent: "from-primary/80 to-primary",
-  },
-  {
-    icon: GraduationCap,
-    title: "Cours & Stages",
-    description:
-      "Perfectionnez votre équitation avec nos cours adaptés à tous les niveaux, du débutant à l'expert.",
-    image: marocCavalierCote,
-    href: "/destinations?type=cours",
-    accent: "from-accent-foreground/80 to-accent-foreground",
   },
   {
     icon: Home,
