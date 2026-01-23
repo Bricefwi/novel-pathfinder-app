@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
 import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
+import { COMPANY_CONFIG } from "@/config/constants";
 
 // Validation schema with length limits and format checks
 const contactSchema = z.object({
@@ -119,13 +120,13 @@ const Contact = () => {
               <div className="bg-card rounded-3xl p-8 border border-border/50 space-y-6">
                 <h2 className="font-serif text-2xl font-bold">Nos coordonnées</h2>
                 <div className="space-y-4">
-                  <div className="flex items-start space-x-4"><MapPin className="h-6 w-6 text-primary flex-shrink-0" /><div><p className="font-semibold">Adresse</p><p className="text-muted-foreground">5 Le Bignon, 35360 La Chapelle du Lou du Lac</p></div></div>
-                  <div className="flex items-start space-x-4"><Phone className="h-6 w-6 text-primary flex-shrink-0" /><div><p className="font-semibold">Téléphone</p><a href="tel:+33299066868" className="text-muted-foreground hover:text-primary">02 99 06 68 68</a></div></div>
-                  <div className="flex items-start space-x-4"><Mail className="h-6 w-6 text-primary flex-shrink-0" /><div><p className="font-semibold">Email</p><a href="mailto:contact@ferme-equestre-arwen.com" className="text-muted-foreground hover:text-primary">contact@ferme-equestre-arwen.com</a></div></div>
+                  <div className="flex items-start space-x-4"><MapPin className="h-6 w-6 text-primary flex-shrink-0" /><div><p className="font-semibold">Adresse</p><p className="text-muted-foreground">{COMPANY_CONFIG.address.short}</p></div></div>
+                  <div className="flex items-start space-x-4"><Phone className="h-6 w-6 text-primary flex-shrink-0" /><div><p className="font-semibold">Téléphone</p><a href={`tel:+33${COMPANY_CONFIG.phone.replace(/\s/g, '').slice(1)}`} className="text-muted-foreground hover:text-primary">{COMPANY_CONFIG.phone}</a></div></div>
+                  <div className="flex items-start space-x-4"><Mail className="h-6 w-6 text-primary flex-shrink-0" /><div><p className="font-semibold">Email</p><a href={`mailto:${COMPANY_CONFIG.email}`} className="text-muted-foreground hover:text-primary">{COMPANY_CONFIG.email}</a></div></div>
                 </div>
               </div>
               <div className="rounded-3xl overflow-hidden aspect-video">
-                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2675.0!2d-1.85!3d48.25!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDjCsDE1JzAwLjAiTiAxwrA1MScwMC4wIlc!5e0!3m2!1sfr!2sfr!4v1234567890" width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy" title="Carte" />
+                <iframe src={COMPANY_CONFIG.maps.embedUrl} width="100%" height="100%" style={{ border: 0 }} allowFullScreen loading="lazy" title="Carte" />
               </div>
             </div>
           </div>

@@ -5,6 +5,7 @@ import mentionsImage3 from "@/assets/mentions-legales-3.jpg";
 import mentionsImage4 from "@/assets/mentions-legales-4.jpg";
 import mentionsImage5 from "@/assets/mentions-legales-5.jpg";
 import mentionsImage6 from "@/assets/mentions-legales-6.jpg";
+import { COMPANY_CONFIG } from "@/config/constants";
 
 const MentionsLegales = () => {
   return (
@@ -34,12 +35,12 @@ const MentionsLegales = () => {
                 Éditeur du site
               </h2>
               <ul className="list-none pl-0 space-y-2">
-                <li><strong>Nom :</strong> RAUBER Arwen</li>
-                <li><strong>Statut :</strong> Entrepreneur individuel – Guide équestre indépendant</li>
+                <li><strong>Nom :</strong> {COMPANY_CONFIG.owner}</li>
+                <li><strong>Statut :</strong> Entrepreneur individuel – {COMPANY_CONFIG.ownerTitle}</li>
                 <li><strong>Activité :</strong> Organisation et encadrement de randonnées équestres en France et à l'étranger</li>
-                <li><strong>Siège social :</strong> 5 Le Bignon, 35360 La Chapelle Du Lou Du Lac, France</li>
-                <li><strong>Téléphone :</strong> <a href="tel:+33659226270" className="text-primary hover:underline">06 59 22 62 70</a></li>
-                <li><strong>Adresse e-mail :</strong> <a href="mailto:contact@ferme-equestre-an-arwen.com" className="text-primary hover:underline">contact@ferme-equestre-an-arwen.com</a></li>
+                <li><strong>Siège social :</strong> {COMPANY_CONFIG.address.full}</li>
+                <li><strong>Téléphone :</strong> <a href={`tel:+33${COMPANY_CONFIG.phoneMobile.replace(/\s/g, '').slice(1)}`} className="text-primary hover:underline">{COMPANY_CONFIG.phoneMobile}</a></li>
+                <li><strong>Adresse e-mail :</strong> <a href={`mailto:${COMPANY_CONFIG.email}`} className="text-primary hover:underline">{COMPANY_CONFIG.email}</a></li>
               </ul>
             </section>
 
@@ -48,9 +49,9 @@ const MentionsLegales = () => {
                 Immatriculation
               </h2>
               <ul className="list-none pl-0 space-y-2">
-                <li><strong>SIREN / SIRET :</strong> 80266354200016</li>
-                <li><strong>Code APE :</strong> 9329Z</li>
-                <li><strong>TVA intracommunautaire :</strong> Non assujetti à la TVA – article 293 B du Code général des impôts (sauf option contraire)</li>
+                <li><strong>SIREN / SIRET :</strong> {COMPANY_CONFIG.registration.siret}</li>
+                <li><strong>Code APE :</strong> {COMPANY_CONFIG.registration.codeAPE}</li>
+                <li><strong>TVA intracommunautaire :</strong> {COMPANY_CONFIG.registration.tvaStatus} (sauf option contraire)</li>
               </ul>
             </section>
 
@@ -59,8 +60,8 @@ const MentionsLegales = () => {
                 Responsable de la publication
               </h2>
               <p>
-                <strong>RAUBER Arwen</strong><br />
-                Titre : Guide équestre pour Ferme équestre An Arwen
+                <strong>{COMPANY_CONFIG.owner}</strong><br />
+                Titre : {COMPANY_CONFIG.ownerTitle} pour {COMPANY_CONFIG.name}
               </p>
             </section>
 
@@ -69,8 +70,8 @@ const MentionsLegales = () => {
                 Hébergeur du site
               </h2>
               <ul className="list-none pl-0 space-y-2">
-                <li><strong>Hébergeur :</strong> Lovable (GPT Engineer Inc.)</li>
-                <li><strong>Adresse :</strong> San Francisco, CA, États-Unis</li>
+                <li><strong>Hébergeur :</strong> {COMPANY_CONFIG.hosting.name}</li>
+                <li><strong>Adresse :</strong> {COMPANY_CONFIG.hosting.address}</li>
               </ul>
             </section>
 
@@ -79,7 +80,7 @@ const MentionsLegales = () => {
                 Propriété intellectuelle
               </h2>
               <p>
-                L'ensemble du contenu du site (textes, photographies, visuels, vidéos, logos, graphismes, structure générale) est la propriété exclusive de RAUBER Arwen, sauf mention contraire.
+                L'ensemble du contenu du site (textes, photographies, visuels, vidéos, logos, graphismes, structure générale) est la propriété exclusive de {COMPANY_CONFIG.owner}, sauf mention contraire.
               </p>
               <p>
                 Toute reproduction, représentation, diffusion ou exploitation, totale ou partielle, sans autorisation écrite préalable est strictement interdite et constitue une contrefaçon au sens des articles L.335-2 et suivants du Code de la propriété intellectuelle.
@@ -91,7 +92,7 @@ const MentionsLegales = () => {
                 Responsabilité
               </h2>
               <p>
-                RAUBER Arwen, en qualité de guide équestre indépendant, met en œuvre tous les moyens raisonnables pour assurer l'exactitude et la mise à jour des informations diffusées sur le site.
+                {COMPANY_CONFIG.owner}, en qualité de {COMPANY_CONFIG.ownerTitle}, met en œuvre tous les moyens raisonnables pour assurer l'exactitude et la mise à jour des informations diffusées sur le site.
               </p>
               <p>
                 Toutefois, l'éditeur ne saurait être tenu responsable des erreurs, omissions ou indisponibilités temporaires du site.

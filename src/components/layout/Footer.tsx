@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { MapPin, Phone, Mail, Facebook, Instagram, MessageCircle } from "lucide-react";
 import logoCheval from "@/assets/logo-cheval.png";
+import { COMPANY_CONFIG } from "@/config/constants";
 
 const TikTokIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -33,22 +34,22 @@ const navigation = {
 const socialLinks = [
   {
     name: "Facebook",
-    href: "https://www.facebook.com/fermeequestrearwen/",
+    href: COMPANY_CONFIG.social.facebook,
     icon: Facebook,
   },
   {
     name: "Instagram",
-    href: "https://www.instagram.com/fermeequestreanarwen/",
+    href: COMPANY_CONFIG.social.instagram,
     icon: Instagram,
   },
   {
     name: "TikTok",
-    href: "https://www.tiktok.com/@ferme_equestre_an_arwen",
+    href: COMPANY_CONFIG.social.tiktok,
     icon: TikTokIcon,
   },
   {
     name: "WhatsApp",
-    href: "https://wa.me/33659226270",
+    href: COMPANY_CONFIG.whatsapp,
     icon: MessageCircle,
   },
 ];
@@ -63,11 +64,11 @@ export function Footer() {
           <div className="space-y-6">
             <Link to="/" className="flex items-center space-x-3 group">
               <div className="w-20 h-20 rounded-full bg-background/10 flex items-center justify-center overflow-hidden">
-                <img src={logoCheval} alt="Logo Ferme Équestre An Arwen" className="w-18 h-18 object-contain" />
+                <img src={logoCheval} alt={`Logo ${COMPANY_CONFIG.name}`} className="w-18 h-18 object-contain" />
               </div>
               <div>
-                <h2 className="font-serif text-xl font-bold">An Arwen</h2>
-                <p className="text-xs text-secondary-foreground/70">Ferme Équestre</p>
+                <h2 className="font-serif text-xl font-bold">{COMPANY_CONFIG.shortName}</h2>
+                <p className="text-xs text-secondary-foreground/70">{COMPANY_CONFIG.tagline}</p>
               </div>
             </Link>
             <p className="text-sm text-secondary-foreground/80 leading-relaxed">
@@ -148,26 +149,26 @@ export function Footer() {
               <li className="flex items-start space-x-3">
                 <MapPin className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                 <span className="text-sm text-secondary-foreground/70">
-                  5 Le Bignon<br />
-                  35360 La Chapelle du Lou du Lac
+                  {COMPANY_CONFIG.address.street}<br />
+                  {COMPANY_CONFIG.address.postalCode} {COMPANY_CONFIG.address.city}
                 </span>
               </li>
               <li className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-primary flex-shrink-0" />
                 <a
-                  href="tel:+33299066868"
+                  href={`tel:+33${COMPANY_CONFIG.phone.replace(/\s/g, '').slice(1)}`}
                   className="text-sm text-secondary-foreground/70 hover:text-primary transition-colors"
                 >
-                  02 99 06 68 68
+                  {COMPANY_CONFIG.phone}
                 </a>
               </li>
               <li className="flex items-center space-x-3">
                 <Mail className="h-5 w-5 text-primary flex-shrink-0" />
                 <a
-                  href="mailto:contact@ferme-equestre-arwen.com"
+                  href={`mailto:${COMPANY_CONFIG.email}`}
                   className="text-sm text-secondary-foreground/70 hover:text-primary transition-colors"
                 >
-                  contact@ferme-equestre-arwen.com
+                  {COMPANY_CONFIG.email}
                 </a>
               </li>
             </ul>
@@ -180,7 +181,7 @@ export function Footer() {
         <div className="container mx-auto px-4 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-sm text-secondary-foreground/60">
-              © {new Date().getFullYear()} Ferme Équestre An Arwen. Tous droits réservés.
+              © {new Date().getFullYear()} {COMPANY_CONFIG.name}. Tous droits réservés.
             </p>
             <ul className="flex items-center space-x-6">
               {navigation.legal.map((item) => (
