@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
+import { downloadProspectAnalysisPDF, ProspectAnalysisData } from "@/components/pdf/ProspectAnalysisPDFGenerator";
 import {
   Users,
   Search,
@@ -31,6 +32,8 @@ import {
   Sparkles,
   Target,
   ShoppingBag,
+  Download,
+  History,
 } from "lucide-react";
 
 interface ProspectAnalysis {
@@ -39,6 +42,18 @@ interface ProspectAnalysis {
   confiance: string;
   produits_suggeres: Array<{ nom: string; raison: string }>;
   analyse_resume: string;
+}
+
+interface AnalysisHistoryItem {
+  id: string;
+  user_id: string;
+  budget_probable: string | null;
+  intention_principale: string | null;
+  confiance: string | null;
+  produits_suggeres: Array<{ nom: string; raison: string }>;
+  analyse_resume: string | null;
+  events_analyzed: number;
+  created_at: string;
 }
 
 interface ClientProfile {
@@ -65,12 +80,34 @@ export function CRM360() {
   const [selectedClient, setSelectedClient] = useState<ClientProfile | null>(null);
   const [activeSegment, setActiveSegment] = useState<string>("all");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<{
     status: string;
     analysis?: ProspectAnalysis;
     events_analyzed?: number;
     message?: string;
   } | null>(null);
+  const queryClient = useQueryClient();
+
+  // Fetch analysis history for selected client
+  const { data: analysisHistory } = useQuery({
+    queryKey: ["analysis-history", selectedClient?.user_id],
+    queryFn: async () => {
+      if (!selectedClient?.user_id) return [];
+      const { data, error } = await supabase
+        .from("prospect_analyses")
+        .select("*")
+        .eq("user_id", selectedClient.user_id)
+        .order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      return (data || []).map(item => ({
+        ...item,
+        produits_suggeres: (item.produits_suggeres as Array<{ nom: string; raison: string }>) || []
+      })) as AnalysisHistoryItem[];
+    },
+    enabled: !!selectedClient?.user_id,
+  });
 
   // Fetch all profiles with related data
   const { data: clients, isLoading } = useQuery({
@@ -171,7 +208,7 @@ export function CRM360() {
     );
   };
 
-  // Analyze prospect behavior with AI
+  // Analyze prospect behavior with AI and save to history
   const analyzeProspect = async (userId: string) => {
     setIsAnalyzing(true);
     setAnalysisResult(null);
@@ -185,8 +222,25 @@ export function CRM360() {
       setAnalysisResult(data);
       if (data.status === "insufficient_data") {
         toast.info("Pas assez de données pour analyser ce prospect.");
-      } else if (data.status === "success") {
-        toast.success("Analyse IA terminée !");
+      } else if (data.status === "success" && data.analysis) {
+        // Save analysis to history
+        const { error: saveError } = await supabase.from("prospect_analyses").insert({
+          user_id: userId,
+          budget_probable: data.analysis.budget_probable,
+          intention_principale: data.analysis.intention_principale,
+          confiance: data.analysis.confiance,
+          produits_suggeres: data.analysis.produits_suggeres,
+          analyse_resume: data.analysis.analyse_resume,
+          events_analyzed: data.events_analyzed || 0,
+          raw_response: data,
+        });
+        
+        if (saveError) {
+          console.error("Erreur sauvegarde analyse:", saveError);
+        } else {
+          queryClient.invalidateQueries({ queryKey: ["analysis-history", userId] });
+        }
+        toast.success("Analyse IA terminée et sauvegardée !");
       }
     } catch (err) {
       console.error("Erreur analyse prospect:", err);
@@ -194,6 +248,46 @@ export function CRM360() {
     } finally {
       setIsAnalyzing(false);
     }
+  };
+
+  // Export analysis to PDF
+  const handleExportPDF = (analysis: ProspectAnalysis, eventsAnalyzed: number) => {
+    if (!selectedClient) return;
+    
+    const pdfData: ProspectAnalysisData = {
+      clientName: `${selectedClient.first_name || "Sans"} ${selectedClient.last_name || "nom"}`,
+      clientEmail: selectedClient.email,
+      analysisDate: new Date(),
+      eventsAnalyzed,
+      budgetProbable: analysis.budget_probable,
+      intentionPrincipale: analysis.intention_principale,
+      confiance: analysis.confiance,
+      produitsSuggeres: analysis.produits_suggeres,
+      analyseResume: analysis.analyse_resume,
+    };
+    
+    downloadProspectAnalysisPDF(pdfData);
+    toast.success("Export PDF en cours...");
+  };
+
+  // Export history item to PDF
+  const handleExportHistoryPDF = (historyItem: AnalysisHistoryItem) => {
+    if (!selectedClient) return;
+    
+    const pdfData: ProspectAnalysisData = {
+      clientName: `${selectedClient.first_name || "Sans"} ${selectedClient.last_name || "nom"}`,
+      clientEmail: selectedClient.email,
+      analysisDate: new Date(historyItem.created_at),
+      eventsAnalyzed: historyItem.events_analyzed,
+      budgetProbable: historyItem.budget_probable || "Non défini",
+      intentionPrincipale: historyItem.intention_principale || "Non défini",
+      confiance: historyItem.confiance || "Non défini",
+      produitsSuggeres: historyItem.produits_suggeres || [],
+      analyseResume: historyItem.analyse_resume || "",
+    };
+    
+    downloadProspectAnalysisPDF(pdfData);
+    toast.success("Export PDF en cours...");
   };
 
   const getBudgetColor = (budget: string) => {
@@ -404,12 +498,12 @@ export function CRM360() {
                   </Card>
                 </div>
 
-                {/* AI Analysis Button */}
-                <div className="border-t pt-4">
+                {/* AI Analysis Buttons */}
+                <div className="border-t pt-4 flex gap-2">
                   <Button 
                     onClick={() => analyzeProspect(selectedClient.user_id)}
                     disabled={isAnalyzing}
-                    className="w-full gap-2"
+                    className="flex-1 gap-2"
                     variant="outline"
                   >
                     {isAnalyzing ? (
@@ -420,22 +514,91 @@ export function CRM360() {
                     ) : (
                       <>
                         <BrainCircuit className="h-4 w-4" />
-                        Analyser le comportement avec l'IA
+                        Analyser avec l'IA
                       </>
                     )}
                   </Button>
+                  {(analysisHistory?.length ?? 0) > 0 && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowHistory(!showHistory)}
+                      className="gap-2"
+                    >
+                      <History className="h-4 w-4" />
+                      Historique ({analysisHistory?.length})
+                    </Button>
+                  )}
                 </div>
+
+                {/* Analysis History */}
+                {showHistory && (analysisHistory?.length ?? 0) > 0 && (
+                  <div className="border rounded-lg p-4 bg-muted/20 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium flex items-center gap-2">
+                        <History className="h-4 w-4" />
+                        Historique des analyses
+                      </h4>
+                    </div>
+                    <ScrollArea className="h-[200px]">
+                      <div className="space-y-2">
+                        {analysisHistory?.map((item) => (
+                          <div key={item.id} className="p-3 rounded-lg bg-background border text-sm">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-muted-foreground">
+                                {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
+                              </span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleExportHistoryPDF(item)}
+                                className="h-7 gap-1"
+                              >
+                                <Download className="h-3 w-3" />
+                                PDF
+                              </Button>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge className={getBudgetColor(item.budget_probable || "")}>
+                                {item.budget_probable || "?"}
+                              </Badge>
+                              <Badge variant="outline">{item.intention_principale || "?"}</Badge>
+                              <Badge variant="secondary">{item.confiance || "?"}</Badge>
+                            </div>
+                            {item.analyse_resume && (
+                              <p className="text-xs text-muted-foreground mt-2 italic line-clamp-2">
+                                "{item.analyse_resume}"
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </ScrollArea>
+                  </div>
+                )}
 
                 {/* AI Analysis Results */}
                 {analysisResult && (
                   <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <Sparkles className="h-4 w-4 text-primary" />
-                      Analyse IA
-                      {analysisResult.events_analyzed && (
-                        <span className="text-muted-foreground font-normal">
-                          ({analysisResult.events_analyzed} événements analysés)
-                        </span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm font-medium">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        Analyse IA
+                        {analysisResult.events_analyzed && (
+                          <span className="text-muted-foreground font-normal">
+                            ({analysisResult.events_analyzed} événements)
+                          </span>
+                        )}
+                      </div>
+                      {analysisResult.status === "success" && analysisResult.analysis && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleExportPDF(analysisResult.analysis!, analysisResult.events_analyzed || 0)}
+                          className="gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Exporter PDF
+                        </Button>
                       )}
                     </div>
 

@@ -1020,6 +1020,48 @@ export type Database = {
         }
         Relationships: []
       }
+      prospect_analyses: {
+        Row: {
+          analyse_resume: string | null
+          budget_probable: string | null
+          confiance: string | null
+          created_at: string
+          events_analyzed: number | null
+          id: string
+          intention_principale: string | null
+          produits_suggeres: Json | null
+          raw_response: Json | null
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          analyse_resume?: string | null
+          budget_probable?: string | null
+          confiance?: string | null
+          created_at?: string
+          events_analyzed?: number | null
+          id?: string
+          intention_principale?: string | null
+          produits_suggeres?: Json | null
+          raw_response?: Json | null
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          analyse_resume?: string | null
+          budget_probable?: string | null
+          confiance?: string | null
+          created_at?: string
+          events_analyzed?: number | null
+          id?: string
+          intention_principale?: string | null
+          produits_suggeres?: Json | null
+          raw_response?: Json | null
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       quotes: {
         Row: {
           activity_duration: string | null
