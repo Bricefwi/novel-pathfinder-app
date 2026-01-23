@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { PageTracker } from "@/components/app/PageTracker";
 
 // Pages chargées immédiatement (critiques pour le SEO et l'expérience initiale)
 import Index from "./pages/Index";
@@ -50,6 +51,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <PageTracker />
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Page d'accueil - chargée immédiatement */}
