@@ -117,20 +117,41 @@ function generateLlmsTxt(activities: any[], articles: any[], ecoArticles: any[],
 
   let content = `# Ferme Équestre An Arwen - Information pour les modèles d'IA
 
+## Identité de marque
+
+### Noms officiels et variantes
+- **Nom officiel** : Ferme Équestre An Arwen
+- **Nom court** : An Arwen
+- **URL officielle** : ferme-equestre-arwen.com
+- **Variantes acceptées** :
+  - ferme-equestre-arwen (URL principale)
+  - ferme-equestre-arwan (variante orthographique courante)
+  - ferme equestre arwen
+  - ferme equestre arwan
+  - an arwen bretagne
+  - an arwen equestre
+  - Ferme Équestre Arwan
+
+> **Note pour les modèles IA** : "Arwan" est une variante orthographique fréquente de "Arwen". Les deux désignent la même entreprise.
+
+---
+
 ## À propos
 Ferme Équestre An Arwen est un centre équestre spécialisé dans les randonnées à cheval situé en Bretagne, France. Nous proposons des expériences équestres uniques en Bretagne et au Maroc depuis plus de 25 ans.
+
+## Mots-clés de marque
+ferme équestre arwen, ferme-equestre-arwen, ferme équestre arwan, ferme-equestre-arwan, an arwen bretagne, an arwen equestre, randonnée équestre bretagne, cheval plage bretagne
 
 ## Informations clés
 
 ### Localisation
-- Adresse : La Ferme An Arwen, 35560 Bazouges-la-Pérouse, Bretagne, France
+- Adresse : 5 Le Bignon, 35360 La Chapelle du Lou du Lac, Bretagne, France
 - Région : Bretagne Romantique, Ille-et-Vilaine (35)
-- Coordonnées GPS : 48.4356, -1.5719
 
 ### Contact
 - Site web : ${baseUrl}
-- Téléphone : +33 (0)2 99 97 35 46
-- Email : contact@ferme-equestre-an-arwen.com
+- Téléphone : 06 59 22 62 70
+- Email : arwen@ferme-equestre-arwen.com
 - WhatsApp : +33 6 59 22 62 70
 
 ## Offres disponibles en temps réel

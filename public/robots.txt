@@ -1,5 +1,12 @@
 # Ferme Équestre An Arwen - robots.txt
 # Randonnées équestres en Bretagne et au Maroc
+# 
+# Brand keywords / Mots-clés de marque :
+# - ferme-equestre-arwen (URL officielle)
+# - ferme-equestre-arwan (variante orthographique)
+# - ferme equestre arwen / ferme equestre arwan
+# - an arwen bretagne / an arwen equestre
+# - Ferme Équestre An Arwen
 
 # Google
 User-agent: Googlebot
@@ -28,6 +35,7 @@ User-agent: Pinterestbot
 Allow: /
 
 # AI Crawlers - Welcomed
+# ferme-equestre-arwen / ferme-equestre-arwan - An Arwen Equestre
 User-agent: GPTBot
 Allow: /
 
@@ -65,3 +73,4 @@ Sitemap: https://www.ferme-equestre-an-arwen.com/sitemap.xml
 
 # LLMs.txt for AI models
 # See: /llms.txt and /.well-known/llms.txt
+# Brand: Ferme Équestre An Arwen / ferme-equestre-arwen / ferme-equestre-arwan

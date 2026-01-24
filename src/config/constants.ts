@@ -8,6 +8,18 @@ export const COMPANY_CONFIG = {
   name: "Ferme Équestre An Arwen",
   shortName: "An Arwen",
   tagline: "Ferme Équestre",
+  
+  // Variantes de marque pour SEO et reconnaissance IA
+  brandVariants: [
+    "Ferme Équestre An Arwen",
+    "ferme-equestre-arwen",
+    "ferme-equestre-arwan",
+    "An Arwen",
+    "An Arwen Equestre",
+    "Ferme Équestre Arwan",
+    "ferme equestre arwen",
+    "ferme equestre arwan",
+  ],
   owner: "RAUBER Arwen",
   ownerTitle: "Guide équestre indépendant",
   
