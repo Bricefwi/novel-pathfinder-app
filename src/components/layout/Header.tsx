@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, User, Heart, LogOut, ChevronDown, Scale, MessageCircle, Shield, CalendarDays } from "lucide-react";
+import { Menu, X, User, Heart, LogOut, ChevronDown, Scale, MessageCircle, Shield, CalendarDays, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -20,6 +21,12 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const navigation = [
   { name: "Accueil", href: "/" },
@@ -45,11 +52,43 @@ const authNavigation = [
   { name: "Mon Espace", href: "/mon-espace" },
 ];
 
+interface Profile {
+  first_name: string | null;
+  last_name: string | null;
+  phone: string | null;
+  riding_level: string | null;
+  riding_experience_years: number | null;
+  dream_destinations: string[] | null;
+  preferred_trip_types: string[] | null;
+  interests: string[] | null;
+  riding_style: string[] | null;
+  travel_style: string | null;
+}
+
+const calculateProfileCompletion = (p: Profile | null): number => {
+  if (!p) return 0;
+  const fields = [
+    p.first_name,
+    p.last_name,
+    p.phone,
+    p.riding_level,
+    p.riding_experience_years,
+    p.dream_destinations?.length,
+    p.preferred_trip_types?.length,
+    p.interests?.length,
+    p.riding_style?.length,
+    p.travel_style,
+  ];
+  const filled = fields.filter(Boolean).length;
+  return Math.round((filled / fields.length) * 100);
+};
+
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -66,15 +105,26 @@ export function Header() {
         setUser(session?.user ?? null);
         if (session?.user) {
           // Check admin role
-          const { data } = await supabase
+          const { data: roleData } = await supabase
             .from("user_roles")
             .select("role")
             .eq("user_id", session.user.id)
             .eq("role", "admin")
             .single();
-          setIsAdmin(!!data);
+          setIsAdmin(!!roleData);
+          
+          // Check profile completion
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("first_name, last_name, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_style")
+            .eq("user_id", session.user.id)
+            .single();
+          
+          const completion = calculateProfileCompletion(profileData);
+          setIsProfileComplete(completion === 100);
         } else {
           setIsAdmin(false);
+          setIsProfileComplete(false);
         }
       }
     );
@@ -82,13 +132,23 @@ export function Header() {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        const { data } = await supabase
+        const { data: roleData } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", session.user.id)
           .eq("role", "admin")
           .single();
-        setIsAdmin(!!data);
+        setIsAdmin(!!roleData);
+        
+        // Check profile completion
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("first_name, last_name, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_style")
+          .eq("user_id", session.user.id)
+          .single();
+        
+        const completion = calculateProfileCompletion(profileData);
+        setIsProfileComplete(completion === 100);
       }
     });
 
@@ -179,14 +239,53 @@ export function Header() {
 
           {/* Actions */}
           <div className="flex items-center space-x-3">
+            {/* Verified Profile Badge */}
+            {user && isProfileComplete && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge 
+                      variant="secondary" 
+                      className="hidden sm:flex gap-1.5 bg-green-500/10 text-green-700 border-green-500/30 hover:bg-green-500/20 cursor-default"
+                    >
+                      <BadgeCheck className="h-3.5 w-3.5" />
+                      <span className="hidden md:inline">Profil vérifié</span>
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Votre profil est complet à 100% !</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
+                  <Button variant="ghost" size="icon" className="rounded-full relative">
                     <User className="h-5 w-5" />
+                    {isProfileComplete && (
+                      <span className="absolute -top-0.5 -right-0.5 sm:hidden">
+                        <BadgeCheck className="h-3.5 w-3.5 text-green-600 fill-green-100" />
+                      </span>
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
+                  {isProfileComplete && (
+                    <>
+                      <div className="px-2 py-1.5">
+                        <Badge 
+                          variant="secondary" 
+                          className="w-full justify-center gap-1.5 bg-green-500/10 text-green-700 border-green-500/30"
+                        >
+                          <BadgeCheck className="h-3.5 w-3.5" />
+                          Cavalier Vérifié
+                        </Badge>
+                      </div>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem asChild>
                     <Link to="/mon-espace" className="flex items-center">
                       <User className="mr-2 h-4 w-4" />
