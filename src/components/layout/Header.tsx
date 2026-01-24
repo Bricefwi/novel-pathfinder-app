@@ -28,6 +28,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { calculateProfileCompletion, type ProfileForCompletion } from "@/lib/profile-utils";
 
 const navigation = [
   { name: "Accueil", href: "/" },
@@ -52,37 +53,6 @@ const legalNavigation = [
 const authNavigation = [
   { name: "Mon Espace", href: "/mon-espace" },
 ];
-
-interface Profile {
-  first_name: string | null;
-  last_name: string | null;
-  phone: string | null;
-  riding_level: string | null;
-  riding_experience_years: number | null;
-  dream_destinations: string[] | null;
-  preferred_trip_types: string[] | null;
-  interests: string[] | null;
-  riding_style: string[] | null;
-  travel_style: string | null;
-}
-
-const calculateProfileCompletion = (p: Profile | null): number => {
-  if (!p) return 0;
-  const fields = [
-    p.first_name,
-    p.last_name,
-    p.phone,
-    p.riding_level,
-    p.riding_experience_years,
-    p.dream_destinations?.length,
-    p.preferred_trip_types?.length,
-    p.interests?.length,
-    p.riding_style?.length,
-    p.travel_style,
-  ];
-  const filled = fields.filter(Boolean).length;
-  return Math.round((filled / fields.length) * 100);
-};
 
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
@@ -123,7 +93,7 @@ export function Header() {
             .eq("user_id", session.user.id)
             .single();
           
-          const completion = calculateProfileCompletion(profileData);
+          const completion = calculateProfileCompletion(profileData as ProfileForCompletion | null);
           setIsProfileComplete(completion === 100);
           
           // Set avatar (from profile or OAuth metadata)
@@ -164,7 +134,7 @@ export function Header() {
           .eq("user_id", session.user.id)
           .single();
         
-        const completion = calculateProfileCompletion(profileData);
+        const completion = calculateProfileCompletion(profileData as ProfileForCompletion | null);
         setIsProfileComplete(completion === 100);
         
         // Set avatar (from profile or OAuth metadata)

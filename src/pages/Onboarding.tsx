@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +58,15 @@ const RIDING_LEVELS = [
   },
 ];
 
+const RIDING_STYLES = [
+  { value: "randonnee", label: "Randonnée", emoji: "🏔️" },
+  { value: "dressage", label: "Dressage", emoji: "🎩" },
+  { value: "saut", label: "Saut d'obstacles", emoji: "🏇" },
+  { value: "western", label: "Western", emoji: "🤠" },
+  { value: "endurance", label: "Endurance", emoji: "🏃" },
+  { value: "ethologique", label: "Éthologique", emoji: "🐴" },
+];
+
 const DESTINATIONS = [
   { name: "Bretagne", emoji: "🌊" },
   { name: "Maroc", emoji: "🏜️" },
@@ -79,6 +87,24 @@ const TRIP_TYPES = [
   { value: "culture", label: "Culture & Cheval", emoji: "🏛️" },
   { value: "famille", label: "En famille", emoji: "👨‍👩‍👧‍👦" },
   { value: "photo", label: "Photo & Nature", emoji: "📸" },
+];
+
+const INTERESTS = [
+  { value: "nature", label: "Nature", emoji: "🌿" },
+  { value: "photographie", label: "Photographie", emoji: "📷" },
+  { value: "gastronomie", label: "Gastronomie", emoji: "🍽️" },
+  { value: "histoire", label: "Histoire", emoji: "📜" },
+  { value: "meditation", label: "Méditation", emoji: "🧘" },
+  { value: "aventure", label: "Aventure", emoji: "🧗" },
+  { value: "animaux", label: "Animaux", emoji: "🐕" },
+  { value: "bien-etre", label: "Bien-être", emoji: "💆" },
+];
+
+const TRAVEL_STYLES = [
+  { value: "solo", label: "Solo", emoji: "🚶" },
+  { value: "couple", label: "En couple", emoji: "💑" },
+  { value: "famille", label: "En famille", emoji: "👨‍👩‍👧" },
+  { value: "groupe", label: "En groupe", emoji: "👥" },
 ];
 
 const BUDGET_LABELS: Record<number, string> = {
@@ -105,10 +131,14 @@ const Onboarding = () => {
     phone: "",
     avatar_url: "",
     riding_level: "",
+    riding_experience_years: 0,
+    riding_style: [] as string[],
     height_cm: 170,
     weight_kg: 70,
     dream_destinations: [] as string[],
-    travel_preferences: [] as string[],
+    preferred_trip_types: [] as string[],
+    interests: [] as string[],
+    travel_style: "",
     budget_range: "1500",
   });
 
@@ -151,10 +181,14 @@ const Onboarding = () => {
         phone: profile.phone || "",
         avatar_url: profile.avatar_url || session.user.user_metadata?.avatar_url || "",
         riding_level: profile.riding_level || "",
+        riding_experience_years: profile.riding_experience_years || 0,
+        riding_style: profile.riding_style || [],
         height_cm: profile.height_cm || 170,
         weight_kg: profile.weight_kg || 70,
         dream_destinations: profile.dream_destinations || [],
-        travel_preferences: profile.travel_preferences || [],
+        preferred_trip_types: profile.preferred_trip_types || [],
+        interests: profile.interests || [],
+        travel_style: profile.travel_style || "",
         budget_range: profile.budget_range || "1500",
       });
     }
@@ -219,10 +253,18 @@ const Onboarding = () => {
         toast.error("Veuillez renseigner votre nom et prénom");
         return;
       }
+      if (!formData.phone.trim()) {
+        toast.error("Veuillez renseigner votre numéro de téléphone");
+        return;
+      }
     }
     if (currentStep === 2) {
       if (!formData.riding_level) {
         toast.error("Veuillez sélectionner votre niveau équestre");
+        return;
+      }
+      if (formData.riding_style.length === 0) {
+        toast.error("Veuillez sélectionner au moins un style d'équitation");
         return;
       }
     }
@@ -239,6 +281,24 @@ const Onboarding = () => {
   };
 
   const handleSubmit = async () => {
+    // Final validation
+    if (formData.dream_destinations.length === 0) {
+      toast.error("Veuillez sélectionner au moins une destination rêvée");
+      return;
+    }
+    if (formData.preferred_trip_types.length === 0) {
+      toast.error("Veuillez sélectionner au moins un type de voyage");
+      return;
+    }
+    if (formData.interests.length === 0) {
+      toast.error("Veuillez sélectionner au moins un centre d'intérêt");
+      return;
+    }
+    if (!formData.travel_style) {
+      toast.error("Veuillez sélectionner votre style de voyage");
+      return;
+    }
+
     if (!userId) return;
     setLoading(true);
 
@@ -250,10 +310,14 @@ const Onboarding = () => {
         phone: formData.phone,
         avatar_url: formData.avatar_url,
         riding_level: formData.riding_level as "debutant" | "intermediaire" | "confirme" | "expert" | null,
+        riding_experience_years: formData.riding_experience_years,
+        riding_style: formData.riding_style,
         height_cm: formData.height_cm,
         weight_kg: formData.weight_kg,
         dream_destinations: formData.dream_destinations,
-        travel_preferences: formData.travel_preferences,
+        preferred_trip_types: formData.preferred_trip_types,
+        interests: formData.interests,
+        travel_style: formData.travel_style,
         budget_range: formData.budget_range,
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
@@ -429,7 +493,7 @@ const Onboarding = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Téléphone</Label>
+                    <Label htmlFor="phone">Téléphone *</Label>
                     <Input
                       id="phone"
                       type="tel"
@@ -474,6 +538,48 @@ const Onboarding = () => {
                     </RadioGroup>
                   </div>
 
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <Label className="text-base">Années d'expérience</Label>
+                      <span className="text-sm font-medium text-primary">
+                        {formData.riding_experience_years} an{formData.riding_experience_years > 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <Slider
+                      value={[formData.riding_experience_years]}
+                      onValueChange={([value]) => updateFormData("riding_experience_years", value)}
+                      min={0}
+                      max={30}
+                      step={1}
+                      className="py-4"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Débutant</span>
+                      <span>30+ ans</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <Label className="text-base">Votre style d'équitation *</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {RIDING_STYLES.map((style) => (
+                        <button
+                          key={style.value}
+                          type="button"
+                          className={`p-3 rounded-xl border-2 text-center transition-all ${
+                            formData.riding_style.includes(style.value)
+                              ? "border-primary bg-primary/10"
+                              : "border-border hover:border-primary/30"
+                          }`}
+                          onClick={() => toggleArrayItem("riding_style", style.value)}
+                        >
+                          <span className="text-xl block mb-1">{style.emoji}</span>
+                          <span className="text-xs font-medium">{style.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div className="p-4 bg-muted/50 rounded-xl space-y-4">
                     <div className="flex items-start gap-2">
                       <Info className="h-4 w-4 text-primary mt-0.5" />
@@ -515,7 +621,7 @@ const Onboarding = () => {
               {currentStep === 3 && (
                 <>
                   <div className="space-y-4">
-                    <Label className="text-base">Quelles destinations vous font rêver ?</Label>
+                    <Label className="text-base">Quelles destinations vous font rêver ? *</Label>
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                       {DESTINATIONS.map((dest) => (
                         <button
@@ -536,21 +642,63 @@ const Onboarding = () => {
                   </div>
 
                   <div className="space-y-4">
-                    <Label className="text-base">Votre style de voyage idéal</Label>
+                    <Label className="text-base">Type de séjour préféré *</Label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {TRIP_TYPES.map((type) => (
                         <button
                           key={type.value}
                           type="button"
                           className={`p-3 rounded-xl border-2 text-center transition-all ${
-                            formData.travel_preferences.includes(type.value)
+                            formData.preferred_trip_types.includes(type.value)
                               ? "border-primary bg-primary/10"
                               : "border-border hover:border-primary/30"
                           }`}
-                          onClick={() => toggleArrayItem("travel_preferences", type.value)}
+                          onClick={() => toggleArrayItem("preferred_trip_types", type.value)}
                         >
                           <span className="text-xl block mb-1">{type.emoji}</span>
                           <span className="text-xs font-medium">{type.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <Label className="text-base">Vos centres d'intérêt *</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {INTERESTS.map((interest) => (
+                        <button
+                          key={interest.value}
+                          type="button"
+                          className={`p-3 rounded-xl border-2 text-center transition-all ${
+                            formData.interests.includes(interest.value)
+                              ? "border-primary bg-primary/10"
+                              : "border-border hover:border-primary/30"
+                          }`}
+                          onClick={() => toggleArrayItem("interests", interest.value)}
+                        >
+                          <span className="text-xl block mb-1">{interest.emoji}</span>
+                          <span className="text-xs font-medium">{interest.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <Label className="text-base">Votre style de voyage *</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {TRAVEL_STYLES.map((style) => (
+                        <button
+                          key={style.value}
+                          type="button"
+                          className={`p-3 rounded-xl border-2 text-center transition-all ${
+                            formData.travel_style === style.value
+                              ? "border-primary bg-primary/10"
+                              : "border-border hover:border-primary/30"
+                          }`}
+                          onClick={() => updateFormData("travel_style", style.value)}
+                        >
+                          <span className="text-xl block mb-1">{style.emoji}</span>
+                          <span className="text-xs font-medium">{style.label}</span>
                         </button>
                       ))}
                     </div>

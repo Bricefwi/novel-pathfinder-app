@@ -42,6 +42,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import type { AdminModule } from "./ControlTower";
 import logoAnArwen from "@/assets/logo-an-arwen.png";
+import { calculateProfileCompletion, type ProfileForCompletion } from "@/lib/profile-utils";
 
 interface ControlTowerSidebarProps {
   activeModule: AdminModule;
@@ -49,37 +50,9 @@ interface ControlTowerSidebarProps {
   onOpenCommand: () => void;
 }
 
-interface UserProfile {
-  first_name: string | null;
-  last_name: string | null;
+interface UserProfile extends ProfileForCompletion {
   avatar_url: string | null;
-  phone: string | null;
-  riding_level: string | null;
-  riding_experience_years: number | null;
-  dream_destinations: string[] | null;
-  preferred_trip_types: string[] | null;
-  interests: string[] | null;
-  riding_style: string[] | null;
-  travel_style: string | null;
 }
-
-const calculateProfileCompletion = (p: UserProfile | null): number => {
-  if (!p) return 0;
-  const fields = [
-    p.first_name,
-    p.last_name,
-    p.phone,
-    p.riding_level,
-    p.riding_experience_years,
-    p.dream_destinations?.length,
-    p.preferred_trip_types?.length,
-    p.interests?.length,
-    p.riding_style?.length,
-    p.travel_style,
-  ];
-  const filled = fields.filter(Boolean).length;
-  return Math.round((filled / fields.length) * 100);
-};
 
 const CORE_MODULES = [
   { id: "dashboard" as const, label: "Vue d'ensemble", icon: LayoutDashboard },

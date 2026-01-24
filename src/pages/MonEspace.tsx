@@ -26,22 +26,13 @@ import {
   ChevronRight
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
+import { calculateProfileCompletion, type ProfileForCompletion } from "@/lib/profile-utils";
 
-interface Profile {
+interface Profile extends ProfileForCompletion {
   id: string;
-  first_name: string | null;
-  last_name: string | null;
-  phone: string | null;
   avatar_url: string | null;
-  riding_level: string | null;
   bio: string | null;
-  riding_experience_years: number | null;
-  riding_style: string[] | null;
-  dream_destinations: string[] | null;
-  preferred_trip_types: string[] | null;
   preferred_duration: string | null;
-  travel_style: string | null;
-  interests: string[] | null;
   onboarding_completed: boolean | null;
 }
 
@@ -77,25 +68,6 @@ const MonEspace = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("accueil");
   const [hasShownProfileNotification, setHasShownProfileNotification] = useState(false);
-
-  // Calculate profile completion percentage
-  const calculateProfileCompletion = (p: Profile | null): number => {
-    if (!p) return 0;
-    const fields = [
-      p.first_name,
-      p.last_name,
-      p.phone,
-      p.riding_level,
-      p.riding_experience_years,
-      p.dream_destinations?.length,
-      p.preferred_trip_types?.length,
-      p.interests?.length,
-      p.riding_style?.length,
-      p.travel_style,
-    ];
-    const filled = fields.filter(Boolean).length;
-    return Math.round((filled / fields.length) * 100);
-  };
 
   const profileCompletion = calculateProfileCompletion(profile);
   const isProfileComplete = profileCompletion === 100;
