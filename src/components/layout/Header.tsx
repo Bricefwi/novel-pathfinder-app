@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X, User, Heart, LogOut, ChevronDown, Scale, MessageCircle, Shield, CalendarDays, BadgeCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
@@ -89,6 +90,8 @@ export function Header() {
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [userInitials, setUserInitials] = useState<string>("U");
   const location = useLocation();
 
   useEffect(() => {
@@ -113,18 +116,32 @@ export function Header() {
             .single();
           setIsAdmin(!!roleData);
           
-          // Check profile completion
+          // Check profile completion and get avatar
           const { data: profileData } = await supabase
             .from("profiles")
-            .select("first_name, last_name, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_style")
+            .select("first_name, last_name, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_style, avatar_url")
             .eq("user_id", session.user.id)
             .single();
           
           const completion = calculateProfileCompletion(profileData);
           setIsProfileComplete(completion === 100);
+          
+          // Set avatar (from profile or OAuth metadata)
+          const avatarFromProfile = profileData?.avatar_url;
+          const avatarFromOAuth = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;
+          setAvatarUrl(avatarFromProfile || avatarFromOAuth || null);
+          
+          // Set initials
+          if (profileData?.first_name || profileData?.last_name) {
+            setUserInitials(`${profileData.first_name?.charAt(0) || ""}${profileData.last_name?.charAt(0) || ""}`.toUpperCase() || "U");
+          } else {
+            setUserInitials(session.user.email?.charAt(0).toUpperCase() || "U");
+          }
         } else {
           setIsAdmin(false);
           setIsProfileComplete(false);
+          setAvatarUrl(null);
+          setUserInitials("U");
         }
       }
     );
@@ -140,15 +157,27 @@ export function Header() {
           .single();
         setIsAdmin(!!roleData);
         
-        // Check profile completion
+        // Check profile completion and get avatar
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("first_name, last_name, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_style")
+          .select("first_name, last_name, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_style, avatar_url")
           .eq("user_id", session.user.id)
           .single();
         
         const completion = calculateProfileCompletion(profileData);
         setIsProfileComplete(completion === 100);
+        
+        // Set avatar (from profile or OAuth metadata)
+        const avatarFromProfile = profileData?.avatar_url;
+        const avatarFromOAuth = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;
+        setAvatarUrl(avatarFromProfile || avatarFromOAuth || null);
+        
+        // Set initials
+        if (profileData?.first_name || profileData?.last_name) {
+          setUserInitials(`${profileData.first_name?.charAt(0) || ""}${profileData.last_name?.charAt(0) || ""}`.toUpperCase() || "U");
+        } else {
+          setUserInitials(session.user.email?.charAt(0).toUpperCase() || "U");
+        }
       }
     });
 
@@ -262,11 +291,18 @@ export function Header() {
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full relative">
-                    <User className="h-5 w-5" />
+                  <Button variant="ghost" size="icon" className="rounded-full relative p-0 h-9 w-9">
+                    <Avatar className="h-9 w-9 border-2 border-primary/20">
+                      {avatarUrl ? (
+                        <AvatarImage src={avatarUrl} alt="Avatar" />
+                      ) : null}
+                      <AvatarFallback className="text-sm bg-primary/10 text-primary">
+                        {userInitials}
+                      </AvatarFallback>
+                    </Avatar>
                     {isProfileComplete && (
-                      <span className="absolute -top-0.5 -right-0.5 sm:hidden">
-                        <BadgeCheck className="h-3.5 w-3.5 text-green-600 fill-green-100" />
+                      <span className="absolute -bottom-0.5 -right-0.5">
+                        <BadgeCheck className="h-4 w-4 text-green-600 fill-green-100" />
                       </span>
                     )}
                   </Button>

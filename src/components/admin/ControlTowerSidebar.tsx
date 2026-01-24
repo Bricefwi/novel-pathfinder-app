@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Sidebar,
@@ -13,6 +14,8 @@ import {
   SidebarSeparator,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
   LayoutDashboard,
   Package,
@@ -34,6 +37,7 @@ import {
   Settings,
   LogOut,
   ExternalLink,
+  BadgeCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { AdminModule } from "./ControlTower";
@@ -44,6 +48,38 @@ interface ControlTowerSidebarProps {
   onModuleChange: (module: AdminModule) => void;
   onOpenCommand: () => void;
 }
+
+interface UserProfile {
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  phone: string | null;
+  riding_level: string | null;
+  riding_experience_years: number | null;
+  dream_destinations: string[] | null;
+  preferred_trip_types: string[] | null;
+  interests: string[] | null;
+  riding_style: string[] | null;
+  travel_style: string | null;
+}
+
+const calculateProfileCompletion = (p: UserProfile | null): number => {
+  if (!p) return 0;
+  const fields = [
+    p.first_name,
+    p.last_name,
+    p.phone,
+    p.riding_level,
+    p.riding_experience_years,
+    p.dream_destinations?.length,
+    p.preferred_trip_types?.length,
+    p.interests?.length,
+    p.riding_style?.length,
+    p.travel_style,
+  ];
+  const filled = fields.filter(Boolean).length;
+  return Math.round((filled / fields.length) * 100);
+};
 
 const CORE_MODULES = [
   { id: "dashboard" as const, label: "Vue d'ensemble", icon: LayoutDashboard },
@@ -72,10 +108,42 @@ const LEGACY_MODULES = [
 
 export function ControlTowerSidebar({ activeModule, onModuleChange, onOpenCommand }: ControlTowerSidebarProps) {
   const navigate = useNavigate();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [isProfileComplete, setIsProfileComplete] = useState(false);
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUserEmail(session.user.email || "");
+        
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("first_name, last_name, avatar_url, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_style")
+          .eq("user_id", session.user.id)
+          .single();
+        
+        if (profileData) {
+          setProfile(profileData);
+          setIsProfileComplete(calculateProfileCompletion(profileData) === 100);
+        }
+      }
+    };
+    
+    fetchUserProfile();
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
+  };
+
+  const getInitials = () => {
+    if (profile?.first_name || profile?.last_name) {
+      return `${profile.first_name?.charAt(0) || ""}${profile.last_name?.charAt(0) || ""}`.toUpperCase();
+    }
+    return userEmail.charAt(0).toUpperCase();
   };
 
   const renderMenuItem = (item: { id: AdminModule; label: string; icon: React.ElementType; badge?: string }) => (
@@ -165,6 +233,43 @@ export function ControlTowerSidebar({ activeModule, onModuleChange, onOpenComman
       </SidebarContent>
 
       <SidebarFooter className="border-t pt-2">
+        {/* User Profile Section */}
+        <div className="px-2 py-3 mb-2 group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:py-2">
+          <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
+            <div className="relative">
+              <Avatar className="h-9 w-9 border-2 border-primary/20">
+                {profile?.avatar_url ? (
+                  <AvatarImage src={profile.avatar_url} alt="Avatar" />
+                ) : null}
+                <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                  {getInitials()}
+                </AvatarFallback>
+              </Avatar>
+              {isProfileComplete && (
+                <span className="absolute -bottom-0.5 -right-0.5">
+                  <BadgeCheck className="h-4 w-4 text-green-600 fill-green-100" />
+                </span>
+              )}
+            </div>
+            <div className="flex flex-col group-data-[collapsible=icon]:hidden min-w-0">
+              <span className="text-sm font-medium truncate">
+                {profile?.first_name ? `${profile.first_name} ${profile.last_name || ""}`.trim() : "Admin"}
+              </span>
+              {isProfileComplete ? (
+                <Badge 
+                  variant="secondary" 
+                  className="w-fit text-[10px] px-1.5 py-0 gap-1 bg-green-500/10 text-green-700 border-green-500/30"
+                >
+                  <BadgeCheck className="h-2.5 w-2.5" />
+                  Profil vérifié
+                </Badge>
+              ) : (
+                <span className="text-xs text-muted-foreground truncate">{userEmail}</span>
+              )}
+            </div>
+          </div>
+        </div>
+
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton onClick={() => navigate("/admin/diagnostics")} tooltip="Diagnostics Système">
