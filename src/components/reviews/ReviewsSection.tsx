@@ -6,6 +6,8 @@ import { ReviewCard } from "./ReviewCard";
 import { ReviewForm } from "./ReviewForm";
 import { supabase } from "@/integrations/supabase/client";
 
+import { calculateProfileCompletion, type ProfileForCompletion } from "@/lib/profile-utils";
+
 interface Review {
   id: string;
   content: string;
@@ -17,6 +19,7 @@ interface Review {
     last_name: string | null;
     avatar_url: string | null;
   } | null;
+  isVerified?: boolean;
 }
 
 export function ReviewsSection() {
@@ -53,22 +56,27 @@ export function ReviewsSection() {
 
       if (error) throw error;
 
-      // Fetch profiles for each review
+      // Fetch profiles for each review (including completion fields)
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map((r) => r.user_id))];
         const { data: profilesData } = await supabase
           .from("profiles")
-          .select("user_id, first_name, last_name, avatar_url")
+          .select("user_id, first_name, last_name, avatar_url, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_style")
           .in("user_id", userIds);
 
         const profilesMap = new Map(
           profilesData?.map((p) => [p.user_id, p]) || []
         );
 
-        const reviewsWithProfiles = data.map((review) => ({
-          ...review,
-          profiles: profilesMap.get(review.user_id) || null,
-        }));
+        const reviewsWithProfiles = data.map((review) => {
+          const profile = profilesMap.get(review.user_id) || null;
+          const isVerified = profile ? calculateProfileCompletion(profile as ProfileForCompletion) === 100 : false;
+          return {
+            ...review,
+            profiles: profile,
+            isVerified,
+          };
+        });
 
         setReviews(reviewsWithProfiles);
       } else {
