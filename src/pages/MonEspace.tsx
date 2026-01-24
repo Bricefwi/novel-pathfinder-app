@@ -4,7 +4,10 @@ import { Layout } from "@/components/layout/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import ChatCommunautaire from "@/components/chat/ChatCommunautaire";
 import { TravelHubOverview } from "@/components/user/TravelHubOverview";
 import { TravelHubTrips } from "@/components/user/TravelHubTrips";
@@ -18,7 +21,9 @@ import {
   FileText, 
   User,
   Bell, 
-  Settings
+  Settings,
+  AlertCircle,
+  ChevronRight
 } from "lucide-react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
@@ -71,6 +76,29 @@ const MonEspace = () => {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("accueil");
+  const [hasShownProfileNotification, setHasShownProfileNotification] = useState(false);
+
+  // Calculate profile completion percentage
+  const calculateProfileCompletion = (p: Profile | null): number => {
+    if (!p) return 0;
+    const fields = [
+      p.first_name,
+      p.last_name,
+      p.phone,
+      p.riding_level,
+      p.riding_experience_years,
+      p.dream_destinations?.length,
+      p.preferred_trip_types?.length,
+      p.interests?.length,
+      p.riding_style?.length,
+      p.travel_style,
+    ];
+    const filled = fields.filter(Boolean).length;
+    return Math.round((filled / fields.length) * 100);
+  };
+
+  const profileCompletion = calculateProfileCompletion(profile);
+  const isProfileComplete = profileCompletion === 100;
 
   // Realtime hook for quotes
   useQuoteRealtime({
@@ -106,7 +134,27 @@ const MonEspace = () => {
       .eq("user_id", userId)
       .single();
 
-    if (profileData) setProfile(profileData);
+    if (profileData) {
+      setProfile(profileData);
+      
+      // Show notification if profile is incomplete (only once per session)
+      const completion = calculateProfileCompletion(profileData);
+      if (completion < 100 && !hasShownProfileNotification) {
+        setHasShownProfileNotification(true);
+        setTimeout(() => {
+          toast.info(
+            `Votre profil est complété à ${completion}%. Finalisez-le pour des recommandations personnalisées ! 🐴`,
+            {
+              duration: 6000,
+              action: {
+                label: "Compléter",
+                onClick: () => navigate("/onboarding"),
+              },
+            }
+          );
+        }, 1500); // Delay for better UX
+      }
+    }
 
     // Fetch bookings
     const { data: bookingsData } = await supabase
@@ -157,7 +205,7 @@ const MonEspace = () => {
       <section className="pt-28 pb-16 min-h-screen bg-gradient-to-b from-background to-muted/20">
         <div className="container mx-auto px-4">
           {/* Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
             <div>
               <h1 className="font-serif text-3xl md:text-4xl font-bold mb-1">
                 Bonjour, <span className="text-primary">{profile?.first_name || "Aventurier"}</span> !
@@ -185,6 +233,32 @@ const MonEspace = () => {
               </Button>
             </div>
           </div>
+
+          {/* Profile Completion Alert */}
+          {!isProfileComplete && (
+            <Alert className="mb-6 border-primary/30 bg-primary/5">
+              <AlertCircle className="h-4 w-4 text-primary" />
+              <AlertDescription className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="font-medium">Profil complété à {profileCompletion}%</span>
+                    <span className="text-sm text-muted-foreground">
+                      ({100 - profileCompletion}% restant)
+                    </span>
+                  </div>
+                  <Progress value={profileCompletion} className="h-2 max-w-xs" />
+                </div>
+                <Button 
+                  size="sm" 
+                  onClick={() => navigate("/onboarding")}
+                  className="shrink-0"
+                >
+                  Compléter mon profil
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
 
           {/* Main Tabs */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
