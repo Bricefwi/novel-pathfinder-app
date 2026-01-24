@@ -96,6 +96,7 @@ const Onboarding = () => {
   const [uploading, setUploading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [isOAuthImported, setIsOAuthImported] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -135,10 +136,9 @@ const Onboarding = () => {
       .single();
 
     if (profile) {
-      // If already completed, redirect
+      // If already completed, user is in edit mode (came from /mon-espace)
       if (profile.onboarding_completed) {
-        navigate("/mon-espace");
-        return;
+        setIsEditMode(true);
       }
       
       // Check if data was imported from OAuth
@@ -264,7 +264,7 @@ const Onboarding = () => {
       toast.error("Erreur lors de la sauvegarde");
       console.error(error);
     } else {
-      toast.success("Bienvenue dans la tribu An Arwen ! 🐴");
+      toast.success(isEditMode ? "Profil mis à jour avec succès ! ✅" : "Bienvenue dans la tribu An Arwen ! 🐴");
       navigate("/mon-espace");
     }
     setLoading(false);
@@ -284,13 +284,15 @@ const Onboarding = () => {
           <div className="text-center mb-8">
             <Badge className="mb-4 gap-2">
               <Sparkles className="w-4 h-4" />
-              Questionnaire de bienvenue
+              {isEditMode ? "Modifier mon profil" : "Questionnaire de bienvenue"}
             </Badge>
             <h1 className="font-serif text-3xl font-bold mb-2">
-              Préparez votre aventure
+              {isEditMode ? "Mettez à jour vos préférences" : "Préparez votre aventure"}
             </h1>
             <p className="text-muted-foreground">
-              Quelques questions pour personnaliser votre expérience
+              {isEditMode 
+                ? "Modifiez vos informations et préférences de voyage"
+                : "Quelques questions pour personnaliser votre expérience"}
             </p>
           </div>
 
