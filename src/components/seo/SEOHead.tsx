@@ -13,7 +13,7 @@ interface SEOHeadProps {
 
 const defaultTitle = "Ferme Équestre An Arwen | Randonnées à Cheval Bretagne & Maroc";
 const defaultDescription = "Randonnées équestres en Bretagne et au Maroc. Galops sur les plages bretonnes, traversées du désert marocain. Hébergement yourte insolite. +20 ans d'expérience.";
-const defaultKeywords = "randonnée équestre Bretagne, cheval plage Bretagne, séjour équestre Maroc, yourte Bretagne, galop plage Mont-Saint-Michel, vacances à cheval France, randonnée cheval désert Maroc, centre équestre Ille-et-Vilaine";
+const defaultKeywords = "ferme équestre arwen, ferme equestre arwen, ferme-equestre-arwen, ferme équestre arwan, ferme equestre arwan, ferme-equestre-arwan, an arwen bretagne, an arwen equestre, randonnée équestre Bretagne, cheval plage Bretagne, séjour équestre Maroc, yourte Bretagne, galop plage Mont-Saint-Michel, vacances à cheval France, randonnée cheval désert Maroc, centre équestre Ille-et-Vilaine";
 const siteUrl = "https://www.ferme-equestre-an-arwen.com";
 
 export function SEOHead({
