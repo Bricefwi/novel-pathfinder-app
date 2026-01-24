@@ -20,22 +20,13 @@ import {
   Sparkles,
   Edit
 } from "lucide-react";
+import { calculateProfileCompletion, type ProfileForCompletion } from "@/lib/profile-utils";
 
-interface Profile {
+interface Profile extends ProfileForCompletion {
   id: string;
-  first_name: string | null;
-  last_name: string | null;
-  phone: string | null;
   avatar_url: string | null;
-  riding_level: string | null;
   bio: string | null;
-  riding_experience_years: number | null;
-  riding_style: string[] | null;
-  dream_destinations: string[] | null;
-  preferred_trip_types: string[] | null;
   preferred_duration: string | null;
-  travel_style: string | null;
-  interests: string[] | null;
   onboarding_completed: boolean | null;
 }
 
@@ -47,24 +38,6 @@ interface TravelHubProfileProps {
 
 export const TravelHubProfile = ({ profile, userEmail, loading }: TravelHubProfileProps) => {
   const navigate = useNavigate();
-
-  const calculateProfileCompletion = () => {
-    if (!profile) return 0;
-    const fields = [
-      profile.first_name,
-      profile.last_name,
-      profile.phone,
-      profile.riding_level,
-      profile.riding_experience_years,
-      profile.dream_destinations?.length,
-      profile.preferred_trip_types?.length,
-      profile.interests?.length,
-      profile.riding_style?.length,
-      profile.travel_style,
-    ];
-    const filled = fields.filter(Boolean).length;
-    return Math.round((filled / fields.length) * 100);
-  };
 
   const getRidingLevelLabel = (level: string | null) => {
     const labels: Record<string, string> = {
@@ -91,7 +64,7 @@ export const TravelHubProfile = ({ profile, userEmail, loading }: TravelHubProfi
     }
   };
 
-  const profileCompletion = calculateProfileCompletion();
+  const profileCompletion = calculateProfileCompletion(profile);
   const isVerified = profileCompletion === 100;
 
   if (loading) {
