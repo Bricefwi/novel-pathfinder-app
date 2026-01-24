@@ -12,6 +12,7 @@ import { Slider } from "@/components/ui/slider";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { triggerProfileCompleteConfetti } from "@/lib/confetti";
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -328,6 +329,10 @@ const Onboarding = () => {
       toast.error("Erreur lors de la sauvegarde");
       console.error(error);
     } else {
+      // Trigger confetti for first-time profile completion
+      if (!isEditMode) {
+        triggerProfileCompleteConfetti();
+      }
       toast.success(isEditMode ? "Profil mis à jour avec succès ! ✅" : "Bienvenue dans la tribu An Arwen ! 🐴");
       navigate("/mon-espace");
     }

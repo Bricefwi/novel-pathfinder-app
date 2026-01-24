@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X, User, Heart, LogOut, ChevronDown, Scale, MessageCircle, Shield, CalendarDays, BadgeCheck } from "lucide-react";
+import { Menu, X, User, Heart, LogOut, ChevronDown, Scale, MessageCircle, Shield, CalendarDays, BadgeCheck, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { AvatarUploadDialog } from "./AvatarUploadDialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import {
@@ -62,6 +63,7 @@ export function Header() {
   const [isProfileComplete, setIsProfileComplete] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [userInitials, setUserInitials] = useState<string>("U");
+  const [showAvatarDialog, setShowAvatarDialog] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
@@ -159,7 +161,12 @@ export function Header() {
     setIsAdmin(false);
   };
 
+  const handleAvatarUpdate = (newUrl: string) => {
+    setAvatarUrl(newUrl);
+  };
+
   return (
+    <>
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
@@ -292,6 +299,10 @@ export function Header() {
                       <DropdownMenuSeparator />
                     </>
                   )}
+                  <DropdownMenuItem onClick={() => setShowAvatarDialog(true)}>
+                    <Camera className="mr-2 h-4 w-4" />
+                    Changer ma photo
+                  </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/mon-espace" className="flex items-center">
                       <User className="mr-2 h-4 w-4" />
@@ -424,5 +435,18 @@ export function Header() {
         </div>
       </div>
     </header>
+
+      {/* Avatar Upload Dialog */}
+      {user && (
+        <AvatarUploadDialog
+          open={showAvatarDialog}
+          onOpenChange={setShowAvatarDialog}
+          userId={user.id}
+          currentAvatarUrl={avatarUrl}
+          userInitials={userInitials}
+          onAvatarUpdate={handleAvatarUpdate}
+        />
+      )}
+    </>
   );
 }
