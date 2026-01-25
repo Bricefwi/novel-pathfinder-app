@@ -156,12 +156,16 @@ const Auth = () => {
           toast.error(error.message);
         }
       } else if (data.user) {
-        // Auto-confirm is enabled, so redirect directly
+        // If email confirmation is required, session will be null until user clicks the link.
         if (data.session) {
           toast.success("Inscription réussie ! Bienvenue chez An Arwen 🐴");
           await handlePostLoginRedirect(data.user.id);
         } else {
-          toast.success("Inscription réussie ! Vérifiez votre email pour confirmer.");
+          toast.success(
+            "Compte créé ! Vérifiez votre email et cliquez sur le lien de confirmation, puis connectez-vous."
+          );
+          setIsLogin(true);
+          setShowResendButton(true);
         }
       }
     }
