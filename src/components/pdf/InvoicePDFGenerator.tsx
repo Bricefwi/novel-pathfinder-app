@@ -234,7 +234,7 @@ export const generateInvoicePDF = (data: InvoiceData): string => {
     </div>
     <div class="company-info">
       <p class="company-name">Ferme Équestre An Arwen</p>
-      <p>RAUBER Arwen</p>
+      <p>POTTIER Arwen</p>
       <p>Guide Équestre Indépendant</p>
       <p>Bretagne, France</p>
       <p>contact@ferme-equestre-arwen.com</p>
@@ -358,7 +358,7 @@ export const generateInvoicePDF = (data: InvoiceData): string => {
     <h3>CONDITIONS GÉNÉRALES DE VENTE (Extrait)</h3>
     
     <h4>Article 1 – Statut du prestataire</h4>
-    <p>RAUBER Arwen exerce son activité en qualité de guide équestre indépendant. Les prestations consistent en l'encadrement équestre, la mise à disposition des chevaux et l'organisation technique de randonnées équestres.</p>
+    <p>POTTIER Arwen exerce son activité en qualité de guide équestre indépendant. Les prestations consistent en l'encadrement équestre, la mise à disposition des chevaux et l'organisation technique de randonnées équestres.</p>
     
     <h4>Article 5 – Modalités de paiement</h4>
     <p>Le règlement peut être effectué par virement bancaire, chèque, paiement électronique sécurisé ou espèces. Tout retard de paiement entraîne l'exigibilité immédiate des sommes dues.</p>
@@ -378,10 +378,10 @@ export const generateInvoicePDF = (data: InvoiceData): string => {
   </div>
 
   <div class="footer">
-    <p>Ferme Équestre An Arwen – RAUBER Arwen – Guide Équestre Indépendant</p>
-    <p>SIRET : [À compléter] – TVA non applicable, art. 293 B du CGI</p>
+    <p>Ferme Équestre An Arwen – POTTIER Arwen – Guide Équestre Indépendant</p>
+    <p>SIRET : 80266354200016 – TVA non applicable, art. 293 B du CGI</p>
     <p>contact@ferme-equestre-arwen.com – www.ferme-equestre-arwen.com</p>
-    <p style="margin-top: 10px;">En cas de litige, les tribunaux du ressort du domicile professionnel de RAUBER Arwen sont compétents.</p>
+    <p style="margin-top: 10px;">En cas de litige, les tribunaux du ressort du domicile professionnel de POTTIER Arwen sont compétents.</p>
   </div>
 </body>
 </html>

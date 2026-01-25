@@ -20,11 +20,11 @@ export const COMPANY_CONFIG = {
     "ferme equestre arwen",
     "ferme equestre arwan",
   ],
-  owner: "RAUBER Arwen",
+  owner: "POTTIER Arwen",
   ownerTitle: "Guide équestre indépendant",
   
   // Contact
-  email: "arwen@ferme-equestre-arwen.com",
+  email: "contact@ferme-equestre-arwen.com",
   phone: "06 59 22 62 70",
   phoneMobile: "06 59 22 62 70",
   phoneInternational: "+33659226270",

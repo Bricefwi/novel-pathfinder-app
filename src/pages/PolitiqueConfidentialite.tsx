@@ -19,7 +19,7 @@ const PolitiqueConfidentialite = () => {
                 située au 5 Le Bignon, 35360 La Chapelle du Lou du Lac, France.
               </p>
               <p>
-                <strong>Contact DPO :</strong> contact@ferme-equestre-an-arwen.com
+                <strong>Contact DPO :</strong> contact@ferme-equestre-arwen.com
               </p>
             </section>
 
@@ -100,7 +100,7 @@ const PolitiqueConfidentialite = () => {
                 <li><strong>Droit à la limitation :</strong> limiter le traitement de vos données</li>
               </ul>
               <p className="mt-4">
-                Pour exercer vos droits, contactez-nous à : <strong>contact@ferme-equestre-an-arwen.com</strong>
+                Pour exercer vos droits, contactez-nous à : <strong>contact@ferme-equestre-arwen.com</strong>
               </p>
               <p>
                 Vous pouvez également introduire une réclamation auprès de la CNIL : 
