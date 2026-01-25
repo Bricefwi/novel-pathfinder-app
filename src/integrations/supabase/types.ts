@@ -941,25 +941,38 @@ export type Database = {
       }
       profiles: {
         Row: {
+          address_line1: string | null
+          address_line2: string | null
           avatar_url: string | null
           bio: string | null
+          birth_date: string | null
           budget_range: string | null
+          city: string | null
+          country: string | null
           created_at: string
           dream_destinations: string[] | null
+          equipment_details: string | null
           first_name: string | null
+          has_own_equipment: boolean | null
+          health_info: string | null
           height_cm: number | null
           id: string
           interests: string[] | null
           last_name: string | null
           newsletter_subscribed: boolean | null
           onboarding_completed: boolean | null
+          past_experiences: string | null
           phone: string | null
+          postal_code: string | null
           preferences: Json | null
           preferred_duration: string | null
+          preferred_periods: string[] | null
           preferred_trip_types: string[] | null
           riding_experience_years: number | null
           riding_level: Database["public"]["Enums"]["riding_level"] | null
           riding_style: string[] | null
+          travel_companions: string | null
+          travel_dreams: string | null
           travel_preferences: string[] | null
           travel_style: string | null
           updated_at: string
@@ -967,25 +980,38 @@ export type Database = {
           weight_kg: number | null
         }
         Insert: {
+          address_line1?: string | null
+          address_line2?: string | null
           avatar_url?: string | null
           bio?: string | null
+          birth_date?: string | null
           budget_range?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           dream_destinations?: string[] | null
+          equipment_details?: string | null
           first_name?: string | null
+          has_own_equipment?: boolean | null
+          health_info?: string | null
           height_cm?: number | null
           id?: string
           interests?: string[] | null
           last_name?: string | null
           newsletter_subscribed?: boolean | null
           onboarding_completed?: boolean | null
+          past_experiences?: string | null
           phone?: string | null
+          postal_code?: string | null
           preferences?: Json | null
           preferred_duration?: string | null
+          preferred_periods?: string[] | null
           preferred_trip_types?: string[] | null
           riding_experience_years?: number | null
           riding_level?: Database["public"]["Enums"]["riding_level"] | null
           riding_style?: string[] | null
+          travel_companions?: string | null
+          travel_dreams?: string | null
           travel_preferences?: string[] | null
           travel_style?: string | null
           updated_at?: string
@@ -993,25 +1019,38 @@ export type Database = {
           weight_kg?: number | null
         }
         Update: {
+          address_line1?: string | null
+          address_line2?: string | null
           avatar_url?: string | null
           bio?: string | null
+          birth_date?: string | null
           budget_range?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           dream_destinations?: string[] | null
+          equipment_details?: string | null
           first_name?: string | null
+          has_own_equipment?: boolean | null
+          health_info?: string | null
           height_cm?: number | null
           id?: string
           interests?: string[] | null
           last_name?: string | null
           newsletter_subscribed?: boolean | null
           onboarding_completed?: boolean | null
+          past_experiences?: string | null
           phone?: string | null
+          postal_code?: string | null
           preferences?: Json | null
           preferred_duration?: string | null
+          preferred_periods?: string[] | null
           preferred_trip_types?: string[] | null
           riding_experience_years?: number | null
           riding_level?: Database["public"]["Enums"]["riding_level"] | null
           riding_style?: string[] | null
+          travel_companions?: string | null
+          travel_dreams?: string | null
           travel_preferences?: string[] | null
           travel_style?: string | null
           updated_at?: string
