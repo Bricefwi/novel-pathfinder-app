@@ -57,16 +57,23 @@ const Auth = () => {
   };
 
   const handlePostLoginRedirect = async (userId: string) => {
-    // Check if onboarding is completed
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("onboarding_completed")
-      .eq("user_id", userId)
-      .single();
+    try {
+      // Check if onboarding is completed
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("onboarding_completed")
+        .eq("user_id", userId)
+        .maybeSingle();
 
-    if (profile?.onboarding_completed) {
-      navigate("/mon-espace");
-    } else {
+      // If profile doesn't exist yet or onboarding not completed, go to onboarding
+      if (error || !profile || !profile.onboarding_completed) {
+        navigate("/onboarding");
+      } else {
+        navigate("/mon-espace");
+      }
+    } catch (err) {
+      console.error("Redirect error:", err);
+      // Fallback to onboarding on any error
       navigate("/onboarding");
     }
   };
