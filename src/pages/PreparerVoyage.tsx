@@ -13,7 +13,8 @@ import {
   Play,
   Pause,
   Volume2,
-  VolumeX
+  VolumeX,
+  Printer
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -41,8 +42,12 @@ const PreparerVoyage = () => {
   const toggleMute = () => {
     if (videoRef.current) {
       videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
+    setIsMuted(!isMuted);
     }
+  };
+
+  const handlePrint = () => {
+    window.print();
   };
 
   const contentData = {
@@ -261,7 +266,17 @@ const PreparerVoyage = () => {
         ))}
       </nav>
 
-      <div className="bg-accent/20 p-4 rounded-xl border border-accent/30">
+      {/* Print Button */}
+      <Button
+        variant="outline"
+        onClick={handlePrint}
+        className="w-full gap-2 print:hidden"
+      >
+        <Printer className="h-4 w-4" />
+        Imprimer le mémo
+      </Button>
+
+      <div className="bg-accent/20 p-4 rounded-xl border border-accent/30 print:hidden">
         <div className="flex items-center gap-2 text-accent-foreground font-bold text-sm mb-2">
           <AlertTriangle className="w-4 h-4" /> Conseil Vital
         </div>

@@ -7,11 +7,12 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Eye, EyeOff, Mail, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Mail, Loader2, KeyRound } from "lucide-react";
 import cavaliersSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -89,6 +90,25 @@ const Auth = () => {
       }
       setGoogleLoading(false);
     }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast.error("Veuillez entrer votre adresse email");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth?reset=true`,
+    });
+    if (error) {
+      toast.error("Erreur : " + error.message);
+    } else {
+      toast.success("Un email de réinitialisation a été envoyé ! Vérifiez votre boîte de réception.");
+      setIsForgotPassword(false);
+    }
+    setLoading(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -172,15 +192,63 @@ const Auth = () => {
             {/* Header */}
             <div className="text-center space-y-2">
               <h1 className="font-serif text-3xl font-bold">
-                {isLogin ? "Bon retour parmi nous !" : "Rejoignez l'aventure"}
+                {isForgotPassword 
+                  ? "Mot de passe oublié ?" 
+                  : isLogin 
+                    ? "Bon retour parmi nous !" 
+                    : "Rejoignez l'aventure"}
               </h1>
               <p className="text-muted-foreground">
-                {isLogin
-                  ? "Connectez-vous pour accéder à votre espace cavalier"
-                  : "Créez votre compte et préparez votre prochaine escapade équestre"}
+                {isForgotPassword 
+                  ? "Entrez votre email pour recevoir un lien de réinitialisation"
+                  : isLogin
+                    ? "Connectez-vous pour accéder à votre espace cavalier"
+                    : "Créez votre compte et préparez votre prochaine escapade équestre"}
               </p>
             </div>
 
+            {isForgotPassword ? (
+              /* Forgot Password Form */
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="jean@example.com"
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full h-12 text-base gap-2" disabled={loading}>
+                  {loading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <KeyRound className="h-4 w-4" />
+                      Envoyer le lien de réinitialisation
+                    </>
+                  )}
+                </Button>
+
+                <p className="text-center text-sm text-muted-foreground">
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotPassword(false)}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Retour à la connexion
+                  </button>
+                </p>
+              </form>
+            ) : (
+              <>
             {/* Google OAuth Button */}
             <Button
               type="button"
@@ -289,6 +357,17 @@ const Auth = () => {
                 {!isLogin && (
                   <p className="text-xs text-muted-foreground">Minimum 6 caractères</p>
                 )}
+                {isLogin && (
+                  <div className="text-right">
+                    <button
+                      type="button"
+                      onClick={() => setIsForgotPassword(true)}
+                      className="text-sm text-primary hover:underline"
+                    >
+                      Mot de passe oublié ?
+                    </button>
+                  </div>
+                )}
               </div>
 
               <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
@@ -339,6 +418,8 @@ const Auth = () => {
                 politique de confidentialité
               </a>
             </p>
+              </>
+            )}
           </div>
         </div>
       </section>

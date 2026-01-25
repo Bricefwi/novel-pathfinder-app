@@ -198,7 +198,7 @@ export const generateQuotePDF = (data: QuoteData): string => {
     </div>
     <div class="company-info">
       <p class="company-name">Ferme Équestre An Arwen</p>
-      <p>RAUBER Arwen</p>
+      <p>POTTIER Arwen</p>
       <p>Guide Équestre Indépendant</p>
       <p>Bretagne, France</p>
       <p>contact@ferme-equestre-arwen.com</p>
@@ -291,7 +291,7 @@ export const generateQuotePDF = (data: QuoteData): string => {
     <h3>CONDITIONS GÉNÉRALES DE VENTE (Extrait)</h3>
     
     <h4>Article 1 – Statut du prestataire</h4>
-    <p>RAUBER Arwen exerce son activité en qualité de guide équestre indépendant, en tant que prestataire de services. Les prestations proposées consistent en l'encadrement équestre, la mise à disposition des chevaux et l'organisation technique de randonnées équestres.</p>
+    <p>POTTIER Arwen exerce son activité en qualité de guide équestre indépendant, en tant que prestataire de services. Les prestations proposées consistent en l'encadrement équestre, la mise à disposition des chevaux et l'organisation technique de randonnées équestres.</p>
     
     <h4>Article 3 – Réservation</h4>
     <p>La réservation devient ferme et définitive après validation écrite et versement de l'acompte de ${data.deposit_percentage}% du montant total.</p>
@@ -314,14 +314,14 @@ export const generateQuotePDF = (data: QuoteData): string => {
     </div>
     <div class="signature-box">
       <h4>Le Prestataire</h4>
-      <p style="margin-top: 20px;">RAUBER Arwen</p>
+      <p style="margin-top: 20px;">POTTIER Arwen</p>
       <p style="font-size: 9px;">Ferme Équestre An Arwen</p>
     </div>
   </div>
 
   <div class="footer">
-    <p>Ferme Équestre An Arwen – RAUBER Arwen – Guide Équestre Indépendant</p>
-    <p>SIRET : [À compléter] – TVA non applicable, art. 293 B du CGI</p>
+    <p>Ferme Équestre An Arwen – POTTIER Arwen – Guide Équestre Indépendant</p>
+    <p>SIRET : 80266354200016 – TVA non applicable, art. 293 B du CGI</p>
     <p>contact@ferme-equestre-arwen.com – www.ferme-equestre-arwen.com</p>
   </div>
 </body>

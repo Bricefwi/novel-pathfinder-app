@@ -172,7 +172,7 @@ export function Header() {
         "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
         isScrolled
           ? "bg-card/95 backdrop-blur-md shadow-lg py-3"
-          : "bg-transparent py-6"
+          : "bg-background/80 backdrop-blur-sm py-6"
       )}
     >
       <div className="container mx-auto px-4">
@@ -384,20 +384,23 @@ export function Header() {
               </Link>
             ))}
             
-            {/* Legal Section Mobile */}
-            <div className="px-4 py-2">
-              <p className="text-xs font-semibold text-muted-foreground uppercase mb-2 flex items-center gap-1">
-                <Scale className="h-3 w-3" />
-                Légal
-              </p>
-              <div className="space-y-1 pl-2">
+            {/* Legal Section Mobile - Collapsible */}
+            <details className="group">
+              <summary className="px-4 py-3 text-sm font-medium rounded-lg transition-all text-foreground/80 hover:text-primary hover:bg-primary/5 cursor-pointer list-none flex items-center justify-between">
+                <span className="flex items-center gap-2">
+                  <Scale className="h-4 w-4" />
+                  Légal
+                </span>
+                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="space-y-1 pl-4 pb-2">
                 {legalNavigation.map((item) => (
                   <Link
                     key={item.name}
                     to={item.href}
                     onClick={() => setIsOpen(false)}
                     className={cn(
-                      "block px-3 py-2 text-sm rounded-lg transition-all",
+                      "block px-4 py-2 text-sm rounded-lg transition-all",
                       location.pathname === item.href
                         ? "text-primary bg-primary/10"
                         : "text-foreground/70 hover:text-primary hover:bg-primary/5"
@@ -407,7 +410,7 @@ export function Header() {
                   </Link>
                 ))}
               </div>
-            </div>
+            </details>
 
             {user && authNavigation.map((item) => (
               <Link

@@ -22,7 +22,7 @@ const CGV = () => {
                 Article 1 – Statut du prestataire
               </h2>
               <p>
-                RAUBER Arwen exerce son activité en qualité de guide équestre indépendant, en tant que prestataire de services.
+                POTTIER Arwen exerce son activité en qualité de guide équestre indépendant, en tant que prestataire de services.
                 Il n'intervient pas en qualité d'agence de voyages, de voyagiste ou de tour-opérateur au sens des articles L.211-1 et suivants du Code du tourisme.
               </p>
               <p>Les prestations proposées consistent exclusivement en :</p>
@@ -37,7 +37,7 @@ const CGV = () => {
                 responsabilité contractuelle et civile.
               </p>
               <p>
-                RAUBER Arwen ne saurait être tenu responsable des défaillances, retards ou manquements imputables à ces prestataires.
+                POTTIER Arwen ne saurait être tenu responsable des défaillances, retards ou manquements imputables à ces prestataires.
               </p>
             </section>
 
@@ -56,7 +56,7 @@ const CGV = () => {
                 Le participant reconnaît que toute fausse déclaration engage sa seule responsabilité.
               </p>
               <p>
-                RAUBER Arwen se réserve le droit de refuser ou d'interrompre, à tout moment, la participation d'un cavalier 
+                POTTIER Arwen se réserve le droit de refuser ou d'interrompre, à tout moment, la participation d'un cavalier 
                 dont le comportement, l'état physique ou le niveau technique serait incompatible avec la sécurité du groupe, 
                 des chevaux ou de l'activité, sans que cette décision ne puisse donner lieu à remboursement ou indemnisation.
               </p>
@@ -106,7 +106,7 @@ const CGV = () => {
               </h2>
               <p>
                 Les prestations de randonnées équestres, séjours itinérants, sorties à la journée et activités d'équitation 
-                de pleine nature proposées par RAUBER Arwen sont fournies aux conditions financières définies au présent article.
+                de pleine nature proposées par POTTIER Arwen sont fournies aux conditions financières définies au présent article.
               </p>
 
               <h3 className="font-serif text-xl font-semibold text-foreground mt-6 mb-3">
@@ -145,7 +145,7 @@ const CGV = () => {
                 5.4 Paiement échelonné
               </h3>
               <p>
-                Un paiement échelonné peut être accordé à titre exceptionnel, uniquement sur accord écrit préalable de RAUBER Arwen.
+                Un paiement échelonné peut être accordé à titre exceptionnel, uniquement sur accord écrit préalable de POTTIER Arwen.
                 Le non-respect d'une échéance entraîne l'exigibilité immédiate de l'intégralité des sommes restant dues.
               </p>
 
@@ -213,7 +213,7 @@ const CGV = () => {
                 Article 7 – Annulation ou modification par le guide
               </h2>
               <p>
-                RAUBER Arwen se réserve le droit de modifier ou d'annuler une randonnée lorsque les conditions de sécurité 
+                POTTIER Arwen se réserve le droit de modifier ou d'annuler une randonnée lorsque les conditions de sécurité 
                 ne sont plus garanties, notamment en cas de :
               </p>
               <ul className="list-disc pl-6 space-y-2">
@@ -235,7 +235,7 @@ const CGV = () => {
                 Article 8 – Assurances
               </h2>
               <p>
-                RAUBER Arwen est titulaire d'une assurance Responsabilité Civile Professionnelle couvrant l'encadrement 
+                POTTIER Arwen est titulaire d'une assurance Responsabilité Civile Professionnelle couvrant l'encadrement 
                 des activités équestres.
               </p>
               <p>
@@ -258,7 +258,7 @@ const CGV = () => {
                 Le participant reconnaît que l'équitation est une activité de pleine nature comportant des risques 
                 inhérents, même en présence d'un encadrement professionnel.
               </p>
-              <p>RAUBER Arwen ne saurait être tenu responsable :</p>
+              <p>POTTIER Arwen ne saurait être tenu responsable :</p>
               <ul className="list-disc pl-6 space-y-2">
                 <li>des accidents résultant d'un comportement imprudent ou inadapté du participant,</li>
                 <li>des accidents survenus en dehors des temps d'encadrement effectif,</li>
@@ -306,7 +306,7 @@ const CGV = () => {
                 Article 12 – Droit à l'image
               </h2>
               <p>
-                Sauf opposition écrite préalable, le participant autorise RAUBER Arwen à utiliser les images et vidéos 
+                Sauf opposition écrite préalable, le participant autorise POTTIER Arwen à utiliser les images et vidéos 
                 réalisées lors des randonnées à des fins de communication professionnelle.
               </p>
             </section>
@@ -323,7 +323,7 @@ const CGV = () => {
               </p>
               <p>
                 À défaut d'accord amiable, le litige sera porté devant les tribunaux compétents du ressort du 
-                domicile professionnel de RAUBER Arwen, y compris en cas de pluralité de défendeurs ou d'appel en garantie.
+                domicile professionnel de POTTIER Arwen, y compris en cas de pluralité de défendeurs ou d'appel en garantie.
               </p>
             </section>
 
@@ -347,7 +347,7 @@ const CGV = () => {
 
             <p className="text-sm text-muted-foreground/70 pt-8 border-t border-border">
               Dernière mise à jour : 01/01/2026<br />
-              RAUBER Arwen – Guide équestre indépendant
+              POTTIER Arwen – Guide équestre indépendant
             </p>
           </div>
         </div>
