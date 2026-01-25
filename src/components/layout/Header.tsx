@@ -92,7 +92,7 @@ export function Header() {
           // Check profile completion and get avatar
           const { data: profileData } = await supabase
             .from("profiles")
-            .select("first_name, last_name, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_style, avatar_url")
+            .select("first_name, last_name, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_companions, avatar_url")
             .eq("user_id", session.user.id)
             .single();
           
@@ -133,7 +133,7 @@ export function Header() {
         // Check profile completion and get avatar
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("first_name, last_name, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_style, avatar_url")
+          .select("first_name, last_name, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_companions, avatar_url")
           .eq("user_id", session.user.id)
           .single();
         

@@ -93,7 +93,7 @@ export function ControlTowerSidebar({ activeModule, onModuleChange, onOpenComman
         
         const { data: profileData } = await supabase
           .from("profiles")
-          .select("first_name, last_name, avatar_url, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_style")
+          .select("first_name, last_name, avatar_url, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_companions")
           .eq("user_id", session.user.id)
           .single();
         
