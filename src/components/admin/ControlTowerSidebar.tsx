@@ -67,6 +67,10 @@ const GROWTH_MODULES = [
   { id: "traffic" as const, label: "Trafic Web", icon: Globe, badge: "NEW" },
 ];
 
+const TOOLS_MODULES = [
+  { id: "audit" as const, label: "Audit du Site", icon: Search, badge: "AI" },
+];
+
 const LEGACY_MODULES = [
   { id: "activities" as const, label: "Activités", icon: MapPin },
   { id: "articles" as const, label: "Blog", icon: FileText },
@@ -189,6 +193,17 @@ export function ControlTowerSidebar({ activeModule, onModuleChange, onOpenComman
           <SidebarGroupContent>
             <SidebarMenu>
               {GROWTH_MODULES.map(renderMenuItem)}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarSeparator />
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Outils IA</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {TOOLS_MODULES.map(renderMenuItem)}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
