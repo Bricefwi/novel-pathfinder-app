@@ -310,6 +310,8 @@ const Onboarding = () => {
   };
 
   const handleSubmit = async () => {
+    console.log("handleSubmit called, userId:", userId);
+    
     // Final validation
     if (formData.dream_destinations.length === 0) {
       toast.error("Veuillez sélectionner au moins une destination rêvée");
@@ -328,43 +330,64 @@ const Onboarding = () => {
       return;
     }
 
-    if (!userId) return;
+    if (!userId) {
+      toast.error("Session expirée. Veuillez vous reconnecter.");
+      navigate("/auth");
+      return;
+    }
+    
     setLoading(true);
 
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        phone: formData.phone,
-        avatar_url: formData.avatar_url,
-        riding_level: formData.riding_level as "debutant" | "intermediaire" | "confirme" | "expert" | null,
-        riding_experience_years: formData.riding_experience_years,
-        riding_style: formData.riding_style,
-        height_cm: formData.height_cm,
-        weight_kg: formData.weight_kg,
-        dream_destinations: formData.dream_destinations,
-        preferred_trip_types: formData.preferred_trip_types,
-        interests: formData.interests,
-        travel_style: formData.travel_style,
-        budget_range: formData.budget_range,
-        onboarding_completed: true,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("user_id", userId);
+    try {
+      console.log("Updating profile for user:", userId);
+      console.log("Form data:", formData);
 
-    if (error) {
-      toast.error("Erreur lors de la sauvegarde");
-      console.error(error);
-    } else {
-      // Trigger confetti for first-time profile completion
-      if (!isEditMode) {
-        triggerProfileCompleteConfetti();
+      const { data, error } = await supabase
+        .from("profiles")
+        .update({
+          first_name: formData.first_name,
+          last_name: formData.last_name,
+          phone: formData.phone,
+          avatar_url: formData.avatar_url,
+          riding_level: formData.riding_level as "debutant" | "intermediaire" | "confirme" | "expert" | null,
+          riding_experience_years: formData.riding_experience_years,
+          riding_style: formData.riding_style,
+          height_cm: formData.height_cm,
+          weight_kg: formData.weight_kg,
+          dream_destinations: formData.dream_destinations,
+          preferred_trip_types: formData.preferred_trip_types,
+          interests: formData.interests,
+          travel_style: formData.travel_style,
+          budget_range: formData.budget_range,
+          onboarding_completed: true,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("user_id", userId)
+        .select();
+
+      console.log("Update result:", { data, error });
+
+      if (error) {
+        console.error("Profile update error:", error);
+        toast.error("Erreur lors de la sauvegarde: " + error.message);
+      } else if (!data || data.length === 0) {
+        console.error("No profile updated - profile may not exist");
+        toast.error("Profil introuvable. Veuillez vous reconnecter.");
+        navigate("/auth");
+      } else {
+        // Trigger confetti for first-time profile completion
+        if (!isEditMode) {
+          triggerProfileCompleteConfetti();
+        }
+        toast.success(isEditMode ? "Profil mis à jour avec succès ! ✅" : "Bienvenue dans la tribu An Arwen ! 🐴");
+        navigate("/mon-espace");
       }
-      toast.success(isEditMode ? "Profil mis à jour avec succès ! ✅" : "Bienvenue dans la tribu An Arwen ! 🐴");
-      navigate("/mon-espace");
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast.error("Une erreur inattendue s'est produite");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const getInitials = () => {
