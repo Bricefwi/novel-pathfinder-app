@@ -58,6 +58,7 @@ const authNavigation = [
 export function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isLegalOpen, setIsLegalOpen] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isProfileComplete, setIsProfileComplete] = useState(false);
@@ -384,33 +385,42 @@ export function Header() {
               </Link>
             ))}
             
-            {/* Legal Section Mobile - Collapsible */}
-            <details className="group">
-              <summary className="px-4 py-3 text-sm font-medium rounded-lg transition-all text-foreground/80 hover:text-primary hover:bg-primary/5 cursor-pointer list-none flex items-center justify-between">
+            {/* Legal Section Mobile - Controlled toggle */}
+            <div className="space-y-1">
+              <button
+                type="button"
+                onClick={() => setIsLegalOpen(!isLegalOpen)}
+                className="w-full px-4 py-3 text-sm font-medium rounded-lg transition-all text-foreground/80 hover:text-primary hover:bg-primary/5 flex items-center justify-between"
+              >
                 <span className="flex items-center gap-2">
                   <Scale className="h-4 w-4" />
                   Légal
                 </span>
-                <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
-              </summary>
-              <div className="space-y-1 pl-4 pb-2">
-                {legalNavigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    onClick={() => setIsOpen(false)}
-                    className={cn(
-                      "block px-4 py-2 text-sm rounded-lg transition-all",
-                      location.pathname === item.href
-                        ? "text-primary bg-primary/10"
-                        : "text-foreground/70 hover:text-primary hover:bg-primary/5"
-                    )}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-              </div>
-            </details>
+                <ChevronDown className={cn("h-4 w-4 transition-transform", isLegalOpen && "rotate-180")} />
+              </button>
+              {isLegalOpen && (
+                <div className="space-y-1 pl-4 pb-2">
+                  {legalNavigation.map((item) => (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      onClick={() => {
+                        setIsOpen(false);
+                        setIsLegalOpen(false);
+                      }}
+                      className={cn(
+                        "block px-4 py-2 text-sm rounded-lg transition-all",
+                        location.pathname === item.href
+                          ? "text-primary bg-primary/10"
+                          : "text-foreground/70 hover:text-primary hover:bg-primary/5"
+                      )}
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {user && authNavigation.map((item) => (
               <Link
