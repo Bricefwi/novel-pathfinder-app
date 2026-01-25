@@ -27,5 +27,8 @@ verify_jwt = false
 [functions.serve-sitemap-xml]
 verify_jwt = false
 
+[functions.audit-site]
+verify_jwt = false
+
 [functions.analyze-prospect]
 verify_jwt = false
