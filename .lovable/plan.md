@@ -1,116 +1,232 @@
 
-# Plan de Renforcement SEO - Marque "Ferme Equestre Arwen"
+# Plan : Système d'Audit Complet avec Gemini 3 Pro
 
 ## Objectif
-Propulser "ferme-equestre-arwen" et la variante "ferme-equestre-arwan" en tete des resultats de recherche moteurs et IA.
+Creer un outil d'audit automatise qui analyse l'ensemble du site An Arwen (code, securite, UX, SEO, accessibilite, performance) en utilisant **Gemini 3 Pro** via Lovable AI Gateway.
 
 ---
 
-## Modifications a effectuer
+## Architecture Proposee
 
-### 1. Mise a jour des mots-cles dans SEOHead.tsx
-
-**Fichier:** `src/components/seo/SEOHead.tsx`
-
-Enrichir `defaultKeywords` avec les variantes de marque :
-- ferme equestre arwen
-- ferme equestre arwan (variante orthographique)
-- ferme-equestre-arwen
-- an arwen bretagne
-- an arwen equestre
-
-### 2. Enrichissement du JSON-LD dans index.html
-
-**Fichier:** `index.html`
-
-Ajouter dans le schema `LocalBusiness` :
-- Propriete `alternateName` avec un tableau de variantes : "An Arwen", "Ferme Equestre Arwan", "ferme-equestre-arwen"
-- Propriete `keywords` dans la description
-- Renforcer `sameAs` avec les profils sociaux
-
-Ajouter un nouveau bloc JSON-LD `Organization` dedie a la marque avec :
 ```text
-"@type": "Organization"
-"name": "Ferme Equestre An Arwen"
-"alternateName": ["An Arwen", "Ferme Equestre Arwan", "ferme-equestre-arwen", "ferme-equestre-arwan"]
-"brand": {...}
-```
-
-### 3. Mise a jour des meta tags dans index.html
-
-**Fichier:** `index.html`
-
-Ajouter dans la section `<head>` :
-- Meta `keywords` enrichi avec les variantes de marque
-- Meta `application-name` pour les navigateurs
-- Meta `apple-mobile-web-app-title`
-
-### 4. Mise a jour du fichier llms.txt statique
-
-**Fichier:** `public/llms.txt`
-
-Ajouter une section dediee aux noms de marque :
-```text
-## Noms de marque et variantes
-- Nom officiel : Ferme Equestre An Arwen
-- Variantes acceptees : ferme-equestre-arwen, ferme-equestre-arwan, An Arwen
-- URL : ferme-equestre-arwen.com
-```
-
-### 5. Mise a jour du fichier llms.txt .well-known
-
-**Fichier:** `public/.well-known/llms.txt`
-
-Ajouter les memes variantes de marque pour les crawlers IA en anglais.
-
-### 6. Mise a jour de l'Edge Function serve-llms-txt
-
-**Fichier:** `supabase/functions/serve-llms-txt/index.ts`
-
-Integrer dans la generation dynamique :
-- Section "Identite de marque" avec toutes les variantes
-- Mots-cles de marque dans la section Keywords
-
-### 7. Mise a jour du robots.txt
-
-**Fichier:** `public/robots.txt`
-
-Ajouter un commentaire SEO avec les mots-cles de marque pour les crawlers qui lisent les commentaires.
-
-### 8. Ajout dans la configuration centralisee
-
-**Fichier:** `src/config/constants.ts`
-
-Ajouter un champ `brandVariants` dans `COMPANY_CONFIG` :
-```text
-brandVariants: [
-  "Ferme Equestre An Arwen",
-  "ferme-equestre-arwen",
-  "ferme-equestre-arwan",
-  "An Arwen",
-  "An Arwen Equestre"
-]
++-------------------+       +------------------------+       +------------------+
+|   Admin Panel     |  -->  |  Edge Function         |  -->  | Gemini 3 Pro     |
+|   (Control Tower) |       |  audit-site            |       | (Lovable AI)     |
++-------------------+       +------------------------+       +------------------+
+         |                           |
+         v                           v
+  +-------------+            +------------------+
+  | Rapport PDF |            | Stockage DB      |
+  | (telecharg) |            | (audit_reports)  |
+  +-------------+            +------------------+
 ```
 
 ---
 
-## Resume des fichiers a modifier
+## Fonctionnalites de l'Audit
 
-| Fichier | Type de modification |
-|---------|---------------------|
-| `src/components/seo/SEOHead.tsx` | Enrichir mots-cles par defaut |
-| `index.html` | Ajouter JSON-LD Organization + meta tags |
-| `public/llms.txt` | Section noms de marque |
-| `public/.well-known/llms.txt` | Section brand names (EN) |
-| `supabase/functions/serve-llms-txt/index.ts` | Identite de marque dynamique |
-| `public/robots.txt` | Commentaires SEO enrichis |
-| `src/config/constants.ts` | Champ brandVariants |
+### 1. Categories d'Analyse
+L'audit couvrira 6 domaines :
+
+| Domaine | Points Analyses |
+|---------|-----------------|
+| **Securite** | RLS policies, validation inputs, CORS, injection XSS/SQL |
+| **Performance** | Lazy loading, bundle size, images optimisees, cache |
+| **SEO** | Meta tags, sitemap, robots.txt, llms.txt, schema.org |
+| **Accessibilite** | Contrastes, labels aria, navigation clavier, alt images |
+| **UX/Design** | Coherence visuelle, responsive, parcours utilisateur |
+| **Code** | Bonnes pratiques React, TypeScript, composants reutilisables |
+
+### 2. Score Global
+Chaque domaine recoit une note de 0 a 100, avec un score global pondere.
+
+### 3. Recommandations Actionnables
+Chaque probleme identifie sera accompagne :
+- D'une description claire du probleme
+- D'un niveau de priorite (Critique, Haute, Moyenne, Faible)
+- D'une solution concrete avec exemple de code si applicable
 
 ---
 
-## Impact attendu
+## Implementation Technique
 
-- **Moteurs de recherche** : Meilleure association entre les requetes "ferme equestre arwen/arwan" et le site
-- **Agents IA** : Reconnaissance immediate de la marque grace aux fichiers llms.txt
-- **Fautes de frappe** : Capture des utilisateurs tapant "arwan" au lieu de "arwen"
-- **Donnees structurees** : Schema.org renforce pour le Knowledge Graph Google
+### Phase 1 : Creation de la Table de Stockage
+```sql
+CREATE TABLE audit_reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at TIMESTAMPTZ DEFAULT now(),
+  created_by UUID REFERENCES auth.users(id),
+  audit_type TEXT NOT NULL, -- 'full', 'security', 'seo', etc.
+  status TEXT DEFAULT 'pending', -- 'pending', 'running', 'completed', 'failed'
+  scores JSONB, -- { security: 85, performance: 72, ... }
+  global_score INTEGER,
+  findings JSONB, -- Array of issues found
+  recommendations JSONB, -- Array of suggestions
+  raw_response TEXT, -- Full AI response for debugging
+  model_used TEXT DEFAULT 'google/gemini-3-pro-preview'
+);
+```
+
+### Phase 2 : Edge Function `audit-site`
+
+**Fichier** : `supabase/functions/audit-site/index.ts`
+
+L'edge function :
+1. Recupere les donnees du projet (structure pages, composants, config)
+2. Analyse la base de donnees (tables, RLS policies via linter)
+3. Construit un prompt detaille pour Gemini 3 Pro
+4. Execute l'appel API avec le modele `google/gemini-3-pro-preview`
+5. Parse et stocke le rapport dans `audit_reports`
+
+```typescript
+// Extrait du prompt systeme
+const AUDIT_SYSTEM_PROMPT = `Tu es un expert en developpement web, securite et UX.
+Tu realises un audit complet d'une application React/Vite/Supabase.
+
+STRUCTURE DU RAPPORT ATTENDU (JSON) :
+{
+  "scores": {
+    "security": 0-100,
+    "performance": 0-100,
+    "seo": 0-100,
+    "accessibility": 0-100,
+    "ux": 0-100,
+    "code_quality": 0-100
+  },
+  "global_score": 0-100,
+  "findings": [
+    {
+      "category": "security|performance|seo|accessibility|ux|code",
+      "severity": "critical|high|medium|low",
+      "title": "Titre du probleme",
+      "description": "Description detaillee",
+      "location": "Fichier ou composant concerne",
+      "recommendation": "Solution concrete",
+      "code_example": "Code correctif si applicable"
+    }
+  ],
+  "summary": "Resume en 3 phrases"
+}`;
+```
+
+### Phase 3 : Interface Admin
+
+**Nouveau module** : `src/components/admin/modules/SiteAudit.tsx`
+
+Fonctionnalites :
+- Bouton "Lancer un audit complet"
+- Historique des audits precedents
+- Affichage des scores avec jauges visuelles
+- Liste des problemes tries par priorite
+- Export PDF du rapport
+- Comparaison entre audits (evolution dans le temps)
+
+### Phase 4 : Collecte des Donnees pour l'Audit
+
+L'edge function collectera :
+
+```typescript
+// Donnees injectees dans le prompt
+const auditContext = {
+  // Structure de l'application
+  pages: ["Index", "Destinations", "Auth", "Admin", ...],
+  components_count: 45,
+  edge_functions: ["ask-loic", "analyze-prospect", ...],
+  
+  // Configuration
+  seo_files: ["robots.txt", "sitemap.xml", "llms.txt"],
+  rls_policies: [...], // Depuis le linter
+  
+  // Echantillons de code
+  auth_implementation: "...",
+  sample_components: ["Header.tsx", "Layout.tsx"],
+  
+  // Configuration Supabase
+  tables: ["profiles", "activities", "bookings", ...],
+  storage_buckets: ["avatars", "gallery"],
+};
+```
+
+---
+
+## Details des Livrables
+
+### Fichiers a Creer
+
+| Fichier | Description |
+|---------|-------------|
+| `supabase/functions/audit-site/index.ts` | Edge function principale |
+| `src/components/admin/modules/SiteAudit.tsx` | Interface d'audit dans Control Tower |
+| `src/hooks/use-site-audit.ts` | Hook pour gerer l'etat de l'audit |
+| Migration SQL | Table `audit_reports` + RLS admin-only |
+
+### Fichiers a Modifier
+
+| Fichier | Modification |
+|---------|--------------|
+| `src/pages/Admin.tsx` | Ajouter onglet "Audit Site" |
+| `src/components/admin/ControlTowerContent.tsx` | Integrer le module SiteAudit |
+| `supabase/config.toml` | Declarer la nouvelle function |
+
+---
+
+## Interface Utilisateur
+
+```text
++------------------------------------------------------------------+
+|  AUDIT DU SITE                                    [Lancer Audit] |
++------------------------------------------------------------------+
+|                                                                  |
+|  Score Global : 78/100  ████████████████████░░░░░                |
+|                                                                  |
+|  +------------+  +------------+  +------------+                  |
+|  | Securite   |  | Perf.      |  | SEO        |                  |
+|  |   85/100   |  |   72/100   |  |   91/100   |                  |
+|  +------------+  +------------+  +------------+                  |
+|  +------------+  +------------+  +------------+                  |
+|  | A11y       |  | UX         |  | Code       |                  |
+|  |   68/100   |  |   80/100   |  |   75/100   |                  |
+|  +------------+  +------------+  +------------+                  |
+|                                                                  |
+|  PROBLEMES IDENTIFIES (12)                                       |
+|  +--------------------------------------------------------------+|
+|  | ! CRITIQUE : Validation input manquante sur AgentFAQ        ||
+|  | ! HAUTE    : Images sans attribut alt dans Galerie          ||
+|  | . MOYENNE  : Bundle JS non optimise (1.2MB)                 ||
+|  +--------------------------------------------------------------+|
+|                                                                  |
+|  [Telecharger PDF]  [Voir historique]  [Comparer]                |
++------------------------------------------------------------------+
+```
+
+---
+
+## Modele IA Utilise
+
+- **Modele** : `google/gemini-3-pro-preview`
+- **Raison** : Modele next-gen avec capacites de raisonnement avancees, ideal pour l'analyse de code complexe et la generation de recommandations detaillees
+- **Configuration** :
+  - `temperature: 0.2` (reponses factuelles et precises)
+  - `max_tokens: 8192` (rapport detaille)
+
+---
+
+## Securite
+
+- Table `audit_reports` avec RLS : lecture/ecriture admin uniquement
+- Edge function avec validation du role admin avant execution
+- Pas d'exposition de donnees sensibles dans les rapports
+
+---
+
+## Estimation du Travail
+
+| Etape | Temps estime |
+|-------|--------------|
+| Table + RLS | 5 min |
+| Edge function audit-site | 15 min |
+| Interface SiteAudit.tsx | 15 min |
+| Integration Control Tower | 5 min |
+| Tests et ajustements | 10 min |
+
+**Total : ~50 minutes**
