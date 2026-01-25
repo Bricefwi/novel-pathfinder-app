@@ -61,7 +61,7 @@ export function ReviewsSection() {
         const userIds = [...new Set(data.map((r) => r.user_id))];
         const { data: profilesData } = await supabase
           .from("profiles")
-          .select("user_id, first_name, last_name, avatar_url, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_style")
+          .select("user_id, first_name, last_name, avatar_url, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_companions")
           .in("user_id", userIds);
 
         const profilesMap = new Map(

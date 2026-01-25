@@ -11,7 +11,7 @@ export interface ProfileForCompletion {
   preferred_trip_types: string[] | null;
   interests: string[] | null;
   riding_style: string[] | null;
-  travel_style: string | null;
+  travel_companions: string | null;
 }
 
 /**
@@ -19,7 +19,7 @@ export interface ProfileForCompletion {
  * All 10 fields are required to reach 100%:
  * - first_name, last_name, phone (identity)
  * - riding_level, riding_experience_years, riding_style (rider profile)
- * - dream_destinations, preferred_trip_types, interests, travel_style (preferences)
+ * - dream_destinations, preferred_trip_types, interests, travel_companions (preferences)
  */
 export const calculateProfileCompletion = (p: ProfileForCompletion | null): number => {
   if (!p) return 0;
@@ -34,7 +34,7 @@ export const calculateProfileCompletion = (p: ProfileForCompletion | null): numb
     (p.preferred_trip_types?.length ?? 0) > 0,
     (p.interests?.length ?? 0) > 0,
     (p.riding_style?.length ?? 0) > 0,
-    p.travel_style,
+    p.travel_companions,
   ];
   
   const filled = fields.filter(Boolean).length;
