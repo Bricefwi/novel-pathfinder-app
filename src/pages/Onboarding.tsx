@@ -211,13 +211,21 @@ const Onboarding = () => {
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !userId) return;
+    if (!file) return;
 
-    // Validate file
-    if (!file.type.startsWith("image/")) {
-      toast.error("Veuillez sélectionner une image");
+    // Check user authentication first
+    if (!userId) {
+      toast.error("Veuillez vous reconnecter pour uploader une photo");
       return;
     }
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Veuillez sélectionner une image (JPG, PNG, etc.)");
+      return;
+    }
+    
+    // Validate file size (2MB max)
     if (file.size > 2 * 1024 * 1024) {
       toast.error("L'image ne doit pas dépasser 2 Mo");
       return;
@@ -225,26 +233,46 @@ const Onboarding = () => {
 
     setUploading(true);
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${userId}/avatar.${fileExt}`;
+      const fileExt = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const timestamp = Date.now();
+      const fileName = `${userId}/avatar-${timestamp}.${fileExt}`;
 
-      const { error: uploadError } = await supabase.storage
+      console.log("Uploading avatar to:", fileName);
+
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from("avatars")
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, file, { 
+          upsert: true,
+          contentType: file.type 
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        throw uploadError;
+      }
+
+      console.log("Upload successful:", uploadData);
 
       const { data: { publicUrl } } = supabase.storage
         .from("avatars")
         .getPublicUrl(fileName);
 
+      console.log("Public URL:", publicUrl);
+
       updateFormData("avatar_url", publicUrl);
-      toast.success("Photo ajoutée !");
-    } catch (error) {
-      console.error(error);
-      toast.error("Erreur lors de l'upload");
+      toast.success("Photo ajoutée avec succès !");
+    } catch (error: any) {
+      console.error("Avatar upload error:", error);
+      if (error.message?.includes("security")) {
+        toast.error("Erreur de permission. Veuillez vous reconnecter.");
+      } else if (error.message?.includes("size")) {
+        toast.error("Fichier trop volumineux. Maximum 2 Mo.");
+      } else {
+        toast.error("Erreur lors de l'upload. Réessayez.");
+      }
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
   };
 
   const handleNext = () => {
