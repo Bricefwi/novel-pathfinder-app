@@ -44,6 +44,11 @@ export default function AgentFAQ() {
 
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Scroll to top on page load
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
   useEffect(() => {
     checkUserRole();
   }, []);
