@@ -328,116 +328,53 @@ const Planning = () => {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <Tabs defaultValue="activities" className="mb-6">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="activities" className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        Activités
-                      </TabsTrigger>
-                      <TabsTrigger value="hebergement" className="flex items-center gap-2">
-                        <Home className="h-4 w-4" />
-                        Hébergement
-                      </TabsTrigger>
-                    </TabsList>
-
-                    <TabsContent value="activities" className="mt-4">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        month={currentMonth}
-                        onMonthChange={setCurrentMonth}
-                        className="rounded-lg border-0 w-full"
-                        modifiers={{
-                          hasActivity: getDatesWithActivities(),
-                        }}
-                        modifiersStyles={{
-                          hasActivity: {
-                            backgroundColor: "hsl(var(--primary) / 0.2)",
-                            borderRadius: "50%",
-                            fontWeight: "bold",
-                          },
-                        }}
-                        classNames={{
-                          months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
-                          month: "space-y-4 w-full",
-                          table: "w-full border-collapse",
-                          head_row: "flex w-full justify-between",
-                          head_cell: "text-muted-foreground rounded-md w-full font-normal text-sm flex-1 text-center",
-                          row: "flex w-full mt-2 justify-between",
-                          cell: "h-12 w-full text-center text-sm p-0 relative flex-1 flex items-center justify-center",
-                          day: "h-10 w-10 p-0 font-normal rounded-full hover:bg-accent transition-colors",
-                          day_selected: "bg-primary text-primary-foreground hover:bg-primary",
-                          day_today: "bg-accent text-accent-foreground",
-                        }}
-                      />
-                      
-                      {/* Legend */}
-                      <div className="flex flex-wrap gap-3 mt-4 justify-center">
-                        <Badge variant="outline" className="bg-emerald-500/20 text-emerald-700 border-emerald-500/30">
-                          Randonnée
-                        </Badge>
-                        <Badge variant="outline" className="bg-blue-500/20 text-blue-700 border-blue-500/30">
-                          Séjour
-                        </Badge>
-                        <Badge variant="outline" className="bg-amber-500/20 text-amber-700 border-amber-500/30">
-                          Stage
-                        </Badge>
-                        <Badge variant="outline" className="bg-purple-500/20 text-purple-700 border-purple-500/30">
-                          Cours
-                        </Badge>
-                      </div>
-                    </TabsContent>
-
-                    <TabsContent value="hebergement" className="mt-4">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        month={currentMonth}
-                        onMonthChange={setCurrentMonth}
-                        className="rounded-lg border-0 w-full"
-                        disabled={(date) => isBefore(date, startOfDay(new Date()))}
-                        modifiers={{
-                          available: getAvailableAccommodationDates(),
-                          booked: getBookedAccommodationDates(),
-                        }}
-                        modifiersStyles={{
-                          available: {
-                            backgroundColor: "hsl(142 76% 36% / 0.2)",
-                            borderRadius: "50%",
-                          },
-                          booked: {
-                            backgroundColor: "hsl(var(--destructive) / 0.2)",
-                            borderRadius: "50%",
-                            textDecoration: "line-through",
-                          },
-                        }}
-                        classNames={{
-                          months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
-                          month: "space-y-4 w-full",
-                          table: "w-full border-collapse",
-                          head_row: "flex w-full justify-between",
-                          head_cell: "text-muted-foreground rounded-md w-full font-normal text-sm flex-1 text-center",
-                          row: "flex w-full mt-2 justify-between",
-                          cell: "h-12 w-full text-center text-sm p-0 relative flex-1 flex items-center justify-center",
-                          day: "h-10 w-10 p-0 font-normal rounded-full hover:bg-accent transition-colors",
-                          day_selected: "bg-primary text-primary-foreground hover:bg-primary",
-                          day_today: "bg-accent text-accent-foreground",
-                        }}
-                      />
-                      <div className="flex gap-4 mt-4 justify-center text-sm">
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-full bg-green-500/20" />
-                          <span className="text-muted-foreground">Disponible</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 rounded-full bg-destructive/20" />
-                          <span className="text-muted-foreground">Réservé</span>
-                        </div>
-                      </div>
-                    </TabsContent>
-                  </Tabs>
+                  {/* Calendar for Activities only - Hébergement tab removed */}
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    month={currentMonth}
+                    onMonthChange={setCurrentMonth}
+                    className="rounded-lg border-0 w-full"
+                    modifiers={{
+                      hasActivity: getDatesWithActivities(),
+                    }}
+                    modifiersStyles={{
+                      hasActivity: {
+                        backgroundColor: "hsl(var(--primary) / 0.2)",
+                        borderRadius: "50%",
+                        fontWeight: "bold",
+                      },
+                    }}
+                    classNames={{
+                      months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
+                      month: "space-y-4 w-full",
+                      table: "w-full border-collapse",
+                      head_row: "flex w-full justify-between",
+                      head_cell: "text-muted-foreground rounded-md w-full font-normal text-sm flex-1 text-center",
+                      row: "flex w-full mt-2 justify-between",
+                      cell: "h-12 w-full text-center text-sm p-0 relative flex-1 flex items-center justify-center",
+                      day: "h-10 w-10 p-0 font-normal rounded-full hover:bg-accent transition-colors",
+                      day_selected: "bg-primary text-primary-foreground hover:bg-primary",
+                      day_today: "bg-accent text-accent-foreground",
+                    }}
+                  />
+                  
+                  {/* Legend */}
+                  <div className="flex flex-wrap gap-3 mt-4 justify-center">
+                    <Badge variant="outline" className="bg-emerald-500/20 text-emerald-700 border-emerald-500/30">
+                      Randonnée
+                    </Badge>
+                    <Badge variant="outline" className="bg-blue-500/20 text-blue-700 border-blue-500/30">
+                      Séjour
+                    </Badge>
+                    <Badge variant="outline" className="bg-amber-500/20 text-amber-700 border-amber-500/30">
+                      Stage
+                    </Badge>
+                    <Badge variant="outline" className="bg-purple-500/20 text-purple-700 border-purple-500/30">
+                      Cours
+                    </Badge>
+                  </div>
                 </CardContent>
               </Card>
 
