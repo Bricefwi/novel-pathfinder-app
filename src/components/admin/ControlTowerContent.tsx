@@ -20,6 +20,7 @@ import { UnifiedInbox } from "./modules/UnifiedInbox";
 import { MarketingAutomation } from "./modules/MarketingAutomation";
 import { AnalyticsDashboard } from "./modules/AnalyticsDashboard";
 import { TrafficAnalytics } from "./modules/TrafficAnalytics";
+import { SiteAudit } from "./modules/SiteAudit";
 
 interface ControlTowerContentProps {
   activeModule: AdminModule;
@@ -46,6 +47,8 @@ export function ControlTowerContent({ activeModule, onModuleChange }: ControlTow
         return <MarketingAutomation />;
       case "analytics":
         return <AnalyticsDashboard />;
+      case "audit":
+        return <SiteAudit />;
       case "traffic":
         return <TrafficAnalytics />;
       

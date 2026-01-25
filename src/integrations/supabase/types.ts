@@ -384,6 +384,51 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_reports: {
+        Row: {
+          audit_type: string
+          created_at: string
+          created_by: string | null
+          findings: Json | null
+          global_score: number | null
+          id: string
+          model_used: string | null
+          raw_response: string | null
+          recommendations: Json | null
+          scores: Json | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          audit_type?: string
+          created_at?: string
+          created_by?: string | null
+          findings?: Json | null
+          global_score?: number | null
+          id?: string
+          model_used?: string | null
+          raw_response?: string | null
+          recommendations?: Json | null
+          scores?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          audit_type?: string
+          created_at?: string
+          created_by?: string | null
+          findings?: Json | null
+          global_score?: number | null
+          id?: string
+          model_used?: string | null
+          raw_response?: string | null
+          recommendations?: Json | null
+          scores?: Json | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       bookings: {
         Row: {
           activity_id: string | null
