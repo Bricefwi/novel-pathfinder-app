@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { PageTracker } from "@/components/app/PageTracker";
+import { CartDrawer } from "@/components/cart/CartDrawer";
 
 // Pages chargées immédiatement (critiques pour le SEO et l'expérience initiale)
 import Index from "./pages/Index";
@@ -13,6 +14,7 @@ import NotFound from "./pages/NotFound";
 
 // Pages chargées en lazy loading (optimisation du bundle initial)
 const Destinations = lazy(() => import("./pages/Destinations"));
+const FicheSejour = lazy(() => import("./pages/FicheSejour"));
 const Planning = lazy(() => import("./pages/Planning"));
 const Hebergement = lazy(() => import("./pages/Hebergement"));
 const CarnetVoyage = lazy(() => import("./pages/CarnetVoyage"));
@@ -52,6 +54,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <PageTracker />
+        <CartDrawer />
         <Suspense fallback={<PageLoader />}>
           <Routes>
             {/* Page d'accueil - chargée immédiatement */}
@@ -59,6 +62,7 @@ const App = () => (
             
             {/* Pages publiques */}
             <Route path="/destinations" element={<Destinations />} />
+            <Route path="/sejour/:slug" element={<FicheSejour />} />
             <Route path="/planning" element={<Planning />} />
             <Route path="/hebergement" element={<Hebergement />} />
             <Route path="/carnet-de-voyage" element={<CarnetVoyage />} />

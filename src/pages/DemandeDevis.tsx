@@ -44,8 +44,8 @@ const devisSchema = z.object({
   childrenCount: z.number().min(0).max(10, "Maximum 10 enfants"),
   childrenAges: z.string().max(100).optional().or(z.literal("")),
   
-  // Niveau équestre
-  ridingLevel: z.string().min(1, "Niveau requis").max(50),
+  // Niveau équestre - now has default, make it optional with default
+  ridingLevel: z.string().min(1, "Veuillez indiquer votre niveau équestre").max(50).default("intermediaire"),
   ridingExperience: z.string().max(1000).optional().or(z.literal("")),
   hoursPerWeek: z.string().max(100).optional().or(z.literal("")),
   
@@ -54,12 +54,12 @@ const devisSchema = z.object({
   healthNotes: z.string().max(500).optional().or(z.literal("")),
   
   // Paiement
-  paymentOption: z.enum(["deposit", "full", "installments"]),
+  paymentOption: z.enum(["deposit", "full", "installments"]).default("deposit"),
   
   // Attentes
   expectations: z.string().max(2000).optional().or(z.literal("")),
   howDidYouHear: z.string().max(200).optional().or(z.literal("")),
-  newsletter: z.boolean().optional(),
+  newsletter: z.boolean().optional().default(false),
 });
 
 type DevisForm = z.infer<typeof devisSchema>;
@@ -136,8 +136,14 @@ const DemandeDevis = () => {
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<Partial<DevisForm>>({
+    name: "",
+    email: "",
+    phone: "",
+    selectedSejour: "",
+    selectedSlot: "",
     adultsCount: 1,
     childrenCount: 0,
+    ridingLevel: "intermediaire", // Default value to prevent "Required" error
     newsletter: false,
     paymentOption: "deposit",
   });
