@@ -7,21 +7,25 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Eye, EyeOff, Mail, Loader2, KeyRound } from "lucide-react";
+import { Eye, EyeOff, Mail, Loader2, KeyRound, Lock } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import cavaliersSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [isResetPassword, setIsResetPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [showResendButton, setShowResendButton] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true);
   const navigate = useNavigate();
 
   const handleResendConfirmation = async () => {
@@ -50,10 +54,55 @@ const Auth = () => {
   }, []);
 
   const checkSessionAndRedirect = async () => {
+    // Check for reset password flow
+    const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    
+    // Supabase sends access_token in hash for password reset
+    if (params.get("reset") === "true" || hashParams.get("type") === "recovery") {
+      setIsResetPassword(true);
+      setIsLogin(true);
+      setIsForgotPassword(false);
+      return;
+    }
+
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
+      // If we have a recovery session, stay on reset page
+      if (hashParams.get("type") === "recovery") {
+        setIsResetPassword(true);
+        return;
+      }
       await handlePostLoginRedirect(session.user.id);
     }
+  };
+
+  // Handle new password submission
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password.length < 6) {
+      toast.error("Le mot de passe doit contenir au moins 6 caractères");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("Les mots de passe ne correspondent pas");
+      return;
+    }
+    setLoading(true);
+    
+    const { error } = await supabase.auth.updateUser({ password });
+    
+    if (error) {
+      toast.error("Erreur : " + error.message);
+    } else {
+      toast.success("Mot de passe modifié avec succès ! Vous pouvez vous connecter.");
+      setIsResetPassword(false);
+      setPassword("");
+      setConfirmPassword("");
+      // Clear URL params
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    setLoading(false);
   };
 
   const handlePostLoginRedirect = async (userId: string) => {
@@ -203,22 +252,95 @@ const Auth = () => {
             {/* Header */}
             <div className="text-center space-y-2">
               <h1 className="font-serif text-3xl font-bold">
-                {isForgotPassword 
-                  ? "Mot de passe oublié ?" 
-                  : isLogin 
-                    ? "Bon retour parmi nous !" 
-                    : "Rejoignez l'aventure"}
+                {isResetPassword
+                  ? "Nouveau mot de passe"
+                  : isForgotPassword 
+                    ? "Mot de passe oublié ?" 
+                    : isLogin 
+                      ? "Bon retour parmi nous !" 
+                      : "Rejoignez l'aventure"}
               </h1>
               <p className="text-muted-foreground">
-                {isForgotPassword 
-                  ? "Entrez votre email pour recevoir un lien de réinitialisation"
-                  : isLogin
-                    ? "Connectez-vous pour accéder à votre espace cavalier"
-                    : "Créez votre compte et préparez votre prochaine escapade équestre"}
+                {isResetPassword
+                  ? "Définissez votre nouveau mot de passe"
+                  : isForgotPassword 
+                    ? "Entrez votre email pour recevoir un lien de réinitialisation"
+                    : isLogin
+                      ? "Connectez-vous pour accéder à votre espace cavalier"
+                      : "Créez votre compte et préparez votre prochaine escapade équestre"}
               </p>
             </div>
 
-            {isForgotPassword ? (
+            {isResetPassword ? (
+              /* Reset Password Form */
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">Nouveau mot de passe</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="new-password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="pl-10 pr-10"
+                      required
+                      minLength={6}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Minimum 6 caractères</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirmer le mot de passe</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="confirm-password"
+                      type={showPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="pl-10"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                </div>
+
+                <Button type="submit" className="w-full h-12 text-base gap-2" disabled={loading}>
+                  {loading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <KeyRound className="h-4 w-4" />
+                      Changer mon mot de passe
+                    </>
+                  )}
+                </Button>
+
+                <p className="text-center text-sm text-muted-foreground">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsResetPassword(false);
+                      window.history.replaceState({}, document.title, window.location.pathname);
+                    }}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    Retour à la connexion
+                  </button>
+                </p>
+              </form>
+            ) : isForgotPassword ? (
               /* Forgot Password Form */
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div className="space-y-2">
@@ -369,7 +491,20 @@ const Auth = () => {
                   <p className="text-xs text-muted-foreground">Minimum 6 caractères</p>
                 )}
                 {isLogin && (
-                  <div className="text-right">
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="remember" 
+                        checked={rememberMe}
+                        onCheckedChange={(checked) => setRememberMe(checked === true)}
+                      />
+                      <label 
+                        htmlFor="remember" 
+                        className="text-sm text-muted-foreground cursor-pointer"
+                      >
+                        Se souvenir de moi
+                      </label>
+                    </div>
                     <button
                       type="button"
                       onClick={() => setIsForgotPassword(true)}
