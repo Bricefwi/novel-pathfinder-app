@@ -102,7 +102,7 @@ const sejoursData: Record<string, SejourData> = {
     ],
     region: "Bretagne",
     pays: "France",
-    requirements: ["Savoir monter au pas et au trot", "Bonne condition physique", "Âge minimum : 12 ans"],
+    requirements: ["Savoir monter au pas, au trot, et au galop", "Bonne condition physique", "Âge minimum : 12 ans"],
   },
   "terre-mer": {
     id: "terre-mer",
