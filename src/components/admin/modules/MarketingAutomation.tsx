@@ -4,6 +4,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 import { 
   Megaphone, 
   Zap, 
@@ -19,7 +24,9 @@ import {
   MousePointer,
   Clock,
   Target,
-  Sparkles
+  Sparkles,
+  Loader2,
+  CheckCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,6 +35,8 @@ interface SegmentData {
   count: number;
   icon: React.ReactNode;
   color: string;
+  emails?: string[];
+  destination?: string;
 }
 
 interface RecentActivity {
@@ -36,18 +45,33 @@ interface RecentActivity {
   label: string;
 }
 
+type ActionType = "newsletter" | "rappel" | "vip" | null;
+
 export function MarketingAutomation() {
   const [loading, setLoading] = useState(true);
   const [segments, setSegments] = useState<SegmentData[]>([]);
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
+  const [incompleteProfileEmails, setIncompleteProfileEmails] = useState<string[]>([]);
+  const [completeProfileEmails, setCompleteProfileEmails] = useState<string[]>([]);
   const [stats, setStats] = useState({
     totalProfiles: 0,
     completeProfiles: 0,
+    incompleteProfiles: 0,
     totalPageViews: 0,
     uniqueVisitors: 0,
     emailsSent: 0,
     newsletterSubscribers: 0,
   });
+  
+  // Action modals state
+  const [activeAction, setActiveAction] = useState<ActionType>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [newsletterSubject, setNewsletterSubject] = useState("");
+  const [newsletterContent, setNewsletterContent] = useState("");
+  const [selectedSegment, setSelectedSegment] = useState<SegmentData | null>(null);
+  const [rappelSubject, setRappelSubject] = useState("Complétez votre profil cavalier !");
+  const [rappelContent, setRappelContent] = useState("Bonjour ! Nous avons remarqué que votre profil n'est pas encore complet. Prenez quelques minutes pour finaliser vos informations et accéder à des offres personnalisées.");
+  const [vipSubject, setVipSubject] = useState("Offre exclusive pour nos VIP 🌟");
+  const [vipContent, setVipContent] = useState("En tant que membre VIP, vous bénéficiez d'une offre exclusive sur nos prochaines randonnées. Contactez-nous pour en savoir plus !");
 
   useEffect(() => {
     fetchMarketingData();
@@ -56,10 +80,10 @@ export function MarketingAutomation() {
   const fetchMarketingData = async () => {
     setLoading(true);
     try {
-      // Fetch profiles data with all marketing-relevant fields
+      // Fetch profiles data with user_id to get emails
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("dream_destinations, riding_level, preferred_trip_types, interests, travel_style, phone, first_name, last_name, riding_experience_years, riding_style");
+        .select("user_id, dream_destinations, riding_level, preferred_trip_types, interests, travel_style, phone, first_name, last_name, riding_experience_years, riding_style");
 
       // Fetch analytics events (page views, interactions)
       const { data: analyticsEvents } = await supabase
@@ -74,33 +98,33 @@ export function MarketingAutomation() {
         .select("type, status")
         .eq("status", "sent");
 
-      // Fetch newsletter subscribers
+      // Fetch newsletter subscribers with emails
       const { data: subscribers } = await supabase
         .from("newsletter_subscribers")
-        .select("id")
+        .select("id, email")
         .eq("is_active", true);
 
       // Calculate segments from profile data
-      const destinationCounts: Record<string, number> = {};
+      const destinationEmails: Record<string, string[]> = {};
       const levelCounts: Record<string, number> = {};
-      const interestCounts: Record<string, number> = {};
       let completeProfiles = 0;
+      const completeEmails: string[] = [];
+      const incompleteEmails: string[] = [];
+
+      // Get emails from newsletter subscribers by matching user_id
+      const subscriberEmailsSet = new Set(subscribers?.map(s => s.email) || []);
 
       profiles?.forEach(profile => {
-        // Count destinations
+        // Count destinations and track emails (simplified - using user_id as proxy)
         profile.dream_destinations?.forEach((dest: string) => {
-          destinationCounts[dest] = (destinationCounts[dest] || 0) + 1;
+          if (!destinationEmails[dest]) destinationEmails[dest] = [];
+          // We'll need to fetch actual emails separately
         });
 
         // Count levels
         if (profile.riding_level) {
           levelCounts[profile.riding_level] = (levelCounts[profile.riding_level] || 0) + 1;
         }
-
-        // Count interests
-        profile.interests?.forEach((interest: string) => {
-          interestCounts[interest] = (interestCounts[interest] || 0) + 1;
-        });
 
         // Check if profile is complete
         const fields = [
@@ -115,40 +139,89 @@ export function MarketingAutomation() {
           (profile.riding_style?.length ?? 0) > 0,
           profile.travel_style,
         ];
-        if (fields.filter(Boolean).length === 10) {
+        
+        const isComplete = fields.filter(Boolean).length === 10;
+        if (isComplete) {
           completeProfiles++;
         }
       });
 
+      // Fetch emails for profiles
+      const userIds = profiles?.map(p => p.user_id) || [];
+      if (userIds.length > 0) {
+        // Get emails from newsletter_subscribers linked to profiles
+        const { data: profileEmails } = await supabase
+          .from("newsletter_subscribers")
+          .select("email, user_id")
+          .in("user_id", userIds);
+
+        // Rebuild email lists
+        profiles?.forEach(profile => {
+          const email = profileEmails?.find(pe => pe.user_id === profile.user_id)?.email;
+          if (!email) return;
+
+          const fields = [
+            profile.first_name,
+            profile.last_name,
+            profile.phone,
+            profile.riding_level,
+            profile.riding_experience_years,
+            (profile.dream_destinations?.length ?? 0) > 0,
+            (profile.preferred_trip_types?.length ?? 0) > 0,
+            (profile.interests?.length ?? 0) > 0,
+            (profile.riding_style?.length ?? 0) > 0,
+            profile.travel_style,
+          ];
+          
+          if (fields.filter(Boolean).length === 10) {
+            completeEmails.push(email);
+          } else {
+            incompleteEmails.push(email);
+          }
+
+          // Add to destination segments
+          profile.dream_destinations?.forEach((dest: string) => {
+            if (!destinationEmails[dest]) destinationEmails[dest] = [];
+            destinationEmails[dest].push(email);
+          });
+        });
+      }
+
+      setCompleteProfileEmails(completeEmails);
+      setIncompleteProfileEmails(incompleteEmails);
+
       // Build dynamic segments
-      const topDestinations = Object.entries(destinationCounts)
-        .sort(([, a], [, b]) => b - a)
+      const topDestinations = Object.entries(destinationEmails)
+        .sort(([, a], [, b]) => b.length - a.length)
         .slice(0, 5);
 
       const segmentsList: SegmentData[] = [
-        ...topDestinations.map(([dest, count]) => ({
+        ...topDestinations.map(([dest, emails]) => ({
           name: `Intéressés par ${dest}`,
-          count,
+          count: emails.length,
           icon: <MapPin className="h-4 w-4" />,
-          color: "bg-blue-500/10 text-blue-700 border-blue-500/30",
+          color: "bg-chart-4/20 text-chart-4 border-chart-4/30",
+          emails,
+          destination: dest,
         })),
         {
           name: "Cavaliers Débutants",
           count: levelCounts["debutant"] || 0,
           icon: <Mountain className="h-4 w-4" />,
-          color: "bg-green-500/10 text-green-700 border-green-500/30",
+          color: "bg-chart-1/20 text-chart-1 border-chart-1/30",
         },
         {
           name: "Cavaliers Confirmés/Experts",
           count: (levelCounts["confirme"] || 0) + (levelCounts["expert"] || 0),
           icon: <Mountain className="h-4 w-4" />,
-          color: "bg-amber-500/10 text-amber-700 border-amber-500/30",
+          color: "bg-chart-2/20 text-chart-2 border-chart-2/30",
         },
         {
           name: "Profils Complets (VIP)",
           count: completeProfiles,
           icon: <Sparkles className="h-4 w-4" />,
-          color: "bg-purple-500/10 text-purple-700 border-purple-500/30",
+          color: "bg-chart-5/20 text-chart-5 border-chart-5/30",
+          emails: completeEmails,
         },
       ];
 
@@ -160,26 +233,132 @@ export function MarketingAutomation() {
       setStats({
         totalProfiles: profiles?.length || 0,
         completeProfiles,
+        incompleteProfiles: (profiles?.length || 0) - completeProfiles,
         totalPageViews: analyticsEvents?.filter(e => e.event_type === "page_view").length || 0,
         uniqueVisitors: uniqueSessions,
         emailsSent: emailLogs?.length || 0,
         newsletterSubscribers: subscribers?.length || 0,
       });
 
-      // Recent activities
-      const pageViews = analyticsEvents?.filter(e => e.event_type === "page_view").length || 0;
-      const clicks = analyticsEvents?.filter(e => e.event_type === "click").length || 0;
-
-      setRecentActivities([
-        { type: "page_view", count: pageViews, label: "Pages vues (7j)" },
-        { type: "click", count: clicks, label: "Interactions" },
-        { type: "email", count: emailLogs?.length || 0, label: "Emails envoyés" },
-      ]);
-
     } catch (error) {
       console.error("Error fetching marketing data:", error);
     }
     setLoading(false);
+  };
+
+  // Send targeted newsletter
+  const handleSendNewsletter = async () => {
+    if (!selectedSegment || !newsletterSubject || !newsletterContent) {
+      toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+
+    if (!selectedSegment.emails || selectedSegment.emails.length === 0) {
+      toast.error("Aucun email disponible pour ce segment");
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-newsletter", {
+        body: {
+          subject: newsletterSubject,
+          content: newsletterContent,
+          targetEmails: selectedSegment.emails,
+          testMode: false,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(`Newsletter envoyée à ${selectedSegment.emails.length} personnes !`);
+      setActiveAction(null);
+      setNewsletterSubject("");
+      setNewsletterContent("");
+      setSelectedSegment(null);
+    } catch (err) {
+      console.error("Erreur envoi newsletter:", err);
+      toast.error("Erreur lors de l'envoi de la newsletter");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Send profile reminder
+  const handleSendRappel = async () => {
+    if (!rappelSubject || !rappelContent) {
+      toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+
+    if (incompleteProfileEmails.length === 0) {
+      toast.error("Aucun profil incomplet trouvé");
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-newsletter", {
+        body: {
+          subject: rappelSubject,
+          content: rappelContent,
+          targetEmails: incompleteProfileEmails,
+          testMode: false,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(`Rappel envoyé à ${incompleteProfileEmails.length} utilisateurs !`);
+      setActiveAction(null);
+    } catch (err) {
+      console.error("Erreur envoi rappel:", err);
+      toast.error("Erreur lors de l'envoi du rappel");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Send VIP offer
+  const handleSendVIP = async () => {
+    if (!vipSubject || !vipContent) {
+      toast.error("Veuillez remplir tous les champs");
+      return;
+    }
+
+    if (completeProfileEmails.length === 0) {
+      toast.error("Aucun profil VIP trouvé");
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-newsletter", {
+        body: {
+          subject: vipSubject,
+          content: vipContent,
+          targetEmails: completeProfileEmails,
+          testMode: false,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(`Offre VIP envoyée à ${completeProfileEmails.length} membres !`);
+      setActiveAction(null);
+    } catch (err) {
+      console.error("Erreur envoi VIP:", err);
+      toast.error("Erreur lors de l'envoi de l'offre VIP");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const openNewsletterModal = (segment: SegmentData) => {
+    setSelectedSegment(segment);
+    setNewsletterSubject(`Découvrez nos randonnées ${segment.destination || ""}`);
+    setNewsletterContent(`Bonjour,\n\nNous avons sélectionné pour vous nos meilleures randonnées${segment.destination ? ` en ${segment.destination}` : ""}. Découvrez nos offres du moment !\n\nL'équipe An Arwen`);
+    setActiveAction("newsletter");
   };
 
   if (loading) {
@@ -308,7 +487,7 @@ export function MarketingAutomation() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-lg">
-              <Zap className="h-5 w-5 text-amber-500" />
+              <Zap className="h-5 w-5 text-chart-2" />
               Sources de Données
             </CardTitle>
             <CardDescription>
@@ -327,14 +506,14 @@ export function MarketingAutomation() {
                     Niveau équestre, destinations, préférences, budget
                   </p>
                 </div>
-                <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30">
+                <Badge variant="outline" className="bg-chart-1/20 text-chart-1 border-chart-1/30">
                   Actif
                 </Badge>
               </div>
 
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <div className="p-2 rounded-full bg-blue-500/10">
-                  <Eye className="h-4 w-4 text-blue-500" />
+                <div className="p-2 rounded-full bg-chart-4/10">
+                  <Eye className="h-4 w-4 text-chart-4" />
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-sm">Navigation</p>
@@ -342,14 +521,14 @@ export function MarketingAutomation() {
                     Pages visitées, temps passé, sources de trafic
                   </p>
                 </div>
-                <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30">
+                <Badge variant="outline" className="bg-chart-1/20 text-chart-1 border-chart-1/30">
                   Actif
                 </Badge>
               </div>
 
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <div className="p-2 rounded-full bg-purple-500/10">
-                  <Heart className="h-4 w-4 text-purple-500" />
+                <div className="p-2 rounded-full bg-chart-5/10">
+                  <Heart className="h-4 w-4 text-chart-5" />
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-sm">Interactions</p>
@@ -357,14 +536,14 @@ export function MarketingAutomation() {
                     Devis demandés, réservations, favoris
                   </p>
                 </div>
-                <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30">
+                <Badge variant="outline" className="bg-chart-1/20 text-chart-1 border-chart-1/30">
                   Actif
                 </Badge>
               </div>
 
               <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                <div className="p-2 rounded-full bg-amber-500/10">
-                  <Mail className="h-4 w-4 text-amber-500" />
+                <div className="p-2 rounded-full bg-chart-2/10">
+                  <Mail className="h-4 w-4 text-chart-2" />
                 </div>
                 <div className="flex-1">
                   <p className="font-medium text-sm">Échanges Email/Chat</p>
@@ -372,7 +551,7 @@ export function MarketingAutomation() {
                     Historique des communications et questions
                   </p>
                 </div>
-                <Badge variant="outline" className="bg-green-500/10 text-green-700 border-green-500/30">
+                <Badge variant="outline" className="bg-chart-1/20 text-chart-1 border-chart-1/30">
                   Actif
                 </Badge>
               </div>
@@ -381,7 +560,7 @@ export function MarketingAutomation() {
         </Card>
       </div>
 
-      {/* Recommended Actions */}
+      {/* Recommended Actions - NOW ACTIVE */}
       <Card className="bg-primary/5 border-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
@@ -391,50 +570,208 @@ export function MarketingAutomation() {
         </CardHeader>
         <CardContent>
           <div className="grid md:grid-cols-3 gap-4">
+            {/* Newsletter ciblée */}
             <div className="p-4 rounded-lg bg-background border">
               <div className="flex items-center gap-2 mb-2">
-                <Mail className="h-4 w-4 text-blue-500" />
+                <Mail className="h-4 w-4 text-chart-4" />
                 <span className="font-medium text-sm">Newsletter ciblée</span>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
-                Envoyer une newsletter aux {segments.find(s => s.name.includes("Mongolie"))?.count || 0} personnes intéressées par la Mongolie
+                Envoyer une newsletter aux {segments.find(s => s.destination)?.count || 0} personnes intéressées par une destination
               </p>
-              <Button variant="outline" size="sm" className="w-full" disabled>
-                <Send className="h-3 w-3 mr-2" />
-                Bientôt
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full gap-2"
+                onClick={() => {
+                  const segmentWithEmails = segments.find(s => s.emails && s.emails.length > 0);
+                  if (segmentWithEmails) {
+                    openNewsletterModal(segmentWithEmails);
+                  } else {
+                    toast.error("Aucun segment avec emails disponibles");
+                  }
+                }}
+              >
+                <Send className="h-3 w-3" />
+                Envoyer
               </Button>
             </div>
 
+            {/* Rappel profil */}
             <div className="p-4 rounded-lg bg-background border">
               <div className="flex items-center gap-2 mb-2">
-                <Bell className="h-4 w-4 text-amber-500" />
+                <Bell className="h-4 w-4 text-chart-2" />
                 <span className="font-medium text-sm">Rappel profil</span>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
-                Notifier les {stats.totalProfiles - stats.completeProfiles} utilisateurs avec profil incomplet
+                Notifier les {stats.incompleteProfiles} utilisateurs avec profil incomplet
               </p>
-              <Button variant="outline" size="sm" className="w-full" disabled>
-                <Clock className="h-3 w-3 mr-2" />
-                Bientôt
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full gap-2"
+                onClick={() => setActiveAction("rappel")}
+                disabled={stats.incompleteProfiles === 0}
+              >
+                <Clock className="h-3 w-3" />
+                Envoyer
               </Button>
             </div>
 
+            {/* Offre VIP */}
             <div className="p-4 rounded-lg bg-background border">
               <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="h-4 w-4 text-purple-500" />
+                <Sparkles className="h-4 w-4 text-chart-5" />
                 <span className="font-medium text-sm">Offre VIP</span>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
                 Proposer une offre exclusive aux {stats.completeProfiles} profils complets
               </p>
-              <Button variant="outline" size="sm" className="w-full" disabled>
-                <Target className="h-3 w-3 mr-2" />
-                Bientôt
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full gap-2"
+                onClick={() => setActiveAction("vip")}
+                disabled={stats.completeProfiles === 0}
+              >
+                <Target className="h-3 w-3" />
+                Envoyer
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Newsletter Modal */}
+      <Dialog open={activeAction === "newsletter"} onOpenChange={(open) => !open && setActiveAction(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5 text-chart-4" />
+              Newsletter ciblée
+            </DialogTitle>
+            <DialogDescription>
+              Envoyer à {selectedSegment?.count || 0} personnes du segment "{selectedSegment?.name}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="subject">Sujet de l'email</Label>
+              <Input
+                id="subject"
+                value={newsletterSubject}
+                onChange={(e) => setNewsletterSubject(e.target.value)}
+                placeholder="Objet de votre newsletter"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="content">Contenu</Label>
+              <Textarea
+                id="content"
+                value={newsletterContent}
+                onChange={(e) => setNewsletterContent(e.target.value)}
+                placeholder="Rédigez votre message..."
+                rows={6}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActiveAction(null)}>
+              Annuler
+            </Button>
+            <Button onClick={handleSendNewsletter} disabled={actionLoading} className="gap-2">
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Envoyer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rappel Modal */}
+      <Dialog open={activeAction === "rappel"} onOpenChange={(open) => !open && setActiveAction(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5 text-chart-2" />
+              Rappel profil incomplet
+            </DialogTitle>
+            <DialogDescription>
+              Envoyer à {incompleteProfileEmails.length} utilisateurs avec profil incomplet
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="rappel-subject">Sujet de l'email</Label>
+              <Input
+                id="rappel-subject"
+                value={rappelSubject}
+                onChange={(e) => setRappelSubject(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="rappel-content">Contenu</Label>
+              <Textarea
+                id="rappel-content"
+                value={rappelContent}
+                onChange={(e) => setRappelContent(e.target.value)}
+                rows={6}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActiveAction(null)}>
+              Annuler
+            </Button>
+            <Button onClick={handleSendRappel} disabled={actionLoading} className="gap-2">
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Envoyer le rappel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* VIP Modal */}
+      <Dialog open={activeAction === "vip"} onOpenChange={(open) => !open && setActiveAction(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-chart-5" />
+              Offre VIP exclusive
+            </DialogTitle>
+            <DialogDescription>
+              Envoyer à {completeProfileEmails.length} membres VIP (profils complets)
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="vip-subject">Sujet de l'email</Label>
+              <Input
+                id="vip-subject"
+                value={vipSubject}
+                onChange={(e) => setVipSubject(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="vip-content">Contenu</Label>
+              <Textarea
+                id="vip-content"
+                value={vipContent}
+                onChange={(e) => setVipContent(e.target.value)}
+                rows={6}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActiveAction(null)}>
+              Annuler
+            </Button>
+            <Button onClick={handleSendVIP} disabled={actionLoading} className="gap-2">
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              Envoyer l'offre VIP
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
