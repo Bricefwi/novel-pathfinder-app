@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import { Eye, EyeOff, Mail, Loader2, KeyRound, Lock } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -129,17 +130,14 @@ const Auth = () => {
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth`,
-      },
+    const { error } = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
     });
     if (error) {
       const msg = (error.message || "").toLowerCase();
       if (msg.includes("provider is not enabled") || msg.includes("unsupported provider")) {
         toast.error(
-          "Connexion Google indisponible pour l’instant : activez Google dans le backend (Users → Auth Settings → Google Settings), ou créez un compte par email."
+          "Connexion Google indisponible pour l'instant : activez Google dans le backend (Users → Auth Settings → Google Settings), ou créez un compte par email."
         );
       } else {
         toast.error("Erreur de connexion Google : " + error.message);
