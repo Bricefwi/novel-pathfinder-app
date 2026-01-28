@@ -76,82 +76,71 @@ export function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Factorized function to load user data - prevents code duplication
+  const loadUserData = async (userId: string, userMetadata: Record<string, unknown>, userEmail?: string) => {
+    // Run both queries in parallel for performance
+    const [roleResult, profileResult] = await Promise.all([
+      supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle(),
+      supabase
+        .from("profiles")
+        .select("first_name, last_name, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_companions, avatar_url")
+        .eq("user_id", userId)
+        .maybeSingle()
+    ]);
+    
+    setIsAdmin(!!roleResult.data);
+    
+    const profileData = profileResult.data;
+    const completion = calculateProfileCompletion(profileData as ProfileForCompletion | null);
+    setIsProfileComplete(completion === 100);
+    
+    // Set avatar (from profile or OAuth metadata)
+    const avatarFromProfile = profileData?.avatar_url;
+    const avatarFromOAuth = userMetadata?.avatar_url || userMetadata?.picture;
+    setAvatarUrl((avatarFromProfile || avatarFromOAuth || null) as string | null);
+    
+    // Set initials
+    if (profileData?.first_name || profileData?.last_name) {
+      setUserInitials(`${profileData.first_name?.charAt(0) || ""}${profileData.last_name?.charAt(0) || ""}`.toUpperCase() || "U");
+    } else {
+      setUserInitials(userEmail?.charAt(0).toUpperCase() || "U");
+    }
+  };
+
+  const clearUserData = () => {
+    setIsAdmin(false);
+    setIsProfileComplete(false);
+    setAvatarUrl(null);
+    setUserInitials("U");
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_, session) => {
+      (event, session) => {
+        // Synchronous state update first - prevents deadlock
         setUser(session?.user ?? null);
+        
         if (session?.user) {
-          // Check admin role
-          const { data: roleData } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id)
-            .eq("role", "admin")
-            .single();
-          setIsAdmin(!!roleData);
-          
-          // Check profile completion and get avatar
-          const { data: profileData } = await supabase
-            .from("profiles")
-            .select("first_name, last_name, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_companions, avatar_url")
-            .eq("user_id", session.user.id)
-            .single();
-          
-          const completion = calculateProfileCompletion(profileData as ProfileForCompletion | null);
-          setIsProfileComplete(completion === 100);
-          
-          // Set avatar (from profile or OAuth metadata)
-          const avatarFromProfile = profileData?.avatar_url;
-          const avatarFromOAuth = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;
-          setAvatarUrl(avatarFromProfile || avatarFromOAuth || null);
-          
-          // Set initials
-          if (profileData?.first_name || profileData?.last_name) {
-            setUserInitials(`${profileData.first_name?.charAt(0) || ""}${profileData.last_name?.charAt(0) || ""}`.toUpperCase() || "U");
-          } else {
-            setUserInitials(session.user.email?.charAt(0).toUpperCase() || "U");
-          }
+          // Defer async operations with setTimeout to prevent Supabase deadlock
+          setTimeout(() => {
+            loadUserData(session.user.id, session.user.user_metadata, session.user.email);
+          }, 0);
         } else {
-          setIsAdmin(false);
-          setIsProfileComplete(false);
-          setAvatarUrl(null);
-          setUserInitials("U");
+          clearUserData();
         }
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .eq("role", "admin")
-          .single();
-        setIsAdmin(!!roleData);
-        
-        // Check profile completion and get avatar
-        const { data: profileData } = await supabase
-          .from("profiles")
-          .select("first_name, last_name, phone, riding_level, riding_experience_years, dream_destinations, preferred_trip_types, interests, riding_style, travel_companions, avatar_url")
-          .eq("user_id", session.user.id)
-          .single();
-        
-        const completion = calculateProfileCompletion(profileData as ProfileForCompletion | null);
-        setIsProfileComplete(completion === 100);
-        
-        // Set avatar (from profile or OAuth metadata)
-        const avatarFromProfile = profileData?.avatar_url;
-        const avatarFromOAuth = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;
-        setAvatarUrl(avatarFromProfile || avatarFromOAuth || null);
-        
-        // Set initials
-        if (profileData?.first_name || profileData?.last_name) {
-          setUserInitials(`${profileData.first_name?.charAt(0) || ""}${profileData.last_name?.charAt(0) || ""}`.toUpperCase() || "U");
-        } else {
-          setUserInitials(session.user.email?.charAt(0).toUpperCase() || "U");
-        }
+        loadUserData(session.user.id, session.user.user_metadata, session.user.email);
       }
     });
 
@@ -159,8 +148,11 @@ export function Header() {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setIsAdmin(false);
+    // Clear local state immediately for instant UI feedback
+    clearUserData();
+    setUser(null);
+    // Then sign out from Supabase (non-blocking for UX)
+    supabase.auth.signOut();
   };
 
   const handleAvatarUpdate = (newUrl: string) => {
