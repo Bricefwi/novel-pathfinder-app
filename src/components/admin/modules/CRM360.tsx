@@ -14,6 +14,7 @@ import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { downloadProspectAnalysisPDF, ProspectAnalysisData } from "@/components/pdf/ProspectAnalysisPDFGenerator";
+import { UserRoleManager } from "@/components/admin/UserRoleManager";
 import {
   Users,
   Search,
@@ -34,6 +35,7 @@ import {
   ShoppingBag,
   Download,
   History,
+  ShieldCheck,
 } from "lucide-react";
 
 interface ProspectAnalysis {
@@ -73,6 +75,7 @@ interface ClientProfile {
   lastActivity: string | null;
   leadScore: number;
   segment: "vip" | "hot" | "dormant" | "new";
+  userRole?: "admin" | "user";
 }
 
 export function CRM360() {
@@ -113,23 +116,26 @@ export function CRM360() {
   const { data: clients, isLoading } = useQuery({
     queryKey: ["crm-clients"],
     queryFn: async () => {
-      const [profilesRes, bookingsRes, quotesRes, messagesRes] = await Promise.all([
+      const [profilesRes, bookingsRes, quotesRes, messagesRes, rolesRes] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
         supabase.from("bookings").select("user_id, status, created_at"),
         supabase.from("quotes").select("user_id, status, created_at"),
         supabase.from("chat_messages").select("user_id, created_at").order("created_at", { ascending: false }),
+        supabase.from("user_roles").select("user_id, role"),
       ]);
 
       const profiles = profilesRes.data || [];
       const bookings = bookingsRes.data || [];
       const quotes = quotesRes.data || [];
       const messages = messagesRes.data || [];
+      const roles = rolesRes.data || [];
 
       // Enrich profiles with CRM data
       const enrichedProfiles: ClientProfile[] = profiles.map((profile) => {
         const userBookings = bookings.filter((b) => b.user_id === profile.user_id);
         const userQuotes = quotes.filter((q) => q.user_id === profile.id);
         const userMessages = messages.filter((m) => m.user_id === profile.user_id);
+        const userRole = roles.find((r) => r.user_id === profile.user_id);
 
         const totalBookings = userBookings.filter((b) => b.status === "confirmed").length;
         const totalQuotes = userQuotes.length;
@@ -168,6 +174,7 @@ export function CRM360() {
           lastActivity,
           leadScore,
           segment,
+          userRole: (userRole?.role as "admin" | "user") || "user",
         };
       });
 
@@ -439,13 +446,27 @@ export function CRM360() {
                       </CardTitle>
                       <CardDescription className="flex items-center gap-2 mt-1">
                         {getSegmentBadge(selectedClient.segment)}
+                        {selectedClient.userRole === "admin" && (
+                          <Badge className="bg-primary/20 text-primary border-primary/30 gap-1">
+                            <ShieldCheck className="h-3 w-3" />
+                            Admin
+                          </Badge>
+                        )}
                         <span>• Inscrit le {format(new Date(selectedClient.created_at), "dd MMMM yyyy", { locale: fr })}</span>
                       </CardDescription>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm text-muted-foreground mb-1">Lead Score</div>
-                    <div className="text-3xl font-bold text-primary">{selectedClient.leadScore}%</div>
+                  <div className="text-right flex flex-col items-end gap-2">
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Lead Score</div>
+                      <div className="text-3xl font-bold text-primary">{selectedClient.leadScore}%</div>
+                    </div>
+                    <UserRoleManager
+                      userId={selectedClient.user_id}
+                      userName={`${selectedClient.first_name || "Sans"} ${selectedClient.last_name || "nom"}`}
+                      currentRole={selectedClient.userRole}
+                      onRoleChanged={() => queryClient.invalidateQueries({ queryKey: ["crm-clients"] })}
+                    />
                   </div>
                 </div>
               </CardHeader>

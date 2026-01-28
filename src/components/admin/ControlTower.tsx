@@ -4,22 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 import {
   SidebarProvider,
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
   SidebarInset,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
 import { CommandPalette } from "./CommandPalette";
 import { ControlTowerSidebar } from "./ControlTowerSidebar";
 import { ControlTowerContent } from "./ControlTowerContent";
+import { AdminChatAssistant } from "./AdminChatAssistant";
 
 export type AdminModule = 
   | "dashboard"
@@ -136,6 +127,7 @@ export function ControlTower() {
           setCommandOpen(false);
         }}
       />
+      <AdminChatAssistant />
     </SidebarProvider>
   );
 }
