@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
-import { Link } from "react-router-dom";
-import { ArrowRight, MapPin, Calendar, Users, Euro, Compass, Star, Clock, Check, ChevronRight, ArrowLeft } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowRight, MapPin, Calendar, Users, Euro, Compass, Star, Clock, Check, ChevronRight, ArrowLeft, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +21,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { useCartStore } from "@/stores/cartStore";
+import { toast } from "sonner";
 
 // Import real images
 import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
@@ -393,21 +395,45 @@ const SejourCard = ({
   region: string;
   pays: string;
 }) => {
+  const navigate = useNavigate();
+  const { addItem } = useCartStore();
+  
   const niveauColor = {
     "Tous niveaux": "bg-emerald-500/10 text-emerald-700 border-emerald-500/30",
     "Intermédiaire": "bg-amber-500/10 text-amber-700 border-amber-500/30",
     "Confirmé": "bg-rose-500/10 text-rose-700 border-rose-500/30",
   }[sejour.niveau] || "bg-muted text-muted-foreground";
 
+  const handleAddToCart = (creneau?: Creneau) => {
+    const price = creneau?.tarif || sejour.prixFrom || 0;
+    addItem({
+      id: sejour.id,
+      type: "sejour",
+      title: sejour.titre,
+      subtitle: sejour.sousTitre,
+      location: `${region}, ${pays}`,
+      duration: sejour.duree,
+      image: sejour.image,
+      price,
+      startDate: creneau?.dateDebut ? `2026-${creneau.dateDebut.split('/').reverse().join('-')}` : undefined,
+      endDate: creneau?.dateFin ? `2026-${creneau.dateFin.split('/').reverse().join('-')}` : undefined,
+      ridingLevel: sejour.niveau,
+    });
+    toast.success(`${sejour.titre} ajouté au panier !`);
+  };
+
   return (
     <div className="bg-card rounded-xl overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-xl">
       <div className="flex flex-col lg:flex-row">
-        {/* Image section */}
-        <div className="relative lg:w-2/5 aspect-[16/10] lg:aspect-auto lg:min-h-[320px] overflow-hidden">
+        {/* Image section - Clickable */}
+        <Link 
+          to={`/sejour/${sejour.id}`} 
+          className="relative lg:w-2/5 aspect-[16/10] lg:aspect-auto lg:min-h-[320px] overflow-hidden group cursor-pointer"
+        >
           <img
             src={sejour.image}
             alt={sejour.titre}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
           {/* Badge niveau */}
@@ -423,7 +449,7 @@ const SejourCard = ({
               <span className="font-semibold text-sm">{sejour.rating}</span>
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Content section */}
         <div className="lg:w-3/5 p-6 lg:p-8 flex flex-col">
@@ -479,6 +505,7 @@ const SejourCard = ({
                       <TableHead className="text-xs font-semibold text-muted-foreground h-9 px-2 text-center">NUITÉES</TableHead>
                       <TableHead className="text-xs font-semibold text-muted-foreground h-9 px-2 text-center">TARIF</TableHead>
                       <TableHead className="text-xs font-semibold text-muted-foreground h-9 px-2 text-center">DISPO</TableHead>
+                      <TableHead className="text-xs font-semibold text-muted-foreground h-9 px-2 text-center">ACTION</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -494,19 +521,36 @@ const SejourCard = ({
                           {creneau.tarif.toLocaleString("fr-FR")}€
                         </TableCell>
                         <TableCell className="text-xs py-2 px-2 text-center">
-                          <span className={`font-medium ${creneau.placesDisponibles <= 2 ? "text-rose-600" : "text-emerald-600"}`}>
+                          <span className={`font-medium ${creneau.placesDisponibles <= 2 ? "text-destructive" : "text-primary"}`}>
                             {creneau.placesDisponibles} place{creneau.placesDisponibles > 1 ? "s" : ""}
                           </span>
+                        </TableCell>
+                        <TableCell className="py-2 px-2 text-center">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="h-7 text-xs"
+                            onClick={() => handleAddToCart(creneau)}
+                          >
+                            <ShoppingCart className="h-3 w-3 mr-1" />
+                            Ajouter
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </div>
-              <div className="mt-4">
-                <Link to={`/demande-devis?sejour=${encodeURIComponent(sejour.titre)}`}>
-                  <Button className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground">
+              <div className="mt-4 flex flex-col sm:flex-row gap-3">
+                <Link to={`/sejour/${sejour.id}`}>
+                  <Button variant="outline" className="w-full sm:w-auto">
                     Voir les détails
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link to={`/demande-devis?sejour=${encodeURIComponent(sejour.titre)}`}>
+                  <Button className="w-full sm:w-auto">
+                    Demander un devis
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
@@ -515,12 +559,19 @@ const SejourCard = ({
           ) : (
             <div className="border-t border-border pt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <p className="text-muted-foreground text-sm">Sur demande uniquement</p>
-              <Link to={`/demande-devis?sejour=${encodeURIComponent(sejour.titre)}`}>
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  Demander un devis
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
+              <div className="flex gap-2">
+                <Link to={`/sejour/${sejour.id}`}>
+                  <Button variant="outline" size="sm">
+                    Voir détails
+                  </Button>
+                </Link>
+                <Link to={`/demande-devis?sejour=${encodeURIComponent(sejour.titre)}`}>
+                  <Button size="sm">
+                    Demander un devis
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           )}
         </div>

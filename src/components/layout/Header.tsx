@@ -30,6 +30,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { calculateProfileCompletion, type ProfileForCompletion } from "@/lib/profile-utils";
+import { CartButton } from "@/components/cart/CartButton";
 
 const navigation = [
   { name: "Accueil", href: "/" },
@@ -246,6 +247,9 @@ export function Header() {
 
           {/* Actions */}
           <div className="flex items-center space-x-3">
+            {/* Cart Button */}
+            <CartButton />
+            
             {/* Verified Profile Badge */}
             {user && isProfileComplete && (
               <TooltipProvider>
