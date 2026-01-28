@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { AvatarUploadDialog } from "@/components/layout/AvatarUploadDialog";
+import { AccountSettings } from "@/components/user/AccountSettings";
 import { 
   User, 
   Award, 
@@ -18,9 +20,12 @@ import {
   Shield,
   ChevronRight,
   Sparkles,
-  Edit
+  Edit,
+  Camera
 } from "lucide-react";
 import { calculateProfileCompletion, type ProfileForCompletion } from "@/lib/profile-utils";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Profile extends ProfileForCompletion {
   id: string;
@@ -34,10 +39,38 @@ interface TravelHubProfileProps {
   profile: Profile | null;
   userEmail: string;
   loading: boolean;
+  onProfileUpdate?: (updates: Partial<Profile>) => void;
 }
 
-export const TravelHubProfile = ({ profile, userEmail, loading }: TravelHubProfileProps) => {
+export const TravelHubProfile = ({ profile, userEmail, loading, onProfileUpdate }: TravelHubProfileProps) => {
   const navigate = useNavigate();
+  const [localPhone, setLocalPhone] = useState(profile?.phone || null);
+  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const [localAvatarUrl, setLocalAvatarUrl] = useState(profile?.avatar_url || null);
+
+  const handlePhoneUpdate = (newPhone: string) => {
+    setLocalPhone(newPhone);
+    onProfileUpdate?.({ phone: newPhone });
+  };
+
+  const handleAvatarUpdate = async (url: string) => {
+    setLocalAvatarUrl(url);
+    onProfileUpdate?.({ avatar_url: url });
+    
+    // Update in database
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from("profiles")
+          .update({ avatar_url: url, updated_at: new Date().toISOString() })
+          .eq("user_id", user.id);
+        toast.success("Photo de profil mise à jour !");
+      }
+    } catch (error) {
+      console.error("Error updating avatar:", error);
+    }
+  };
 
   const getRidingLevelLabel = (level: string | null) => {
     const labels: Record<string, string> = {
@@ -83,13 +116,28 @@ export const TravelHubProfile = ({ profile, userEmail, loading }: TravelHubProfi
         <div className="bg-gradient-to-r from-primary/10 via-accent/10 to-primary/5 p-6">
           <div className="flex flex-col md:flex-row items-center gap-6">
             {/* Avatar */}
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center text-3xl font-bold text-primary">
-                {profile?.first_name?.[0] || profile?.last_name?.[0] || 'U'}
-              </div>
+            <div className="relative group">
+              {localAvatarUrl ? (
+                <img 
+                  src={localAvatarUrl} 
+                  alt="Avatar"
+                  className="w-24 h-24 rounded-full object-cover border-4 border-background shadow-lg"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center text-3xl font-bold text-primary border-4 border-background shadow-lg">
+                  {profile?.first_name?.[0] || profile?.last_name?.[0] || 'U'}
+                </div>
+              )}
+              {/* Camera overlay */}
+              <button
+                onClick={() => setAvatarDialogOpen(true)}
+                className="absolute inset-0 w-24 h-24 rounded-full bg-foreground/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
+              >
+                <Camera className="h-6 w-6 text-primary-foreground" />
+              </button>
               {isVerified && (
-                <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
-                  <Shield className="h-4 w-4 text-white" />
+                <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-lg">
+                  <Shield className="h-4 w-4 text-primary-foreground" />
                 </div>
               )}
             </div>
@@ -101,7 +149,7 @@ export const TravelHubProfile = ({ profile, userEmail, loading }: TravelHubProfi
                   {profile?.first_name || ''} {profile?.last_name || 'Cavalier Anonyme'}
                 </h2>
                 {isVerified && (
-                  <Badge className="bg-green-500/10 text-green-700 border-green-500/30 w-fit mx-auto md:mx-0">
+                  <Badge className="bg-primary/10 text-primary border-primary/30 w-fit mx-auto md:mx-0">
                     <Shield className="h-3 w-3 mr-1" />
                     Cavalier Vérifié
                   </Badge>
@@ -326,6 +374,13 @@ export const TravelHubProfile = ({ profile, userEmail, loading }: TravelHubProfi
         </Card>
       )}
 
+      {/* Account Settings */}
+      <AccountSettings 
+        userEmail={userEmail}
+        phone={localPhone}
+        onPhoneUpdate={handlePhoneUpdate}
+      />
+
       {/* CTA */}
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="py-6">
@@ -343,6 +398,16 @@ export const TravelHubProfile = ({ profile, userEmail, loading }: TravelHubProfi
           </div>
         </CardContent>
       </Card>
+
+      {/* Avatar Upload Dialog */}
+      <AvatarUploadDialog
+        open={avatarDialogOpen}
+        onOpenChange={setAvatarDialogOpen}
+        onAvatarUpdate={(url) => handleAvatarUpdate(url)}
+        currentAvatarUrl={localAvatarUrl}
+        userId={profile?.id || ""}
+        userInitials={(profile?.first_name?.[0] || "") + (profile?.last_name?.[0] || "U")}
+      />
     </div>
   );
 };
