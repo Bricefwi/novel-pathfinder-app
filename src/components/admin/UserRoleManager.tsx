@@ -13,13 +13,24 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Shield, ShieldCheck, User, Loader2 } from "lucide-react";
+import { Shield, ShieldCheck, User, Loader2, AlertTriangle } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 interface UserRoleManagerProps {
   userId: string;
@@ -31,6 +42,8 @@ interface UserRoleManagerProps {
 export function UserRoleManager({ userId, userName, currentRole = "user", onRoleChanged }: UserRoleManagerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<"admin" | "user">(currentRole);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [confirmationText, setConfirmationText] = useState("");
   const queryClient = useQueryClient();
 
   const updateRoleMutation = useMutation({
@@ -70,6 +83,8 @@ export function UserRoleManager({ userId, userName, currentRole = "user", onRole
       queryClient.invalidateQueries({ queryKey: ["crm-clients"] });
       queryClient.invalidateQueries({ queryKey: ["user-roles"] });
       setIsOpen(false);
+      setShowConfirmation(false);
+      setConfirmationText("");
       onRoleChanged?.();
     },
     onError: (error) => {
@@ -80,10 +95,22 @@ export function UserRoleManager({ userId, userName, currentRole = "user", onRole
 
   const handleSaveRole = () => {
     if (selectedRole !== currentRole) {
-      updateRoleMutation.mutate(selectedRole);
+      // Show security confirmation for critical role changes
+      setShowConfirmation(true);
     } else {
       setIsOpen(false);
     }
+  };
+
+  const handleConfirmedRoleChange = () => {
+    // Validate confirmation text
+    const expectedText = selectedRole === "admin" ? "PROMOUVOIR" : "RÉVOQUER";
+    if (confirmationText.toUpperCase() !== expectedText) {
+      toast.error(`Veuillez taper "${expectedText}" pour confirmer`);
+      return;
+    }
+    
+    updateRoleMutation.mutate(selectedRole);
   };
 
   const getRoleBadge = (role: "admin" | "user") => {
@@ -103,6 +130,27 @@ export function UserRoleManager({ userId, userName, currentRole = "user", onRole
     );
   };
 
+  const getConfirmationDetails = () => {
+    if (selectedRole === "admin") {
+      return {
+        title: "Promouvoir en Administrateur ?",
+        description: `Vous êtes sur le point de donner les droits d'administrateur à ${userName}. Cette personne aura accès au Control Tower et pourra gérer tout le contenu du site, les utilisateurs et les données sensibles.`,
+        confirmText: "PROMOUVOIR",
+        actionLabel: "Confirmer la promotion",
+        variant: "default" as const
+      };
+    }
+    return {
+      title: "Révoquer les droits Administrateur ?",
+      description: `Vous êtes sur le point de retirer les droits d'administrateur à ${userName}. Cette personne n'aura plus accès au Control Tower ni aux fonctionnalités d'administration.`,
+      confirmText: "RÉVOQUER",
+      actionLabel: "Confirmer la révocation",
+      variant: "destructive" as const
+    };
+  };
+
+  const confirmDetails = getConfirmationDetails();
+
   return (
     <>
       <Button
@@ -115,6 +163,7 @@ export function UserRoleManager({ userId, userName, currentRole = "user", onRole
         Gérer le rôle
       </Button>
 
+      {/* Main Role Selection Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent>
           <DialogHeader>
@@ -172,7 +221,54 @@ export function UserRoleManager({ userId, userName, currentRole = "user", onRole
             </Button>
             <Button 
               onClick={handleSaveRole}
-              disabled={updateRoleMutation.isPending}
+              disabled={selectedRole === currentRole}
+            >
+              Continuer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Security Confirmation Dialog */}
+      <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
+              <AlertTriangle className="h-5 w-5" />
+              {confirmDetails.title}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4">
+              <p>{confirmDetails.description}</p>
+              
+              <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2">
+                  Action de sécurité requise
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+                  Pour confirmer, tapez <strong>"{confirmDetails.confirmText}"</strong> ci-dessous :
+                </p>
+                <Input
+                  value={confirmationText}
+                  onChange={(e) => setConfirmationText(e.target.value)}
+                  placeholder={confirmDetails.confirmText}
+                  className="border-amber-300 dark:border-amber-700"
+                  autoComplete="off"
+                  spellCheck={false}
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setConfirmationText("");
+              setShowConfirmation(false);
+            }}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmedRoleChange}
+              disabled={confirmationText.toUpperCase() !== confirmDetails.confirmText || updateRoleMutation.isPending}
+              className={selectedRole === "user" ? "bg-destructive hover:bg-destructive/90" : ""}
             >
               {updateRoleMutation.isPending ? (
                 <>
@@ -180,12 +276,12 @@ export function UserRoleManager({ userId, userName, currentRole = "user", onRole
                   Mise à jour...
                 </>
               ) : (
-                "Enregistrer"
+                confirmDetails.actionLabel
               )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
