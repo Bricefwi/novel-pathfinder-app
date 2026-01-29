@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
-import { ChevronRight, ChevronLeft, Check, MapPin, Flag, FileText, Users, Calendar, Euro } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, MapPin, FileText, Users, Calendar, Euro, Image } from "lucide-react";
+import { ImageUploader } from "./ImageUploader";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Activity = Tables<"activities">;
@@ -24,51 +25,163 @@ const STEPS = [
   { id: 1, title: "Destination", icon: MapPin },
   { id: 2, title: "Informations", icon: FileText },
   { id: 3, title: "Capacité", icon: Users },
-  { id: 4, title: "Créneaux", icon: Calendar },
+  { id: 4, title: "Photos", icon: Image },
   { id: 5, title: "Tarifs", icon: Euro },
 ];
 
-const COUNTRIES = ["France", "Maroc", "Mongolie", "Écosse", "Jordanie"];
+const COUNTRIES = ["France", "Maroc", "Europe", "Asie"];
 const REGIONS: Record<string, string[]> = {
-  France: ["Bretagne", "Normandie", "Provence"],
-  Maroc: ["Désert", "Atlas", "Côte Atlantique"],
-  Mongolie: ["Steppes", "Gobi", "Khentii"],
-  Écosse: ["Highlands", "Île de Skye"],
-  Jordanie: ["Wadi Rum", "Pétra"],
+  France: ["Bretagne", "Normandie", "Provence", "Vosges", "Alsace"],
+  Maroc: ["Sud Marocain", "Atlas & Côte", "Désert", "Côte Atlantique"],
+  Europe: ["Écosse", "Irlande", "Islande", "Espagne"],
+  Asie: ["Mongolie", "Jordanie", "Inde", "Népal"],
 };
+
+const ACTIVITY_TYPES = [
+  { value: "sejour", label: "Séjour / Randonnée" },
+  { value: "stage", label: "Stage" },
+  { value: "cours", label: "Cours" },
+  { value: "randonnee", label: "Randonnée à la journée" },
+];
 
 export function ActivityWizard({ open, onOpenChange, activity, onComplete }: ActivityWizardProps) {
   const queryClient = useQueryClient();
   const [step, setStep] = useState(1);
+  const isEditing = !!activity;
+
   const [formData, setFormData] = useState({
-    country: activity?.country || "France",
-    region: activity?.region || "",
-    title: activity?.title || "",
-    slug: activity?.slug || "",
-    description: activity?.description || "",
-    short_description: activity?.short_description || "",
-    riding_level: activity?.riding_level || "debutant",
-    max_participants: activity?.max_participants || 8,
-    duration: activity?.duration || "",
-    price_from: activity?.price_from || 0,
-    price_to: activity?.price_to || 0,
+    country: "France",
+    region: "",
+    title: "",
+    slug: "",
+    description: "",
+    short_description: "",
+    riding_level: "debutant" as "debutant" | "intermediaire" | "confirme" | "expert",
+    max_participants: 8,
+    duration: "",
+    price_from: 0,
+    price_to: 0,
+    activity_type: "sejour" as "sejour" | "stage" | "cours" | "randonnee" | "hebergement",
+    inclusions: [] as string[],
+    exclusions: [] as string[],
+    requirements: [] as string[],
+    images: [] as string[],
+    featured_image: "",
   });
 
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("activities").insert({
-        ...formData,
-        activity_type: "sejour",
-        is_active: true,
+  // Reset form when activity changes
+  useEffect(() => {
+    if (activity) {
+      setFormData({
+        country: activity.country || "France",
+        region: activity.region || "",
+        title: activity.title || "",
+        slug: activity.slug || "",
+        description: activity.description || "",
+        short_description: activity.short_description || "",
+        riding_level: activity.riding_level || "debutant",
+        max_participants: activity.max_participants || 8,
+        duration: activity.duration || "",
+        price_from: activity.price_from || 0,
+        price_to: activity.price_to || 0,
+        activity_type: activity.activity_type || "sejour",
+        inclusions: activity.inclusions || [],
+        exclusions: activity.exclusions || [],
+        requirements: activity.requirements || [],
+        images: (activity.images as string[]) || [],
+        featured_image: activity.featured_image || "",
       });
-      if (error) throw error;
+    } else {
+      // Reset to defaults for new activity
+      setFormData({
+        country: "France",
+        region: "",
+        title: "",
+        slug: "",
+        description: "",
+        short_description: "",
+        riding_level: "debutant",
+        max_participants: 8,
+        duration: "",
+        price_from: 0,
+        price_to: 0,
+        activity_type: "sejour",
+        inclusions: [],
+        exclusions: [],
+        requirements: [],
+        images: [],
+        featured_image: "",
+      });
+    }
+    setStep(1);
+  }, [activity, open]);
+
+  // Auto-generate slug from title
+  useEffect(() => {
+    if (!isEditing && formData.title) {
+      const slug = formData.title
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+      setFormData((prev) => ({ ...prev, slug }));
+    }
+  }, [formData.title, isEditing]);
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        country: formData.country,
+        region: formData.region,
+        title: formData.title,
+        slug: formData.slug,
+        description: formData.description,
+        short_description: formData.short_description,
+        riding_level: formData.riding_level,
+        max_participants: formData.max_participants,
+        duration: formData.duration,
+        price_from: formData.price_from,
+        price_to: formData.price_to,
+        activity_type: formData.activity_type,
+        inclusions: formData.inclusions,
+        exclusions: formData.exclusions,
+        requirements: formData.requirements,
+        images: formData.images,
+        featured_image: formData.images[0] || formData.featured_image,
+        is_active: true,
+      };
+
+      if (isEditing && activity) {
+        const { error } = await supabase
+          .from("activities")
+          .update(payload)
+          .eq("id", activity.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("activities")
+          .insert(payload);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      toast.success("Séjour créé avec succès");
+      toast.success(isEditing ? "Séjour mis à jour avec succès" : "Séjour créé avec succès");
+      queryClient.invalidateQueries({ queryKey: ["stock-management"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
+      queryClient.invalidateQueries({ queryKey: ["activities"] });
+      queryClient.invalidateQueries({ queryKey: ["sejours-grouped"] });
       onComplete();
       setStep(1);
     },
-    onError: () => toast.error("Erreur lors de la création"),
+    onError: (error: any) => {
+      console.error("Save error:", error);
+      if (error.code === "23505") {
+        toast.error("Ce slug existe déjà. Choisissez un autre titre.");
+      } else {
+        toast.error("Erreur lors de la sauvegarde");
+      }
+    },
   });
 
   const handleNext = () => step < 5 && setStep(step + 1);
@@ -76,54 +189,116 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
 
   const handleSubmit = () => {
     if (!formData.title || !formData.slug) {
-      toast.error("Veuillez remplir les champs obligatoires");
+      toast.error("Veuillez remplir le titre du séjour");
+      setStep(2);
       return;
     }
-    createMutation.mutate();
+    if (!formData.region) {
+      toast.error("Veuillez sélectionner une région");
+      setStep(1);
+      return;
+    }
+    saveMutation.mutate();
+  };
+
+  const handleImagesChange = (images: string[]) => {
+    setFormData((prev) => ({
+      ...prev,
+      images,
+      featured_image: images[0] || prev.featured_image,
+    }));
+  };
+
+  const handleListChange = (field: "inclusions" | "exclusions" | "requirements", value: string) => {
+    const items = value.split("\n").filter((item) => item.trim() !== "");
+    setFormData((prev) => ({ ...prev, [field]: items }));
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Nouveau Séjour - Étape {step}/5</DialogTitle>
+          <DialogTitle>
+            {isEditing ? `Modifier "${activity?.title}"` : "Nouveau Séjour"} - Étape {step}/5
+          </DialogTitle>
         </DialogHeader>
 
         {/* Progress Steps */}
         <div className="flex items-center justify-between mb-6">
           {STEPS.map((s, i) => (
             <div key={s.id} className="flex items-center">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                step >= s.id ? "bg-primary border-primary text-primary-foreground" : "border-muted-foreground/30"
-              }`}>
+              <button
+                onClick={() => setStep(s.id)}
+                className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors ${
+                  step >= s.id
+                    ? "bg-primary border-primary text-primary-foreground"
+                    : "border-muted-foreground/30 hover:border-primary/50"
+                }`}
+              >
                 {step > s.id ? <Check className="h-5 w-5" /> : <s.icon className="h-5 w-5" />}
-              </div>
+              </button>
               {i < STEPS.length - 1 && (
-                <div className={`w-12 h-0.5 mx-1 ${step > s.id ? "bg-primary" : "bg-muted"}`} />
+                <div className={`w-8 md:w-12 h-0.5 mx-1 ${step > s.id ? "bg-primary" : "bg-muted"}`} />
               )}
             </div>
           ))}
         </div>
 
         {/* Step Content */}
-        <div className="min-h-[200px]">
+        <div className="min-h-[280px]">
           {step === 1 && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Pays *</Label>
-                <Select value={formData.country} onValueChange={(v) => setFormData({ ...formData, country: v, region: "" })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Label>Type d'activité *</Label>
+                <Select
+                  value={formData.activity_type}
+                  onValueChange={(v: any) => setFormData({ ...formData, activity_type: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {COUNTRIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    {ACTIVITY_TYPES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>
+                        {t.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Pays *</Label>
+                <Select
+                  value={formData.country}
+                  onValueChange={(v) => setFormData({ ...formData, country: v, region: "" })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTRIES.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label>Région *</Label>
-                <Select value={formData.region} onValueChange={(v) => setFormData({ ...formData, region: v })}>
-                  <SelectTrigger><SelectValue placeholder="Sélectionner une région" /></SelectTrigger>
+                <Select
+                  value={formData.region}
+                  onValueChange={(v) => setFormData({ ...formData, region: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner une région" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {(REGIONS[formData.country] || []).map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    {(REGIONS[formData.country] || []).map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -133,22 +308,49 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
           {step === 2 && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-2 col-span-2">
                   <Label>Titre *</Label>
-                  <Input value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} />
+                  <Input
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Ex: Bretagne Romantique"
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label>Slug *</Label>
-                  <Input value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} />
+                <div className="space-y-2 col-span-2">
+                  <Label>Slug (URL) *</Label>
+                  <Input
+                    value={formData.slug}
+                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                    placeholder="bretagne-romantique"
+                    disabled={isEditing}
+                  />
+                  <p className="text-xs text-muted-foreground">URL: /sejour/{formData.slug || "..."}</p>
                 </div>
               </div>
               <div className="space-y-2">
-                <Label>Description courte</Label>
-                <Input value={formData.short_description} onChange={(e) => setFormData({ ...formData, short_description: e.target.value })} />
+                <Label>Description courte (accroche)</Label>
+                <Input
+                  value={formData.short_description}
+                  onChange={(e) => setFormData({ ...formData, short_description: e.target.value })}
+                  placeholder="Une escapade entre châteaux et forêts enchantées"
+                />
               </div>
               <div className="space-y-2">
                 <Label>Description complète</Label>
-                <Textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} />
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={4}
+                  placeholder="Description détaillée du séjour..."
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Durée</Label>
+                <Input
+                  placeholder="Ex: 4 jours / 3 nuits"
+                  value={formData.duration}
+                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                />
               </div>
             </div>
           )}
@@ -157,8 +359,13 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Niveau équestre requis</Label>
-                <Select value={formData.riding_level || "debutant"} onValueChange={(v: any) => setFormData({ ...formData, riding_level: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={formData.riding_level}
+                  onValueChange={(v: any) => setFormData({ ...formData, riding_level: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="debutant">Débutant</SelectItem>
                     <SelectItem value="intermediaire">Intermédiaire</SelectItem>
@@ -169,18 +376,57 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
               </div>
               <div className="space-y-2">
                 <Label>Places maximum</Label>
-                <Input type="number" value={formData.max_participants} onChange={(e) => setFormData({ ...formData, max_participants: parseInt(e.target.value) || 8 })} />
+                <Input
+                  type="number"
+                  value={formData.max_participants}
+                  onChange={(e) =>
+                    setFormData({ ...formData, max_participants: parseInt(e.target.value) || 8 })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Inclusions (une par ligne)</Label>
+                <Textarea
+                  value={formData.inclusions.join("\n")}
+                  onChange={(e) => handleListChange("inclusions", e.target.value)}
+                  rows={3}
+                  placeholder="Hébergement en gîte&#10;Pension complète&#10;Guide accompagnateur"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Non inclus (une par ligne)</Label>
+                <Textarea
+                  value={formData.exclusions.join("\n")}
+                  onChange={(e) => handleListChange("exclusions", e.target.value)}
+                  rows={2}
+                  placeholder="Transport jusqu'au point de départ&#10;Équipement personnel"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Prérequis (une par ligne)</Label>
+                <Textarea
+                  value={formData.requirements.join("\n")}
+                  onChange={(e) => handleListChange("requirements", e.target.value)}
+                  rows={2}
+                  placeholder="Savoir monter au pas, trot, galop&#10;Bonne condition physique"
+                />
               </div>
             </div>
           )}
 
           {step === 4 && (
             <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Durée</Label>
-                <Input placeholder="ex: 5 jours / 4 nuits" value={formData.duration} onChange={(e) => setFormData({ ...formData, duration: e.target.value })} />
+              <div>
+                <Label className="text-base font-medium">Photos du séjour</Label>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Ajoutez jusqu'à 5 photos. La première sera l'image principale affichée sur le site.
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground">Les créneaux détaillés peuvent être ajoutés après la création du séjour.</p>
+              <ImageUploader
+                images={formData.images}
+                onChange={handleImagesChange}
+                maxImages={5}
+              />
             </div>
           )}
 
@@ -189,11 +435,50 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Prix minimum (€)</Label>
-                  <Input type="number" value={formData.price_from} onChange={(e) => setFormData({ ...formData, price_from: parseInt(e.target.value) || 0 })} />
+                  <Input
+                    type="number"
+                    value={formData.price_from}
+                    onChange={(e) =>
+                      setFormData({ ...formData, price_from: parseInt(e.target.value) || 0 })
+                    }
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>Prix maximum (€)</Label>
-                  <Input type="number" value={formData.price_to} onChange={(e) => setFormData({ ...formData, price_to: parseInt(e.target.value) || 0 })} />
+                  <Input
+                    type="number"
+                    value={formData.price_to}
+                    onChange={(e) =>
+                      setFormData({ ...formData, price_to: parseInt(e.target.value) || 0 })
+                    }
+                  />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Les prix affichés sont indicatifs. Les tarifs exacts seront définis dans les créneaux.
+              </p>
+
+              {/* Summary */}
+              <div className="mt-6 p-4 bg-muted/50 rounded-lg space-y-2">
+                <h4 className="font-medium">Récapitulatif</h4>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <span className="text-muted-foreground">Type :</span>
+                  <span>{ACTIVITY_TYPES.find((t) => t.value === formData.activity_type)?.label}</span>
+                  <span className="text-muted-foreground">Destination :</span>
+                  <span>
+                    {formData.region}, {formData.country}
+                  </span>
+                  <span className="text-muted-foreground">Titre :</span>
+                  <span>{formData.title || "-"}</span>
+                  <span className="text-muted-foreground">Durée :</span>
+                  <span>{formData.duration || "-"}</span>
+                  <span className="text-muted-foreground">Prix :</span>
+                  <span>
+                    {formData.price_from ? `${formData.price_from}€` : "-"}
+                    {formData.price_to ? ` - ${formData.price_to}€` : ""}
+                  </span>
+                  <span className="text-muted-foreground">Photos :</span>
+                  <span>{formData.images.length} image(s)</span>
                 </div>
               </div>
             </div>
@@ -210,8 +495,13 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
               Suivant <ChevronRight className="h-4 w-4 ml-1" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={createMutation.isPending}>
-              <Check className="h-4 w-4 mr-1" /> Créer le séjour
+            <Button onClick={handleSubmit} disabled={saveMutation.isPending}>
+              <Check className="h-4 w-4 mr-1" />
+              {saveMutation.isPending
+                ? "Enregistrement..."
+                : isEditing
+                ? "Mettre à jour"
+                : "Créer le séjour"}
             </Button>
           )}
         </div>
