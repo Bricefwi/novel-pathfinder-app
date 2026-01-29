@@ -23,8 +23,10 @@ import {
   Loader2,
   ExternalLink,
   Mail,
-  MapPin
+  MapPin,
+  Plus
 } from "lucide-react";
+import { EcosystemArticleCreator } from "./ecosystem/EcosystemArticleCreator";
 
 interface EcosystemSuggestion {
   id: string;
@@ -133,7 +135,20 @@ export const AdminEcoSysteme = () => {
         },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Erreur lors de l'appel à la fonction");
+      }
+      
+      // Vérifier si la réponse contient une erreur
+      if (data?.error) {
+        console.error("API error:", data.error);
+        throw new Error(data.error);
+      }
+      
+      if (!data?.article) {
+        throw new Error("Aucun article n'a été généré");
+      }
       
       // Update suggestion status
       await supabase
@@ -153,9 +168,9 @@ export const AdminEcoSysteme = () => {
       toast.success("Article généré avec succès !");
       setGenerating(null);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error("Generation error:", error);
-      toast.error("Erreur lors de la génération");
+      toast.error(`Erreur: ${error.message || "Erreur lors de la génération"}`);
       setGenerating(null);
     },
   });
@@ -211,8 +226,12 @@ export const AdminEcoSysteme = () => {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="suggestions">
+      <Tabs defaultValue="create">
         <TabsList className="mb-6">
+          <TabsTrigger value="create" className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Créer un article
+          </TabsTrigger>
           <TabsTrigger value="suggestions" className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
             Suggestions ({suggestions?.filter(s => s.status === "pending").length || 0})
@@ -222,6 +241,10 @@ export const AdminEcoSysteme = () => {
             Gestion des images
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="create">
+          <EcosystemArticleCreator />
+        </TabsContent>
 
         <TabsContent value="suggestions">
           <Card>
