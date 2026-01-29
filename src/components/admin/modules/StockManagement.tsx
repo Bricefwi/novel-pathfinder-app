@@ -45,7 +45,7 @@ export function StockManagement() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
 
-  // Fetch activities with their slots
+  // Fetch activities with their slots - ALL types, not just sejour
   const { data: activitiesWithSlots, isLoading } = useQuery({
     queryKey: ["stock-management"],
     queryFn: async () => {
@@ -53,8 +53,9 @@ export function StockManagement() {
         supabase
           .from("activities")
           .select("*")
-          .eq("activity_type", "sejour")
-          .order("created_at", { ascending: false }),
+          .order("country", { ascending: true })
+          .order("region", { ascending: true })
+          .order("title", { ascending: true }),
         supabase
           .from("activity_slots")
           .select("*")
@@ -190,31 +191,31 @@ export function StockManagement() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Disponibles</p>
-                <p className="text-2xl font-bold text-green-600">{stats.available}</p>
+                <p className="text-2xl font-bold text-emerald-600">{stats.available}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500 opacity-80" />
+              <CheckCircle className="h-8 w-8 text-emerald-500 opacity-80" />
             </div>
           </CardContent>
         </Card>
-        <Card className="border-orange-200 bg-orange-50/50">
+        <Card className="border-amber-200 bg-amber-50/50 dark:bg-amber-950/20">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Remplissage faible</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.low}</p>
+                <p className="text-2xl font-bold text-amber-600">{stats.low}</p>
               </div>
-              <TrendingDown className="h-8 w-8 text-orange-500 opacity-80" />
+              <TrendingDown className="h-8 w-8 text-amber-500 opacity-80" />
             </div>
           </CardContent>
         </Card>
-        <Card className="border-red-200 bg-red-50/50">
+        <Card className="border-destructive/30 bg-destructive/5">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Complets</p>
-                <p className="text-2xl font-bold text-red-600">{stats.full}</p>
+                <p className="text-2xl font-bold text-destructive">{stats.full}</p>
               </div>
-              <AlertCircle className="h-8 w-8 text-red-500 opacity-80" />
+              <AlertCircle className="h-8 w-8 text-destructive opacity-80" />
             </div>
           </CardContent>
         </Card>
@@ -239,7 +240,7 @@ export function StockManagement() {
               Disponible
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 rounded-full bg-orange-500" />
+              <span className="w-3 h-3 rounded-full bg-amber-500" />
               Yield Alert
             </span>
             <span className="flex items-center gap-1">
