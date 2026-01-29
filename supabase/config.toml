@@ -10,7 +10,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.generate-ecosystem-article]
-verify_jwt = true
+verify_jwt = false
 
 [functions.check-unread-quotes]
 verify_jwt = false
