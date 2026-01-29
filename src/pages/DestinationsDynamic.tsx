@@ -40,13 +40,13 @@ import {
 } from "lucide-react";
 
 // Fallback images for countries without database images
-import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
+import franceMontSaintMichelCavaliers from "@/assets/france-mont-saint-michel-cavaliers.jpg";
 import marocDunesCavaliers from "@/assets/maroc-dunes-cavaliers.jpg";
 import ecosseHighlandsCavaliers from "@/assets/ecosse-highlands-cavaliers.jpg";
 import mongolieSteppesCavaliers from "@/assets/mongolie-steppes-cavaliers.jpg";
 
 const COUNTRY_IMAGES: Record<string, string> = {
-  France: cavaliersPlageCoucherSoleil,
+  France: franceMontSaintMichelCavaliers,
   Maroc: marocDunesCavaliers,
   Europe: ecosseHighlandsCavaliers,
   Asie: mongolieSteppesCavaliers,
@@ -313,7 +313,7 @@ const DestinationsDynamic = () => {
                     >
                       <div className="relative aspect-[4/3] overflow-hidden">
                         <img
-                          src={COUNTRY_IMAGES[country] || cavaliersPlageCoucherSoleil}
+                          src={COUNTRY_IMAGES[country] || franceMontSaintMichelCavaliers}
                           alt={country}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           loading="lazy"
@@ -365,7 +365,7 @@ const DestinationsDynamic = () => {
                     >
                       <div className="relative aspect-[16/10] overflow-hidden">
                         <img
-                          src={firstImage || COUNTRY_IMAGES[nav.selectedCountry!] || cavaliersPlageCoucherSoleil}
+                          src={firstImage || COUNTRY_IMAGES[nav.selectedCountry!] || franceMontSaintMichelCavaliers}
                           alt={region}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           loading="lazy"
