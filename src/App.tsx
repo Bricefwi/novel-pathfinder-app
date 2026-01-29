@@ -14,7 +14,7 @@ import NotFound from "./pages/NotFound";
 
 // Pages chargées en lazy loading (optimisation du bundle initial)
 const Destinations = lazy(() => import("./pages/Destinations"));
-const FicheSejour = lazy(() => import("./pages/FicheSejour"));
+const FicheSejour = lazy(() => import("./pages/FicheSejourDynamic"));
 const Planning = lazy(() => import("./pages/Planning"));
 const Hebergement = lazy(() => import("./pages/Hebergement"));
 const CarnetVoyage = lazy(() => import("./pages/CarnetVoyage"));
