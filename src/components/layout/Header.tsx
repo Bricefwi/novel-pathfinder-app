@@ -360,8 +360,8 @@ export function Header() {
         {/* Mobile Navigation */}
         <div
           className={cn(
-            "lg:hidden overflow-hidden transition-all duration-300",
-            isOpen ? "max-h-[500px] mt-4" : "max-h-0"
+            "lg:hidden transition-all duration-300",
+            isOpen ? "max-h-[80vh] mt-4 overflow-y-auto" : "max-h-0 overflow-hidden"
           )}
         >
           <nav className="flex flex-col space-y-2 pb-4">
