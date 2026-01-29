@@ -98,7 +98,7 @@ const ArticleCard = ({ article }: { article: EcosystemArticle }) => {
   
   return (
     <Card className="group overflow-hidden border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-xl">
-      <div className="relative aspect-[4/3] overflow-hidden max-h-48">
+      <div className="relative aspect-[16/10] overflow-hidden">
         <img
           src={displayImage}
           alt={article.title}
@@ -108,21 +108,22 @@ const ArticleCard = ({ article }: { article: EcosystemArticle }) => {
             (e.target as HTMLImageElement).src = bretagnVillageChevaux;
           }}
         />
-        <div className="absolute top-4 left-4">
-          <Badge className={`${config.color} border text-xs tracking-wider font-medium flex items-center gap-1.5`}>
+        {/* Overlay gradient pour améliorer la lisibilité des badges */}
+        <div className="absolute inset-0 bg-gradient-to-b from-foreground/40 via-transparent to-foreground/60" />
+        
+        {/* Badges repositionnés avec meilleur contraste */}
+        <div className="absolute top-3 left-3 right-3 flex justify-between items-start gap-2">
+          <Badge className={`${config.color} border text-xs tracking-wider font-medium flex items-center gap-1.5 shadow-md`}>
             <IconComponent className="h-3 w-3" />
             {config.label}
           </Badge>
-        </div>
-        {article.distance_from_arwen && (
-          <div className="absolute top-4 right-4">
-            <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm flex items-center gap-1.5">
-              <Navigation className="h-3 w-3" />
+          {article.distance_from_arwen && (
+            <Badge className="bg-background text-foreground border-none shadow-lg flex items-center gap-1.5 text-xs font-medium">
+              <Navigation className="h-3 w-3 text-primary" />
               {article.distance_from_arwen}
             </Badge>
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 via-transparent to-transparent" />
+          )}
+        </div>
       </div>
       
       <CardContent className="p-6">

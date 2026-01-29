@@ -118,8 +118,8 @@ export function CRM360() {
     queryFn: async () => {
       const [profilesRes, bookingsRes, quotesRes, messagesRes, rolesRes] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-        supabase.from("bookings").select("user_id, status, created_at"),
-        supabase.from("quotes").select("user_id, status, created_at"),
+        supabase.from("bookings").select("user_id, status, created_at, contact_email"),
+        supabase.from("quotes").select("user_id, status, created_at, client_email"),
         supabase.from("chat_messages").select("user_id, created_at").order("created_at", { ascending: false }),
         supabase.from("user_roles").select("user_id, role"),
       ]);
@@ -166,8 +166,14 @@ export function CRM360() {
         else if (pendingQuotes > 0 && lastActivity && differenceInDays(new Date(), new Date(lastActivity)) <= 7) segment = "hot";
         else if (lastActivity && differenceInDays(new Date(), new Date(lastActivity)) > 60) segment = "dormant";
 
+        // Récupérer l'email depuis les devis ou réservations
+        const emailFromQuote = userQuotes.find((q) => (q as { client_email?: string }).client_email)?.client_email;
+        const emailFromBooking = userBookings.find((b) => (b as { contact_email?: string }).contact_email)?.contact_email;
+        const email = emailFromQuote || emailFromBooking || null;
+
         return {
           ...profile,
+          email,
           totalBookings,
           totalQuotes,
           pendingQuotes,
@@ -472,10 +478,14 @@ export function CRM360() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Contact Info */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span className="truncate">{selectedClient.email || "Email non renseigné"}</span>
+                  </div>
                   <div className="flex items-center gap-2 text-sm">
                     <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{selectedClient.phone || "Non renseigné"}</span>
+                    <span>{selectedClient.phone || "Téléphone non renseigné"}</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
