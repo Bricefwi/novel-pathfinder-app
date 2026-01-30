@@ -948,6 +948,112 @@ export type Database = {
           },
         ]
       }
+      legal_acceptances: {
+        Row: {
+          acceptance_context: string | null
+          activity_id: string | null
+          cgu_accepted: boolean
+          cgu_accepted_at: string | null
+          cgu_document_hash: string | null
+          cgu_url: string | null
+          cgu_version: string
+          cgv_accepted: boolean
+          cgv_accepted_at: string | null
+          cgv_document_hash: string | null
+          cgv_url: string | null
+          cgv_version: string
+          client_email: string
+          client_ip: string | null
+          client_name: string
+          created_at: string
+          id: string
+          invoice_id: string | null
+          metadata: Json | null
+          quote_id: string | null
+          signature_data: string | null
+          signature_type: string | null
+          updated_at: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          acceptance_context?: string | null
+          activity_id?: string | null
+          cgu_accepted?: boolean
+          cgu_accepted_at?: string | null
+          cgu_document_hash?: string | null
+          cgu_url?: string | null
+          cgu_version?: string
+          cgv_accepted?: boolean
+          cgv_accepted_at?: string | null
+          cgv_document_hash?: string | null
+          cgv_url?: string | null
+          cgv_version?: string
+          client_email: string
+          client_ip?: string | null
+          client_name: string
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          quote_id?: string | null
+          signature_data?: string | null
+          signature_type?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          acceptance_context?: string | null
+          activity_id?: string | null
+          cgu_accepted?: boolean
+          cgu_accepted_at?: string | null
+          cgu_document_hash?: string | null
+          cgu_url?: string | null
+          cgu_version?: string
+          cgv_accepted?: boolean
+          cgv_accepted_at?: string | null
+          cgv_document_hash?: string | null
+          cgv_url?: string | null
+          cgv_version?: string
+          client_email?: string
+          client_ip?: string | null
+          client_name?: string
+          created_at?: string
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          quote_id?: string | null
+          signature_data?: string | null
+          signature_type?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legal_acceptances_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_acceptances_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legal_acceptances_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       newsletter_subscribers: {
         Row: {
           created_at: string | null

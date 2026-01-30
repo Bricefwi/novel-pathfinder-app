@@ -50,6 +50,9 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    const quoteData: QuoteEmailRequest = await req.json();
+    console.log("[send-quote-email] Processing quote:", quoteData.quote_number, "to:", quoteData.client_email);
+    
     // Authentification - optionnelle pour permettre les envois depuis l'admin
     const auth = await authenticateRequest(req);
     let isAdmin = false;
@@ -59,21 +62,23 @@ const handler = async (req: Request): Promise<Response> => {
       userId = auth.user.id;
       isAdmin = await verifyAdminRole(auth.supabase, auth.user.id);
       console.log(`[send-quote-email] Authenticated user: ${userId}, isAdmin: ${isAdmin}`);
-    } else {
-      console.log("[send-quote-email] No auth token - checking service role");
-    }
-
-    const quoteData: QuoteEmailRequest = await req.json();
-    console.log("[send-quote-email] Processing quote:", quoteData.quote_number, "to:", quoteData.client_email);
-
-    // Vérifier les permissions : admin ou service role (depuis l'admin)
-    // Les appels depuis l'interface admin sont autorisés si l'utilisateur est admin
-    if (auth && !isAdmin) {
-      const isOwner = quoteData.user_id ? auth.user.id === quoteData.user_id : false;
-      if (!isOwner) {
-        console.error("[send-quote-email] Permission denied for user:", auth.user.id);
-        return createAuthErrorResponse("Admin access or ownership required", 403, corsHeaders);
+      
+      // Si authentifié mais pas admin, vérifier si c'est le propriétaire du devis
+      if (!isAdmin) {
+        const isOwner = quoteData.user_id ? auth.user.id === quoteData.user_id : false;
+        if (!isOwner) {
+          console.error("[send-quote-email] Permission denied for user:", auth.user.id);
+          return createAuthErrorResponse("Admin access or ownership required", 403, corsHeaders);
+        }
       }
+    } else {
+      // Pas de token - vérifier qu'on a bien les infos de base du devis
+      // On autorise les appels sans auth seulement si toutes les données sont présentes
+      if (!quoteData.quote_number || !quoteData.client_email || !quoteData.client_name) {
+        console.error("[send-quote-email] Missing required fields and no auth");
+        return createAuthErrorResponse("Authentication required or complete quote data", 401, corsHeaders);
+      }
+      console.log("[send-quote-email] No auth token - proceeding with provided data");
     }
 
     console.log(`[send-quote-email] Authorized - proceeding with email send`);
