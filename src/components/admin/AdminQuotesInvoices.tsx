@@ -816,70 +816,73 @@ export const AdminQuotesInvoices = () => {
               {invoicesLoading ? (
                 <p>Chargement...</p>
               ) : invoices && invoices.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>N° Facture</TableHead>
-                      <TableHead>Client</TableHead>
-                      <TableHead>Prestation</TableHead>
-                      <TableHead>Montant</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead>Validé</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {invoices.map(invoice => (
-                      <TableRow key={invoice.id}>
-                        <TableCell className="font-mono">{invoice.invoice_number}</TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{invoice.client_name}</p>
-                            <p className="text-sm text-muted-foreground">{invoice.client_email}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{invoice.activity_title}</TableCell>
-                        <TableCell className="font-medium">{Number(invoice.total_amount).toFixed(2)} €</TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[invoice.payment_status || "pending"]}>
-                            {statusLabels[invoice.payment_status || "pending"]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {invoice.client_validated ? (
-                            <CheckCircle className="h-5 w-5 text-green-500" />
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(invoice.created_at), "dd/MM/yyyy", { locale: fr })}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline" 
-                              onClick={() => handleSendInvoiceEmail(invoice)}
-                              disabled={sendingInvoiceEmail === invoice.id}
-                              title="Envoyer par email"
-                            >
-                              {sendingInvoiceEmail === invoice.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <Mail className="h-4 w-4" />
-                              )}
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => handleDownloadInvoice(invoice)} title="Télécharger PDF">
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[760px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>N° Facture</TableHead>
+                        <TableHead>Client</TableHead>
+                        <TableHead>Prestation</TableHead>
+                        <TableHead>Montant</TableHead>
+                        <TableHead>Statut</TableHead>
+                        <TableHead>Validé</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {invoices.map(invoice => (
+                        <TableRow key={invoice.id}>
+                          <TableCell className="font-mono">{invoice.invoice_number}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{invoice.client_name}</p>
+                              <p className="text-sm text-muted-foreground">{invoice.client_email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>{invoice.activity_title}</TableCell>
+                          <TableCell className="font-medium">{Number(invoice.total_amount).toFixed(2)} €</TableCell>
+                          <TableCell>
+                            <Badge className={statusColors[invoice.payment_status || "pending"]}>
+                              {statusLabels[invoice.payment_status || "pending"]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {invoice.client_validated ? (
+                              <CheckCircle className="h-5 w-5 text-primary" />
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(invoice.created_at), "dd/MM/yyyy", { locale: fr })}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={() => handleSendInvoiceEmail(invoice)}
+                                disabled={sendingInvoiceEmail === invoice.id}
+                                title="Envoyer la facture par email"
+                              >
+                                {sendingInvoiceEmail === invoice.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Mail className="h-4 w-4" />
+                                )}
+                                <span className="sr-only sm:not-sr-only sm:ml-2">Email</span>
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => handleDownloadInvoice(invoice)} title="Télécharger PDF">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
                   <Receipt className="h-12 w-12 mx-auto mb-4 opacity-50" />
