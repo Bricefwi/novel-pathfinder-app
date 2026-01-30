@@ -12,6 +12,7 @@ import { AdminReviews } from "./AdminReviews";
 import { AdminClientInsights } from "./AdminClientInsights";
 import { AdminQuotesInvoices } from "./AdminQuotesInvoices";
 import { AdminEcoSysteme } from "./AdminEcoSysteme";
+import { AdminLegalAcceptances } from "./AdminLegalAcceptances";
 
 // New Control Tower modules
 import { StockManagement } from "./modules/StockManagement";
@@ -77,6 +78,8 @@ export function ControlTowerContent({ activeModule, onModuleChange }: ControlTow
         return <AdminQuotesInvoices />;
       case "ecosystem":
         return <AdminEcoSysteme />;
+      case "legal":
+        return <AdminLegalAcceptances />;
       
       default:
         return <AdminDashboard />;

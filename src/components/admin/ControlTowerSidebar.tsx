@@ -81,6 +81,7 @@ const LEGACY_MODULES = [
   { id: "insights" as const, label: "Insights", icon: Lightbulb },
   { id: "quotes" as const, label: "Devis & Factures", icon: Receipt },
   { id: "ecosystem" as const, label: "Éco-Système", icon: Leaf },
+  { id: "legal" as const, label: "Acceptations Légales", icon: BadgeCheck, badge: "NEW" },
 ];
 
 export function ControlTowerSidebar({ activeModule, onModuleChange, onOpenCommand }: ControlTowerSidebarProps) {
