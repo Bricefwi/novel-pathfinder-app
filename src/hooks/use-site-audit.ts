@@ -83,6 +83,10 @@ export function useSiteAudit() {
 
       const { data, error } = await supabase.functions.invoke('audit-site', {
         body: { audit_type: auditType },
+        // Forcer l'Authorization pour éviter les appels sans token selon le contexte (admin/preview)
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (error) {
