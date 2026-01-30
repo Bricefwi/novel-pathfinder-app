@@ -27,6 +27,10 @@ interface ControlTowerContentProps {
   onModuleChange: (module: AdminModule) => void;
 }
 
+const AdminDashboardWithNav = ({ onModuleChange }: { onModuleChange: (module: AdminModule) => void }) => {
+  return <AdminDashboard onNavigate={onModuleChange} />;
+};
+
 const pageVariants = {
   initial: { opacity: 0, y: 10 },
   animate: { opacity: 1, y: 0 },
@@ -54,7 +58,7 @@ export function ControlTowerContent({ activeModule, onModuleChange }: ControlTow
       
       // Legacy modules
       case "dashboard":
-        return <AdminDashboard />;
+        return <AdminDashboardWithNav onModuleChange={onModuleChange} />;
       case "activities":
         return <AdminActivities />;
       case "articles":

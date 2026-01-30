@@ -10,6 +10,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { format, differenceInDays } from "date-fns";
 import { fr } from "date-fns/locale";
 import { toast } from "sonner";
@@ -36,6 +39,10 @@ import {
   Download,
   History,
   ShieldCheck,
+  ArrowUpDown,
+  Edit,
+  Save,
+  X,
 } from "lucide-react";
 
 interface ProspectAnalysis {
@@ -72,11 +79,15 @@ interface ClientProfile {
   totalBookings: number;
   totalQuotes: number;
   pendingQuotes: number;
+  totalRevenue: number;
   lastActivity: string | null;
   leadScore: number;
   segment: "vip" | "hot" | "dormant" | "new";
   userRole?: "admin" | "user";
 }
+
+type SortField = "name" | "leadScore" | "created_at" | "totalRevenue";
+type SortOrder = "asc" | "desc";
 
 export function CRM360() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -84,6 +95,10 @@ export function CRM360() {
   const [activeSegment, setActiveSegment] = useState<string>("all");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [sortField, setSortField] = useState<SortField>("created_at");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ first_name: "", last_name: "", phone: "" });
   const [analysisResult, setAnalysisResult] = useState<{
     status: string;
     analysis?: ProspectAnalysis;
@@ -118,8 +133,8 @@ export function CRM360() {
     queryFn: async () => {
       const [profilesRes, bookingsRes, quotesRes, messagesRes, rolesRes] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
-        supabase.from("bookings").select("user_id, status, created_at, contact_email"),
-        supabase.from("quotes").select("user_id, status, created_at, client_email"),
+        supabase.from("bookings").select("user_id, status, created_at, contact_email, total_price"),
+        supabase.from("quotes").select("user_id, status, created_at, client_email, total_price"),
         supabase.from("chat_messages").select("user_id, created_at").order("created_at", { ascending: false }),
         supabase.from("user_roles").select("user_id, role"),
       ]);
@@ -137,9 +152,11 @@ export function CRM360() {
         const userMessages = messages.filter((m) => m.user_id === profile.user_id);
         const userRole = roles.find((r) => r.user_id === profile.user_id);
 
-        const totalBookings = userBookings.filter((b) => b.status === "confirmed").length;
+        const confirmedBookings = userBookings.filter((b) => b.status === "confirmed");
+        const totalBookings = confirmedBookings.length;
         const totalQuotes = userQuotes.length;
         const pendingQuotes = userQuotes.filter((q) => q.status === "sent" || q.status === "draft").length;
+        const totalRevenue = confirmedBookings.reduce((acc, b) => acc + (Number(b.total_price) || 0), 0);
         
         // Get last activity date
         const allDates = [
@@ -177,6 +194,7 @@ export function CRM360() {
           totalBookings,
           totalQuotes,
           pendingQuotes,
+          totalRevenue,
           lastActivity,
           leadScore,
           segment,
@@ -188,14 +206,59 @@ export function CRM360() {
     },
   });
 
-  // Filter clients based on search and segment
-  const filteredClients = (clients || []).filter((client) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      `${client.first_name} ${client.last_name}`.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesSegment = activeSegment === "all" || client.segment === activeSegment;
-    return matchesSearch && matchesSegment;
+  // Update profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: { id: string; first_name: string; last_name: string; phone: string }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          first_name: data.first_name,
+          last_name: data.last_name,
+          phone: data.phone,
+        })
+        .eq("id", data.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["crm-clients"] });
+      toast.success("Profil mis à jour");
+      setIsEditing(false);
+    },
+    onError: () => {
+      toast.error("Erreur lors de la mise à jour");
+    },
   });
+
+  // Filter and sort clients
+  const filteredClients = (clients || [])
+    .filter((client) => {
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch =
+        searchQuery === "" ||
+        `${client.first_name} ${client.last_name}`.toLowerCase().includes(searchLower) ||
+        (client.email && client.email.toLowerCase().includes(searchLower)) ||
+        (client.phone && client.phone.includes(searchQuery));
+      const matchesSegment = activeSegment === "all" || client.segment === activeSegment;
+      return matchesSearch && matchesSegment;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      switch (sortField) {
+        case "name":
+          comparison = `${a.first_name || ""} ${a.last_name || ""}`.localeCompare(`${b.first_name || ""} ${b.last_name || ""}`);
+          break;
+        case "leadScore":
+          comparison = a.leadScore - b.leadScore;
+          break;
+        case "created_at":
+          comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+          break;
+        case "totalRevenue":
+          comparison = a.totalRevenue - b.totalRevenue;
+          break;
+      }
+      return sortOrder === "asc" ? comparison : -comparison;
+    });
 
   // Segment counts
   const segmentCounts = {
@@ -219,6 +282,43 @@ export function CRM360() {
         {labels[segment as keyof typeof labels]}
       </Badge>
     );
+  };
+
+  // Export clients to CSV
+  const handleExportCSV = () => {
+    const dataToExport = filteredClients;
+    if (dataToExport.length === 0) {
+      toast.error("Aucun client à exporter");
+      return;
+    }
+
+    const headers = ["Nom", "Prénom", "Email", "Téléphone", "Segment", "Lead Score", "Voyages", "Devis", "CA Total", "Dernière activité"];
+    const rows = dataToExport.map((c) => [
+      c.last_name || "",
+      c.first_name || "",
+      c.email || "",
+      c.phone || "",
+      c.segment,
+      c.leadScore,
+      c.totalBookings,
+      c.totalQuotes,
+      c.totalRevenue.toFixed(2),
+      c.lastActivity ? format(new Date(c.lastActivity), "dd/MM/yyyy", { locale: fr }) : "",
+    ]);
+
+    const csvContent = [
+      headers.join(";"),
+      ...rows.map((row) => row.join(";")),
+    ].join("\n");
+
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `clients_export_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    toast.success(`${dataToExport.length} client(s) exporté(s)`);
   };
 
   // Analyze prospect behavior with AI and save to history
@@ -312,6 +412,26 @@ export function CRM360() {
     }
   };
 
+  const handleStartEdit = () => {
+    if (selectedClient) {
+      setEditForm({
+        first_name: selectedClient.first_name || "",
+        last_name: selectedClient.last_name || "",
+        phone: selectedClient.phone || "",
+      });
+      setIsEditing(true);
+    }
+  };
+
+  const handleSaveEdit = () => {
+    if (selectedClient) {
+      updateProfileMutation.mutate({
+        id: selectedClient.id,
+        ...editForm,
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -329,14 +449,20 @@ export function CRM360() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold font-serif flex items-center gap-2">
-          <Users className="h-6 w-6 text-primary" />
-          CRM 360°
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Vision unifiée de vos clients avec scoring et segmentation automatique
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold font-serif flex items-center gap-2">
+            <Users className="h-6 w-6 text-primary" />
+            CRM 360°
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Vision unifiée de vos clients avec scoring et segmentation automatique
+          </p>
+        </div>
+        <Button variant="outline" onClick={handleExportCSV} className="gap-2">
+          <Download className="h-4 w-4" />
+          Exporter CSV
+        </Button>
       </div>
 
       {/* Segment Tabs */}
@@ -372,15 +498,35 @@ export function CRM360() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Client List */}
         <Card className="lg:col-span-1">
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 space-y-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher un client..."
+                placeholder="Rechercher par nom, email, téléphone..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9"
               />
+            </div>
+            <div className="flex items-center gap-2">
+              <Select value={sortField} onValueChange={(v) => setSortField(v as SortField)}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Trier par..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="created_at">Date d'inscription</SelectItem>
+                  <SelectItem value="name">Nom</SelectItem>
+                  <SelectItem value="leadScore">Lead Score</SelectItem>
+                  <SelectItem value="totalRevenue">CA Total</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}
+              >
+                <ArrowUpDown className="h-4 w-4" />
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="p-0">
@@ -389,7 +535,10 @@ export function CRM360() {
                 {filteredClients.map((client) => (
                   <button
                     key={client.id}
-                    onClick={() => setSelectedClient(client)}
+                    onClick={() => {
+                      setSelectedClient(client);
+                      setIsEditing(false);
+                    }}
                     className={`w-full p-4 text-left hover:bg-muted/50 transition-colors ${
                       selectedClient?.id === client.id ? "bg-muted" : ""
                     }`}
@@ -408,9 +557,15 @@ export function CRM360() {
                           </p>
                           {getSegmentBadge(client.segment)}
                         </div>
+                        {client.email && (
+                          <p className="text-xs text-muted-foreground truncate">{client.email}</p>
+                        )}
                         <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                           <span>{client.totalBookings} voyage(s)</span>
                           <span>{client.totalQuotes} devis</span>
+                          {client.totalRevenue > 0 && (
+                            <span className="text-primary font-medium">{client.totalRevenue.toLocaleString()}€</span>
+                          )}
                         </div>
                         <div className="mt-2">
                           <div className="flex items-center justify-between text-xs mb-1">
@@ -447,33 +602,78 @@ export function CRM360() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle className="text-xl">
-                        {selectedClient.first_name || "Sans"} {selectedClient.last_name || "nom"}
-                      </CardTitle>
-                      <CardDescription className="flex items-center gap-2 mt-1">
-                        {getSegmentBadge(selectedClient.segment)}
-                        {selectedClient.userRole === "admin" && (
-                          <Badge className="bg-primary/20 text-primary border-primary/30 gap-1">
-                            <ShieldCheck className="h-3 w-3" />
-                            Admin
-                          </Badge>
-                        )}
-                        <span>• Inscrit le {format(new Date(selectedClient.created_at), "dd MMMM yyyy", { locale: fr })}</span>
-                      </CardDescription>
+                      {isEditing ? (
+                        <div className="space-y-2">
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Prénom"
+                              value={editForm.first_name}
+                              onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
+                              className="w-32"
+                            />
+                            <Input
+                              placeholder="Nom"
+                              value={editForm.last_name}
+                              onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
+                              className="w-32"
+                            />
+                          </div>
+                          <Input
+                            placeholder="Téléphone"
+                            value={editForm.phone}
+                            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                            className="w-48"
+                          />
+                        </div>
+                      ) : (
+                        <>
+                          <CardTitle className="text-xl">
+                            {selectedClient.first_name || "Sans"} {selectedClient.last_name || "nom"}
+                          </CardTitle>
+                          <CardDescription className="flex items-center gap-2 mt-1">
+                            {getSegmentBadge(selectedClient.segment)}
+                            {selectedClient.userRole === "admin" && (
+                              <Badge className="bg-primary/20 text-primary border-primary/30 gap-1">
+                                <ShieldCheck className="h-3 w-3" />
+                                Admin
+                              </Badge>
+                            )}
+                            <span>• Inscrit le {format(new Date(selectedClient.created_at), "dd MMMM yyyy", { locale: fr })}</span>
+                          </CardDescription>
+                        </>
+                      )}
                     </div>
                   </div>
-                  <div className="text-right flex flex-col items-end gap-2">
-                    <div>
-                      <div className="text-sm text-muted-foreground mb-1">Lead Score</div>
-                      <div className="text-3xl font-bold text-primary">{selectedClient.leadScore}%</div>
-                    </div>
-                    <UserRoleManager
-                      userId={selectedClient.user_id}
-                      userName={`${selectedClient.first_name || "Sans"} ${selectedClient.last_name || "nom"}`}
-                      currentRole={selectedClient.userRole}
-                      onRoleChanged={() => queryClient.invalidateQueries({ queryKey: ["crm-clients"] })}
-                    />
+                  <div className="flex items-center gap-2">
+                    {isEditing ? (
+                      <>
+                        <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>
+                          <X className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" onClick={handleSaveEdit} disabled={updateProfileMutation.isPending}>
+                          <Save className="h-4 w-4 mr-1" />
+                          Enregistrer
+                        </Button>
+                      </>
+                    ) : (
+                      <Button variant="outline" size="sm" onClick={handleStartEdit}>
+                        <Edit className="h-4 w-4 mr-1" />
+                        Modifier
+                      </Button>
+                    )}
                   </div>
+                </div>
+                <div className="text-right flex flex-col items-end gap-2 mt-4">
+                  <div>
+                    <div className="text-sm text-muted-foreground mb-1">Lead Score</div>
+                    <div className="text-3xl font-bold text-primary">{selectedClient.leadScore}%</div>
+                  </div>
+                  <UserRoleManager
+                    userId={selectedClient.user_id}
+                    userName={`${selectedClient.first_name || "Sans"} ${selectedClient.last_name || "nom"}`}
+                    currentRole={selectedClient.userRole}
+                    onRoleChanged={() => queryClient.invalidateQueries({ queryKey: ["crm-clients"] })}
+                  />
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -518,13 +718,9 @@ export function CRM360() {
                   </Card>
                   <Card>
                     <CardContent className="pt-4 text-center">
-                      <MessageSquare className="h-5 w-5 mx-auto text-chart-3 mb-1" />
-                      <p className="text-2xl font-bold">
-                        {selectedClient.lastActivity
-                          ? differenceInDays(new Date(), new Date(selectedClient.lastActivity))
-                          : "-"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">Jours inactif</p>
+                      <ShoppingBag className="h-5 w-5 mx-auto text-chart-1 mb-1" />
+                      <p className="text-2xl font-bold">{selectedClient.totalRevenue.toLocaleString()}€</p>
+                      <p className="text-xs text-muted-foreground">CA Total</p>
                     </CardContent>
                   </Card>
                 </div>

@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { fr } from "date-fns/locale";
+import type { AdminModule } from "./ControlTower";
 
 interface Quote {
   id: string;
@@ -39,8 +40,18 @@ interface Quote {
   created_at: string;
 }
 
-export function AdminDashboard() {
+interface AdminDashboardProps {
+  onNavigate?: (module: AdminModule) => void;
+}
+
+export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const navigate = useNavigate();
+
+  const handleWidgetClick = (module: AdminModule) => {
+    if (onNavigate) {
+      onNavigate(module);
+    }
+  };
 
   // Fetch all dashboard data in one query
   const { data, isLoading } = useQuery({
@@ -196,9 +207,12 @@ export function AdminDashboard() {
         </Button>
       </div>
 
-      {/* Primary KPIs */}
+      {/* Primary KPIs - Clickable */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+        <Card 
+          className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleWidgetClick("analytics")}
+        >
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -212,7 +226,10 @@ export function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
+        <Card 
+          className="bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleWidgetClick("quotes")}
+        >
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -230,7 +247,10 @@ export function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20">
+        <Card 
+          className="bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleWidgetClick("stocks")}
+        >
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -243,7 +263,10 @@ export function AdminDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20">
+        <Card 
+          className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20 cursor-pointer hover:shadow-md transition-shadow"
+          onClick={() => handleWidgetClick("quotes")}
+        >
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
               <div>
@@ -256,17 +279,21 @@ export function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Secondary Stats */}
+      {/* Secondary Stats - Clickable */}
       <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
         {[
-          { title: "Réservations", value: stats?.totalBookings, icon: Calendar, color: "text-primary" },
-          { title: "En attente", value: stats?.pendingBookings, icon: Clock, color: "text-amber-500" },
-          { title: "Messages", value: stats?.totalMessages, icon: MessageSquare, color: "text-blue-500" },
-          { title: "Avis à valider", value: stats?.pendingReviews, icon: Star, color: "text-yellow-500" },
-          { title: "Activités", value: stats?.totalActivities, icon: MapPin, color: "text-green-500" },
-          { title: "Nuits réservées", value: stats?.accommodationBookings, icon: Home, color: "text-purple-500" },
+          { title: "Réservations", value: stats?.totalBookings, icon: Calendar, color: "text-primary", module: "stocks" as AdminModule },
+          { title: "En attente", value: stats?.pendingBookings, icon: Clock, color: "text-amber-500", module: "stocks" as AdminModule },
+          { title: "Messages", value: stats?.totalMessages, icon: MessageSquare, color: "text-blue-500", module: "inbox" as AdminModule },
+          { title: "Avis à valider", value: stats?.pendingReviews, icon: Star, color: "text-yellow-500", module: "reviews" as AdminModule },
+          { title: "Activités", value: stats?.totalActivities, icon: MapPin, color: "text-green-500", module: "activities" as AdminModule },
+          { title: "Nuits réservées", value: stats?.accommodationBookings, icon: Home, color: "text-purple-500", module: "accommodation" as AdminModule },
         ].map((stat) => (
-          <Card key={stat.title}>
+          <Card 
+            key={stat.title}
+            className="cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleWidgetClick(stat.module)}
+          >
             <CardContent className="pt-4">
               <div className="flex items-center gap-2 mb-1">
                 <stat.icon className={`h-4 w-4 ${stat.color}`} />
@@ -282,11 +309,18 @@ export function AdminDashboard() {
         {/* Recent Quotes */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2">
-              <Receipt className="h-5 w-5 text-primary" />
-              Derniers devis
-            </CardTitle>
-            <CardDescription>Suivi des demandes commerciales</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <Receipt className="h-5 w-5 text-primary" />
+                  Derniers devis
+                </CardTitle>
+                <CardDescription>Suivi des demandes commerciales</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => handleWidgetClick("quotes")}>
+                Voir tout →
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {data?.recentQuotes.length === 0 ? (
@@ -296,7 +330,8 @@ export function AdminDashboard() {
                 {data?.recentQuotes.map((quote) => (
                   <div 
                     key={quote.id} 
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors cursor-pointer"
+                    onClick={() => handleWidgetClick("quotes")}
                   >
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -321,7 +356,7 @@ export function AdminDashboard() {
         </Card>
 
         {/* Client Preferences */}
-        <Card>
+        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => handleWidgetClick("crm")}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
@@ -386,10 +421,15 @@ export function AdminDashboard() {
       {/* Recent Bookings */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary" />
-            Dernières réservations
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-primary" />
+              Dernières réservations
+            </CardTitle>
+            <Button variant="ghost" size="sm" onClick={() => handleWidgetClick("stocks")}>
+              Voir tout →
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {data?.recentBookings.length === 0 ? (
@@ -399,7 +439,8 @@ export function AdminDashboard() {
               {data?.recentBookings.map((booking: any) => (
                 <div 
                   key={booking.id} 
-                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted transition-colors"
+                  onClick={() => handleWidgetClick("stocks")}
                 >
                   <div>
                     <p className="font-medium">{booking.contact_name}</p>
