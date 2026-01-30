@@ -28,7 +28,10 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.audit-site]
-verify_jwt = false
+verify_jwt = true
 
 [functions.analyze-prospect]
+verify_jwt = false
+
+[functions.send-invoice-email]
 verify_jwt = false

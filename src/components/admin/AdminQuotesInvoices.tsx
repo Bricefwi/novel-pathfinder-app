@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { FileText, Plus, Download, Send, Eye, Receipt, CheckCircle, Mail, Loader2, Copy } from "lucide-react";
+import { FileText, Plus, Download, Eye, Receipt, CheckCircle, Mail, Loader2, Copy } from "lucide-react";
 import { downloadQuotePDF, type QuoteData } from "@/components/pdf/QuotePDFGenerator";
 import { downloadInvoicePDF, type InvoiceData } from "@/components/pdf/InvoicePDFGenerator";
 
@@ -48,6 +48,7 @@ export const AdminQuotesInvoices = () => {
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
   const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
+  const [sendingInvoiceEmail, setSendingInvoiceEmail] = useState<string | null>(null);
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
   const [duplicatingQuote, setDuplicatingQuote] = useState<string | null>(null);
   const [editingQuote, setEditingQuote] = useState<typeof quotes extends (infer T)[] ? T : never | null>(null);
@@ -409,6 +410,36 @@ export const AdminQuotesInvoices = () => {
       created_at: invoice.created_at,
     };
     downloadInvoicePDF(invoiceData);
+  };
+
+  const handleSendInvoiceEmail = async (invoice: typeof invoices extends (infer T)[] ? T : never) => {
+    setSendingInvoiceEmail(invoice.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-invoice-email", {
+        body: {
+          invoice_id: invoice.id,
+        },
+      });
+      
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Erreur réseau");
+      }
+      
+      // Vérifier si la réponse contient une erreur
+      if (data?.error) {
+        console.error("API returned error:", data.error);
+        throw new Error(data.error);
+      }
+      
+      toast.success(`Facture envoyée à ${invoice.client_email}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Erreur inconnue";
+      console.error("Invoice email error:", err);
+      toast.error(`Erreur lors de l'envoi de l'email: ${errorMessage}`);
+    } finally {
+      setSendingInvoiceEmail(null);
+    }
   };
 
   const QuoteForm = () => {
@@ -826,9 +857,24 @@ export const AdminQuotesInvoices = () => {
                           {format(new Date(invoice.created_at), "dd/MM/yyyy", { locale: fr })}
                         </TableCell>
                         <TableCell>
-                          <Button size="sm" variant="outline" onClick={() => handleDownloadInvoice(invoice)}>
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              onClick={() => handleSendInvoiceEmail(invoice)}
+                              disabled={sendingInvoiceEmail === invoice.id}
+                              title="Envoyer par email"
+                            >
+                              {sendingInvoiceEmail === invoice.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Mail className="h-4 w-4" />
+                              )}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => handleDownloadInvoice(invoice)} title="Télécharger PDF">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

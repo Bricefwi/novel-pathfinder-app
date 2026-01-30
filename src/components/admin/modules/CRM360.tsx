@@ -140,12 +140,13 @@ export function CRM360() {
   const { data: clients, isLoading } = useQuery({
     queryKey: ["crm-clients"],
     queryFn: async () => {
-      const [profilesRes, bookingsRes, quotesRes, messagesRes, rolesRes] = await Promise.all([
+      const [profilesRes, bookingsRes, quotesRes, messagesRes, rolesRes, emailsRes] = await Promise.all([
         supabase.from("profiles").select("*").order("created_at", { ascending: false }),
         supabase.from("bookings").select("user_id, status, created_at, contact_email, total_price"),
         supabase.from("quotes").select("user_id, status, created_at, client_email, total_price"),
         supabase.from("chat_messages").select("user_id, created_at").order("created_at", { ascending: false }),
         supabase.from("user_roles").select("user_id, role"),
+        supabase.rpc("get_user_emails_for_profiles"),
       ]);
 
       const profiles = profilesRes.data || [];
@@ -153,6 +154,10 @@ export function CRM360() {
       const quotes = quotesRes.data || [];
       const messages = messagesRes.data || [];
       const roles = rolesRes.data || [];
+      const userEmails = (emailsRes.data || []) as { user_id: string; email: string }[];
+      
+      // Créer un map pour les emails
+      const emailMap = new Map(userEmails.map((u) => [u.user_id, u.email]));
 
       // Enrich profiles with CRM data
       const enrichedProfiles: ClientProfile[] = profiles.map((profile) => {
@@ -193,10 +198,11 @@ export function CRM360() {
         else if (pendingQuotes > 0 && lastActivity && differenceInDays(new Date(), new Date(lastActivity)) <= 7) segment = "hot";
         else if (lastActivity && differenceInDays(new Date(), new Date(lastActivity)) > 60) segment = "dormant";
 
-        // Récupérer l'email depuis les devis ou réservations
+        // Récupérer l'email depuis auth.users (priorité) puis les devis ou réservations
+        const emailFromAuth = emailMap.get(profile.user_id);
         const emailFromQuote = userQuotes.find((q) => (q as { client_email?: string }).client_email)?.client_email;
         const emailFromBooking = userBookings.find((b) => (b as { contact_email?: string }).contact_email)?.contact_email;
-        const email = emailFromQuote || emailFromBooking || null;
+        const email = emailFromAuth || emailFromQuote || emailFromBooking || null;
 
         return {
           ...profile,

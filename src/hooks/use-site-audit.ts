@@ -81,24 +81,20 @@ export function useSiteAudit() {
         throw new Error("Non authentifié");
       }
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/audit-site`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ audit_type: auditType }),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('audit-site', {
+        body: { audit_type: auditType },
+      });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Erreur ${response.status}`);
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Erreur lors de l'audit");
       }
 
-      return response.json();
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      return data;
     },
     onSuccess: (data) => {
       setIsRunning(false);

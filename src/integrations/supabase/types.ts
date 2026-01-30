@@ -1551,6 +1551,13 @@ export type Database = {
       generate_invoice_number: { Args: never; Returns: string }
       generate_quote_number: { Args: never; Returns: string }
       get_config: { Args: { config_key: string }; Returns: Json }
+      get_user_emails_for_profiles: {
+        Args: never
+        Returns: {
+          email: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
