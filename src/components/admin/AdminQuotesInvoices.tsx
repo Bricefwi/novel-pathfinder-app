@@ -330,8 +330,9 @@ export const AdminQuotesInvoices = () => {
   const handleResendQuoteEmail = async (quote: typeof quotes extends (infer T)[] ? T : never) => {
     setSendingEmail(quote.id);
     try {
-      const { error } = await supabase.functions.invoke("send-quote-email", {
+      const { data, error } = await supabase.functions.invoke("send-quote-email", {
         body: {
+          quote_id: quote.id,
           quote_number: quote.quote_number,
           client_name: quote.client_name,
           client_email: quote.client_email,
@@ -346,10 +347,20 @@ export const AdminQuotesInvoices = () => {
           deposit_percentage: Number(quote.deposit_percentage),
           valid_until: quote.valid_until,
           notes: quote.notes,
+          user_id: quote.user_id,
         },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(error.message || "Erreur réseau");
+      }
+      
+      // Vérifier si la réponse contient une erreur
+      if (data?.error) {
+        console.error("API returned error:", data.error);
+        throw new Error(data.error);
+      }
       
       // Mettre à jour le statut
       await supabase
@@ -358,10 +369,11 @@ export const AdminQuotesInvoices = () => {
         .eq("id", quote.id);
         
       queryClient.invalidateQueries({ queryKey: ["admin-quotes"] });
-      toast.success(`Devis renvoyé à ${quote.client_email}`);
-    } catch (err) {
+      toast.success(`Devis envoyé à ${quote.client_email}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Erreur inconnue";
       console.error("Email error:", err);
-      toast.error("Erreur lors de l'envoi de l'email");
+      toast.error(`Erreur lors de l'envoi de l'email: ${errorMessage}`);
     } finally {
       setSendingEmail(null);
     }
