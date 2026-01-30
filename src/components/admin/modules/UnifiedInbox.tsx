@@ -20,9 +20,12 @@ import {
   Clock,
   CheckCircle,
   Archive,
+  ArchiveRestore,
   Send,
   User,
   Calendar,
+  Star,
+  Loader2,
 } from "lucide-react";
 
 interface InboxItem {
@@ -36,23 +39,31 @@ interface InboxItem {
   created_at: string;
   is_read?: boolean;
   is_archived?: boolean;
+  is_important?: boolean;
 }
 
 export function UnifiedInbox() {
   const queryClient = useQueryClient();
   const [selectedItem, setSelectedItem] = useState<InboxItem | null>(null);
   const [replyMessage, setReplyMessage] = useState("");
-  const [activeTab, setActiveTab] = useState<"all" | "contacts" | "chat">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "contacts" | "chat" | "archived" | "important">("all");
+  const [sendingReply, setSendingReply] = useState(false);
 
-  // Fetch all messages
+  // Fetch all messages including archived
   const { data: inboxItems, isLoading } = useQuery({
     queryKey: ["unified-inbox"],
     queryFn: async () => {
-      const [contactsRes, chatRes] = await Promise.all([
+      const [contactsRes, archivedContactsRes, chatRes] = await Promise.all([
         supabase
           .from("contact_requests")
           .select("*")
           .eq("is_archived", false)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        supabase
+          .from("contact_requests")
+          .select("*")
+          .eq("is_archived", true)
           .order("created_at", { ascending: false })
           .limit(50),
         supabase
@@ -73,6 +84,21 @@ export function UnifiedInbox() {
         created_at: c.created_at,
         is_read: c.is_read,
         is_archived: c.is_archived,
+        is_important: false, // Will be stored in metadata or separate column later
+      }));
+
+      const archivedContacts: InboxItem[] = (archivedContactsRes.data || []).map((c) => ({
+        id: c.id,
+        type: "contact" as const,
+        name: c.name,
+        email: c.email,
+        phone: c.phone,
+        subject: c.subject,
+        message: c.message,
+        created_at: c.created_at,
+        is_read: c.is_read,
+        is_archived: c.is_archived,
+        is_important: false,
       }));
 
       const chats: InboxItem[] = (chatRes.data || []).map((m) => ({
@@ -84,9 +110,12 @@ export function UnifiedInbox() {
         created_at: m.created_at,
       }));
 
-      return [...contacts, ...chats].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
+      return {
+        active: [...contacts, ...chats].sort(
+          (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        ),
+        archived: archivedContacts,
+      };
     },
   });
 
@@ -120,19 +149,83 @@ export function UnifiedInbox() {
     },
   });
 
-  const filteredItems = (inboxItems || []).filter((item) => {
-    if (activeTab === "all") return true;
-    if (activeTab === "contacts") return item.type === "contact";
-    if (activeTab === "chat") return item.type === "chat";
-    return true;
+  // Unarchive
+  const unarchiveItem = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("contact_requests")
+        .update({ is_archived: false })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["unified-inbox"] });
+      toast.success("Message restauré");
+      setSelectedItem(null);
+    },
   });
 
-  const unreadCount = (inboxItems || []).filter(
+  // Send reply email
+  const handleSendReply = async () => {
+    if (!selectedItem || !replyMessage.trim() || !selectedItem.email) {
+      toast.error("Impossible d'envoyer la réponse");
+      return;
+    }
+
+    setSendingReply(true);
+    try {
+      const { error } = await supabase.functions.invoke("notify-admin", {
+        body: {
+          type: "reply",
+          to: selectedItem.email,
+          subject: `Re: ${selectedItem.subject || "Votre demande"}`,
+          message: replyMessage,
+          originalMessage: selectedItem.message,
+          senderName: selectedItem.name,
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success(`Réponse envoyée à ${selectedItem.email}`);
+      setReplyMessage("");
+      
+      // Mark as read and potentially archive
+      await supabase
+        .from("contact_requests")
+        .update({ is_read: true })
+        .eq("id", selectedItem.id);
+      
+      queryClient.invalidateQueries({ queryKey: ["unified-inbox"] });
+    } catch (err) {
+      console.error("Error sending reply:", err);
+      toast.error("Erreur lors de l'envoi de la réponse");
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  // Get filtered items based on active tab
+  const getFilteredItems = () => {
+    if (activeTab === "archived") {
+      return inboxItems?.archived || [];
+    }
+    const items = inboxItems?.active || [];
+    if (activeTab === "contacts") return items.filter((i) => i.type === "contact");
+    if (activeTab === "chat") return items.filter((i) => i.type === "chat");
+    if (activeTab === "important") return items.filter((i) => i.is_important);
+    return items;
+  };
+
+  const filteredItems = getFilteredItems();
+
+  const unreadCount = (inboxItems?.active || []).filter(
     (item) => item.type === "contact" && !item.is_read
   ).length;
 
   const handleSelectItem = (item: InboxItem) => {
     setSelectedItem(item);
+    setReplyMessage("");
     if (item.type === "contact" && !item.is_read) {
       markAsRead.mutate(item.id);
     }
@@ -174,21 +267,26 @@ export function UnifiedInbox() {
           <TabsTrigger value="all" className="gap-2">
             <Inbox className="h-4 w-4" />
             Tous
-            <Badge variant="secondary">{inboxItems?.length || 0}</Badge>
+            <Badge variant="secondary">{inboxItems?.active?.length || 0}</Badge>
           </TabsTrigger>
           <TabsTrigger value="contacts" className="gap-2">
             <Mail className="h-4 w-4" />
             Contacts
             <Badge variant="secondary">
-              {inboxItems?.filter((i) => i.type === "contact").length || 0}
+              {inboxItems?.active?.filter((i) => i.type === "contact").length || 0}
             </Badge>
           </TabsTrigger>
           <TabsTrigger value="chat" className="gap-2">
             <MessageSquare className="h-4 w-4" />
             Chat
             <Badge variant="secondary">
-              {inboxItems?.filter((i) => i.type === "chat").length || 0}
+              {inboxItems?.active?.filter((i) => i.type === "chat").length || 0}
             </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="archived" className="gap-2">
+            <Archive className="h-4 w-4" />
+            Archivés
+            <Badge variant="secondary">{inboxItems?.archived?.length || 0}</Badge>
           </TabsTrigger>
         </TabsList>
       </Tabs>
@@ -224,9 +322,12 @@ export function UnifiedInbox() {
                           <p className={`font-medium truncate ${!item.is_read && item.type === "contact" ? "font-semibold" : ""}`}>
                             {item.name}
                           </p>
-                          {item.type === "contact" && !item.is_read && (
-                            <span className="w-2 h-2 rounded-full bg-primary" />
-                          )}
+                          <div className="flex items-center gap-1">
+                            {item.is_important && <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />}
+                            {item.type === "contact" && !item.is_read && (
+                              <span className="w-2 h-2 rounded-full bg-primary" />
+                            )}
+                          </div>
                         </div>
                         {item.subject && (
                           <p className="text-sm text-muted-foreground truncate">{item.subject}</p>
@@ -241,7 +342,7 @@ export function UnifiedInbox() {
                 ))}
                 {filteredItems.length === 0 && (
                   <div className="p-8 text-center text-muted-foreground">
-                    Aucun message
+                    {activeTab === "archived" ? "Aucun message archivé" : "Aucun message"}
                   </div>
                 )}
               </div>
@@ -285,14 +386,25 @@ export function UnifiedInbox() {
                   </div>
                   {selectedItem.type === "contact" && (
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => archiveItem.mutate(selectedItem.id)}
-                      >
-                        <Archive className="h-4 w-4 mr-1" />
-                        Archiver
-                      </Button>
+                      {selectedItem.is_archived ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => unarchiveItem.mutate(selectedItem.id)}
+                        >
+                          <ArchiveRestore className="h-4 w-4 mr-1" />
+                          Restaurer
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => archiveItem.mutate(selectedItem.id)}
+                        >
+                          <Archive className="h-4 w-4 mr-1" />
+                          Archiver
+                        </Button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -308,7 +420,7 @@ export function UnifiedInbox() {
                   <p className="whitespace-pre-wrap">{selectedItem.message}</p>
                 </div>
 
-                {selectedItem.type === "contact" && (
+                {selectedItem.type === "contact" && selectedItem.email && !selectedItem.is_archived && (
                   <div className="mt-6 space-y-4">
                     <h4 className="font-medium flex items-center gap-2">
                       <Send className="h-4 w-4" />
@@ -325,9 +437,16 @@ export function UnifiedInbox() {
                         <FileText className="h-4 w-4 mr-2" />
                         Générer Devis
                       </Button>
-                      <Button disabled={!replyMessage.trim()}>
-                        <Send className="h-4 w-4 mr-2" />
-                        Envoyer par email
+                      <Button 
+                        disabled={!replyMessage.trim() || sendingReply}
+                        onClick={handleSendReply}
+                      >
+                        {sendingReply ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4 mr-2" />
+                        )}
+                        {sendingReply ? "Envoi..." : "Envoyer par email"}
                       </Button>
                     </div>
                   </div>

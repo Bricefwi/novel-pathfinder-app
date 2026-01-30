@@ -1,16 +1,24 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format, subDays, startOfMonth, endOfMonth, startOfYear, subMonths } from "date-fns";
+import { fr } from "date-fns/locale";
 import {
   BarChart3,
   TrendingUp,
   Users,
   FileText,
-  Calendar,
+  Calendar as CalendarIcon,
   MapPin,
   ArrowUpRight,
   ArrowDownRight,
+  Euro,
 } from "lucide-react";
 import {
   BarChart,
@@ -25,29 +33,65 @@ import {
   Cell,
   LineChart,
   Line,
-  FunnelChart,
-  Funnel,
-  LabelList,
 } from "recharts";
+import { cn } from "@/lib/utils";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
 
+type DateRange = "7d" | "30d" | "90d" | "ytd" | "custom";
+
 export function AnalyticsDashboard() {
+  const [dateRange, setDateRange] = useState<DateRange>("30d");
+  const [customStartDate, setCustomStartDate] = useState<Date | undefined>(subDays(new Date(), 30));
+  const [customEndDate, setCustomEndDate] = useState<Date | undefined>(new Date());
+
+  const getDateRange = () => {
+    const now = new Date();
+    switch (dateRange) {
+      case "7d":
+        return { start: subDays(now, 7), end: now };
+      case "30d":
+        return { start: subDays(now, 30), end: now };
+      case "90d":
+        return { start: subDays(now, 90), end: now };
+      case "ytd":
+        return { start: startOfYear(now), end: now };
+      case "custom":
+        return { start: customStartDate || subDays(now, 30), end: customEndDate || now };
+      default:
+        return { start: subDays(now, 30), end: now };
+    }
+  };
+
+  const { start, end } = getDateRange();
+
   const { data: stats, isLoading } = useQuery({
-    queryKey: ["analytics-dashboard"],
+    queryKey: ["analytics-dashboard", dateRange, customStartDate?.toISOString(), customEndDate?.toISOString()],
     queryFn: async () => {
+      const startStr = start.toISOString();
+      const endStr = end.toISOString();
+
       const [
         profilesRes,
         bookingsRes,
         quotesRes,
         activitiesRes,
         contactsRes,
+        previousBookingsRes,
       ] = await Promise.all([
-        supabase.from("profiles").select("created_at, dream_destinations", { count: "exact" }),
-        supabase.from("bookings").select("status, total_price, created_at", { count: "exact" }),
-        supabase.from("quotes").select("status, total_price, created_at", { count: "exact" }),
+        supabase.from("profiles").select("created_at, dream_destinations", { count: "exact" })
+          .gte("created_at", startStr).lte("created_at", endStr),
+        supabase.from("bookings").select("status, total_price, created_at", { count: "exact" })
+          .gte("created_at", startStr).lte("created_at", endStr),
+        supabase.from("quotes").select("status, total_price, created_at", { count: "exact" })
+          .gte("created_at", startStr).lte("created_at", endStr),
         supabase.from("activities").select("country, activity_type", { count: "exact" }).eq("is_active", true),
-        supabase.from("contact_requests").select("created_at", { count: "exact" }),
+        supabase.from("contact_requests").select("created_at", { count: "exact" })
+          .gte("created_at", startStr).lte("created_at", endStr),
+        // Previous period for comparison
+        supabase.from("bookings").select("status, total_price, created_at", { count: "exact" })
+          .gte("created_at", subDays(start, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))).toISOString())
+          .lt("created_at", startStr),
       ]);
 
       // Funnel data
@@ -55,6 +99,7 @@ export function AnalyticsDashboard() {
       const registered = profilesRes.count || 0;
       const quoteRequests = quotesRes.count || 0;
       const confirmedBookings = (bookingsRes.data || []).filter(b => b.status === "confirmed").length;
+      const previousConfirmedBookings = (previousBookingsRes.data || []).filter(b => b.status === "confirmed").length;
 
       const funnelData = [
         { name: "Visiteurs", value: uniqueVisitors, fill: COLORS[0] },
@@ -75,15 +120,40 @@ export function AnalyticsDashboard() {
         .sort((a, b) => b.value - a.value)
         .slice(0, 8);
 
-      // Revenue by month (mock data for visualization)
-      const revenueData = [
-        { month: "Jan", revenue: 4200 },
-        { month: "Fév", revenue: 5100 },
-        { month: "Mar", revenue: 6800 },
-        { month: "Avr", revenue: 8200 },
-        { month: "Mai", revenue: 9500 },
-        { month: "Juin", revenue: 12000 },
-      ];
+      // Revenue calculation
+      const currentRevenue = (bookingsRes.data || [])
+        .filter(b => b.status === "confirmed")
+        .reduce((acc, b) => acc + (Number(b.total_price) || 0), 0);
+      
+      const previousRevenue = (previousBookingsRes.data || [])
+        .filter(b => b.status === "confirmed")
+        .reduce((acc, b) => acc + (Number(b.total_price) || 0), 0);
+
+      const revenueChange = previousRevenue > 0 
+        ? ((currentRevenue - previousRevenue) / previousRevenue * 100).toFixed(1)
+        : "0";
+
+      // Top products by revenue
+      const productRevenue = new Map<string, { revenue: number; quantity: number }>();
+      (bookingsRes.data || []).filter(b => b.status === "confirmed").forEach(b => {
+        const activity = "Séjour"; // Would need to join with activities table
+        const current = productRevenue.get(activity) || { revenue: 0, quantity: 0 };
+        productRevenue.set(activity, { 
+          revenue: current.revenue + (Number(b.total_price) || 0),
+          quantity: current.quantity + 1
+        });
+      });
+
+      // Revenue by month
+      const revenueByMonth = new Map<string, number>();
+      (bookingsRes.data || []).filter(b => b.status === "confirmed").forEach(b => {
+        const month = format(new Date(b.created_at), "MMM", { locale: fr });
+        revenueByMonth.set(month, (revenueByMonth.get(month) || 0) + (Number(b.total_price) || 0));
+      });
+      const revenueData = Array.from(revenueByMonth.entries()).map(([month, revenue]) => ({
+        month,
+        revenue,
+      }));
 
       // Activities by type
       const activityTypes = new Map<string, number>();
@@ -105,9 +175,11 @@ export function AnalyticsDashboard() {
           bookings: bookingsRes.count || 0,
           quotes: quoteRequests,
           contacts: contactsRes.count || 0,
-          revenue: (bookingsRes.data || [])
-            .filter(b => b.status === "confirmed")
-            .reduce((acc, b) => acc + (b.total_price || 0), 0),
+          revenue: currentRevenue,
+          revenueChange: parseFloat(revenueChange),
+          bookingsChange: previousConfirmedBookings > 0 
+            ? ((confirmedBookings - previousConfirmedBookings) / previousConfirmedBookings * 100)
+            : 0,
         },
       };
     },
@@ -132,15 +204,68 @@ export function AnalyticsDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold font-serif flex items-center gap-2">
-          <BarChart3 className="h-6 w-6 text-primary" />
-          Analytics Dashboard
-        </h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Visualisez vos performances et métriques clés
-        </p>
+      {/* Header with filters */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold font-serif flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-primary" />
+            Analytics Dashboard
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Visualisez vos performances et métriques clés
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Période" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="7d">7 derniers jours</SelectItem>
+              <SelectItem value="30d">30 derniers jours</SelectItem>
+              <SelectItem value="90d">90 derniers jours</SelectItem>
+              <SelectItem value="ytd">Depuis le début de l'année</SelectItem>
+              <SelectItem value="custom">Personnalisé</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {dateRange === "custom" && (
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-[130px] justify-start text-left font-normal")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customStartDate ? format(customStartDate, "dd/MM/yyyy") : "Début"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={customStartDate}
+                    onSelect={setCustomStartDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-[130px] justify-start text-left font-normal")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customEndDate ? format(customEndDate, "dd/MM/yyyy") : "Fin"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={customEndDate}
+                    onSelect={setCustomEndDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* KPI Cards */}
@@ -180,9 +305,16 @@ export function AnalyticsDashboard() {
                 <p className="text-sm text-muted-foreground">Réservations</p>
                 <p className="text-2xl font-bold">{stats?.totals.bookings}</p>
               </div>
-              <div className="flex items-center text-green-500 text-sm">
-                <ArrowUpRight className="h-4 w-4" />
-                +15%
+              <div className={cn(
+                "flex items-center text-sm",
+                (stats?.totals.bookingsChange || 0) >= 0 ? "text-green-500" : "text-red-500"
+              )}>
+                {(stats?.totals.bookingsChange || 0) >= 0 ? (
+                  <ArrowUpRight className="h-4 w-4" />
+                ) : (
+                  <ArrowDownRight className="h-4 w-4" />
+                )}
+                {Math.abs(stats?.totals.bookingsChange || 0).toFixed(0)}%
               </div>
             </div>
           </CardContent>
@@ -194,9 +326,16 @@ export function AnalyticsDashboard() {
                 <p className="text-sm text-muted-foreground">Chiffre d'affaires</p>
                 <p className="text-2xl font-bold">{stats?.totals.revenue.toLocaleString()}€</p>
               </div>
-              <div className="flex items-center text-green-500 text-sm">
-                <ArrowUpRight className="h-4 w-4" />
-                +22%
+              <div className={cn(
+                "flex items-center text-sm",
+                (stats?.totals.revenueChange || 0) >= 0 ? "text-green-500" : "text-red-500"
+              )}>
+                {(stats?.totals.revenueChange || 0) >= 0 ? (
+                  <ArrowUpRight className="h-4 w-4" />
+                ) : (
+                  <ArrowDownRight className="h-4 w-4" />
+                )}
+                {Math.abs(stats?.totals.revenueChange || 0).toFixed(0)}%
               </div>
             </div>
           </CardContent>
@@ -276,10 +415,10 @@ export function AnalyticsDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
+              <Euro className="h-5 w-5 text-primary" />
               Évolution du CA
             </CardTitle>
-            <CardDescription>Chiffre d'affaires mensuel</CardDescription>
+            <CardDescription>Chiffre d'affaires sur la période</CardDescription>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
