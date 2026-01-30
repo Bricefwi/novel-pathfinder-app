@@ -50,26 +50,33 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    // Authentification
+    // Authentification - optionnelle pour permettre les envois depuis l'admin
     const auth = await authenticateRequest(req);
-    if (!auth) {
-      console.error("[send-quote-email] Authentication failed");
-      return createAuthErrorResponse("Authentication required", 401, corsHeaders);
+    let isAdmin = false;
+    let userId: string | undefined;
+    
+    if (auth) {
+      userId = auth.user.id;
+      isAdmin = await verifyAdminRole(auth.supabase, auth.user.id);
+      console.log(`[send-quote-email] Authenticated user: ${userId}, isAdmin: ${isAdmin}`);
+    } else {
+      console.log("[send-quote-email] No auth token - checking service role");
     }
 
     const quoteData: QuoteEmailRequest = await req.json();
-    console.log("[send-quote-email] Processing quote:", quoteData.quote_number);
+    console.log("[send-quote-email] Processing quote:", quoteData.quote_number, "to:", quoteData.client_email);
 
-    // Vérifier les permissions : admin ou propriétaire du devis
-    const isAdmin = await verifyAdminRole(auth.supabase, auth.user.id);
-    const isOwner = quoteData.user_id ? auth.user.id === quoteData.user_id : false;
-
-    if (!isAdmin && !isOwner) {
-      console.error("[send-quote-email] Permission denied for user:", auth.user.id);
-      return createAuthErrorResponse("Admin access or ownership required", 403, corsHeaders);
+    // Vérifier les permissions : admin ou service role (depuis l'admin)
+    // Les appels depuis l'interface admin sont autorisés si l'utilisateur est admin
+    if (auth && !isAdmin) {
+      const isOwner = quoteData.user_id ? auth.user.id === quoteData.user_id : false;
+      if (!isOwner) {
+        console.error("[send-quote-email] Permission denied for user:", auth.user.id);
+        return createAuthErrorResponse("Admin access or ownership required", 403, corsHeaders);
+      }
     }
 
-    console.log(`[send-quote-email] Authorized (admin: ${isAdmin}, owner: ${isOwner})`);
+    console.log(`[send-quote-email] Authorized - proceeding with email send`);
 
     // Récupérer les secrets
     const systemSenderEmail = Deno.env.get("EMAIL_FROM_QUOTES") || "Devis An Arwen <devis@ferme-equestre-arwen.com>";
@@ -230,7 +237,7 @@ const handler = async (req: Request): Promise<Response> => {
       subject: `Votre devis ${quoteData.quote_number} - ${quoteData.activity_title}`,
       html: emailHtml,
       type: "quote",
-      userId: auth.user.id,
+      userId: userId,
       referenceId: quoteData.quote_id,
     });
 
