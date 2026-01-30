@@ -24,8 +24,10 @@ import {
   ExternalLink,
   Mail,
   MapPin,
-  Plus
+  Plus,
+  Trash2
 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { EcosystemArticleCreator } from "./ecosystem/EcosystemArticleCreator";
 
 interface EcosystemSuggestion {
@@ -194,6 +196,25 @@ export const AdminEcoSysteme = () => {
       setSelectedArticle(null);
       setImageOverride("");
       setGalleryOverride("");
+    },
+  });
+
+  // Delete article mutation
+  const deleteArticleMutation = useMutation({
+    mutationFn: async (articleId: string) => {
+      const { error } = await supabase
+        .from("ecosystem_articles")
+        .delete()
+        .eq("id", articleId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-ecosystem-articles"] });
+      toast.success("Article supprimé");
+    },
+    onError: (error: Error) => {
+      console.error("Delete error:", error);
+      toast.error(`Erreur lors de la suppression: ${error.message}`);
     },
   });
 
@@ -527,6 +548,36 @@ export const AdminEcoSysteme = () => {
                           </div>
                         </DialogContent>
                       </Dialog>
+                      
+                      {/* Delete article button */}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Supprimer cet article ?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Cette action est irréversible. L'article "{article.title}" sera définitivement supprimé.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteArticleMutation.mutate(article.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Supprimer
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   ))}
                 </div>
