@@ -174,15 +174,15 @@ const MonEspace = () => {
 
   return (
     <Layout>
-      <section className="pt-28 pb-16 min-h-screen bg-gradient-to-b from-background to-muted/20">
+      <section className="pt-32 md:pt-36 pb-16 min-h-screen bg-gradient-to-b from-background to-muted/20">
         <div className="container mx-auto px-4">
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
             <div>
-              <h1 className="font-serif text-3xl md:text-4xl font-bold mb-1">
+              <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl font-bold mb-1">
                 Bonjour, <span className="text-primary">{profile?.first_name || "Aventurier"}</span> !
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground text-sm sm:text-base">
                 Bienvenue dans votre espace voyage
               </p>
             </div>
