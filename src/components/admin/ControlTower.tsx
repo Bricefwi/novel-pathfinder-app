@@ -29,7 +29,8 @@ export type AdminModule =
   | "accommodation"
   | "insights"
   | "quotes"
-  | "ecosystem";
+  | "ecosystem"
+  | "legal";
 
 export function ControlTower() {
   const navigate = useNavigate();
