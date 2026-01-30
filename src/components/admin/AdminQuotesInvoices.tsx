@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { FileText, Plus, Download, Send, Eye, Receipt, CheckCircle, Mail, Loader2 } from "lucide-react";
+import { FileText, Plus, Download, Send, Eye, Receipt, CheckCircle, Mail, Loader2, Copy } from "lucide-react";
 import { downloadQuotePDF, type QuoteData } from "@/components/pdf/QuotePDFGenerator";
 import { downloadInvoicePDF, type InvoiceData } from "@/components/pdf/InvoicePDFGenerator";
 
@@ -49,6 +49,8 @@ export const AdminQuotesInvoices = () => {
   const [selectedQuote, setSelectedQuote] = useState<string | null>(null);
   const [sendingEmail, setSendingEmail] = useState<string | null>(null);
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
+  const [duplicatingQuote, setDuplicatingQuote] = useState<string | null>(null);
+  const [editingQuote, setEditingQuote] = useState<typeof quotes extends (infer T)[] ? T : never | null>(null);
 
   // Send test email function
   const handleSendTestEmail = async () => {
@@ -246,6 +248,60 @@ export const AdminQuotesInvoices = () => {
       toast.error("Erreur lors de la création de la facture");
     },
   });
+
+  // Duplicate quote mutation
+  const duplicateQuoteMutation = useMutation({
+    mutationFn: async (quoteId: string) => {
+      const quote = quotes?.find(q => q.id === quoteId);
+      if (!quote) throw new Error("Devis non trouvé");
+
+      // Generate new quote number
+      const { data: numberData, error: numberError } = await supabase.rpc("generate_quote_number");
+      if (numberError) throw numberError;
+
+      // Create duplicated quote
+      const { data, error } = await supabase
+        .from("quotes")
+        .insert({
+          quote_number: numberData,
+          client_name: quote.client_name,
+          client_email: quote.client_email,
+          client_phone: quote.client_phone,
+          client_address: quote.client_address,
+          activity_title: quote.activity_title,
+          activity_duration: quote.activity_duration,
+          start_date: quote.start_date,
+          end_date: quote.end_date,
+          unit_price: quote.unit_price,
+          participants: quote.participants,
+          total_price: quote.total_price,
+          deposit_amount: quote.deposit_amount,
+          deposit_percentage: quote.deposit_percentage,
+          payment_option: quote.payment_option,
+          valid_until: null, // Reset validity
+          notes: quote.notes,
+          status: "draft",
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-quotes"] });
+      toast.success(`Devis dupliqué : ${data.quote_number}`);
+      setDuplicatingQuote(null);
+    },
+    onError: () => {
+      toast.error("Erreur lors de la duplication du devis");
+      setDuplicatingQuote(null);
+    },
+  });
+
+  const handleDuplicateQuote = async (quoteId: string) => {
+    setDuplicatingQuote(quoteId);
+    duplicateQuoteMutation.mutate(quoteId);
+  };
 
   const handleDownloadQuote = (quote: typeof quotes extends (infer T)[] ? T : never) => {
     const quoteData: QuoteData = {
@@ -668,6 +724,19 @@ export const AdminQuotesInvoices = () => {
                             </Button>
                             <Button size="sm" variant="outline" onClick={() => handleDownloadQuote(quote)} title="Télécharger PDF">
                               <Download className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleDuplicateQuote(quote.id)}
+                              disabled={duplicatingQuote === quote.id}
+                              title="Dupliquer le devis"
+                            >
+                              {duplicatingQuote === quote.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Copy className="h-4 w-4" />
+                              )}
                             </Button>
                             <Button 
                               size="sm" 

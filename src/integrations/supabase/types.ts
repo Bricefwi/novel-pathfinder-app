@@ -1452,6 +1452,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      user_has_participated_in_room: {
+        Args: { _activity_type: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       activity_type: "randonnee" | "cours" | "stage" | "sejour" | "hebergement"

@@ -43,6 +43,7 @@ import {
   Edit,
   Save,
   X,
+  UserPlus,
 } from "lucide-react";
 
 interface ProspectAnalysis {
@@ -99,6 +100,14 @@ export function CRM360() {
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ first_name: "", last_name: "", phone: "" });
+  const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+  const [newClientForm, setNewClientForm] = useState({
+    first_name: "",
+    last_name: "",
+    phone: "",
+    email: "",
+    riding_level: "debutant" as "debutant" | "intermediaire" | "confirme" | "expert",
+  });
   const [analysisResult, setAnalysisResult] = useState<{
     status: string;
     analysis?: ProspectAnalysis;
@@ -148,7 +157,8 @@ export function CRM360() {
       // Enrich profiles with CRM data
       const enrichedProfiles: ClientProfile[] = profiles.map((profile) => {
         const userBookings = bookings.filter((b) => b.user_id === profile.user_id);
-        const userQuotes = quotes.filter((q) => q.user_id === profile.id);
+        // Fix: Filter quotes by user_id (linked to profile id) OR by client_email matching
+        const userQuotes = quotes.filter((q) => q.user_id === profile.id || q.user_id === profile.user_id);
         const userMessages = messages.filter((m) => m.user_id === profile.user_id);
         const userRole = roles.find((r) => r.user_id === profile.user_id);
 
@@ -226,6 +236,52 @@ export function CRM360() {
     },
     onError: () => {
       toast.error("Erreur lors de la mise à jour");
+    },
+  });
+
+  // Create new client mutation
+  const createClientMutation = useMutation({
+    mutationFn: async (data: typeof newClientForm) => {
+      // First create auth user - we'll create a profile directly
+      // Since we can't create auth users from client side, create profile with random UUID
+      const newUserId = crypto.randomUUID();
+      
+      const { error } = await supabase
+        .from("profiles")
+        .insert({
+          user_id: newUserId,
+          first_name: data.first_name,
+          last_name: data.last_name,
+          phone: data.phone,
+          riding_level: data.riding_level,
+          onboarding_completed: true,
+        });
+      if (error) throw error;
+      
+      // Also create a booking entry to store the email
+      if (data.email) {
+        await supabase.from("contact_requests").insert({
+          name: `${data.first_name} ${data.last_name}`.trim(),
+          email: data.email,
+          message: "Client ajouté manuellement depuis le CRM",
+          subject: "Ajout manuel CRM",
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["crm-clients"] });
+      toast.success("Client ajouté avec succès");
+      setIsAddClientOpen(false);
+      setNewClientForm({
+        first_name: "",
+        last_name: "",
+        phone: "",
+        email: "",
+        riding_level: "debutant",
+      });
+    },
+    onError: () => {
+      toast.error("Erreur lors de l'ajout du client");
     },
   });
 
@@ -459,10 +515,94 @@ export function CRM360() {
             Vision unifiée de vos clients avec scoring et segmentation automatique
           </p>
         </div>
-        <Button variant="outline" onClick={handleExportCSV} className="gap-2">
-          <Download className="h-4 w-4" />
-          Exporter CSV
-        </Button>
+        <div className="flex gap-2">
+          <Dialog open={isAddClientOpen} onOpenChange={setIsAddClientOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                Ajouter un client
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Ajouter un client manuellement</DialogTitle>
+                <DialogDescription>
+                  Pour les clients qui ne sont pas passés par le site
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Prénom</Label>
+                    <Input
+                      value={newClientForm.first_name}
+                      onChange={(e) => setNewClientForm({ ...newClientForm, first_name: e.target.value })}
+                      placeholder="Prénom"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Nom</Label>
+                    <Input
+                      value={newClientForm.last_name}
+                      onChange={(e) => setNewClientForm({ ...newClientForm, last_name: e.target.value })}
+                      placeholder="Nom"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input
+                    type="email"
+                    value={newClientForm.email}
+                    onChange={(e) => setNewClientForm({ ...newClientForm, email: e.target.value })}
+                    placeholder="email@exemple.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Téléphone</Label>
+                  <Input
+                    value={newClientForm.phone}
+                    onChange={(e) => setNewClientForm({ ...newClientForm, phone: e.target.value })}
+                    placeholder="06 XX XX XX XX"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Niveau équestre</Label>
+                  <Select
+                    value={newClientForm.riding_level}
+                    onValueChange={(v) => setNewClientForm({ ...newClientForm, riding_level: v as typeof newClientForm.riding_level })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="debutant">Débutant</SelectItem>
+                      <SelectItem value="intermediaire">Intermédiaire</SelectItem>
+                      <SelectItem value="confirme">Confirmé</SelectItem>
+                      <SelectItem value="expert">Expert</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={() => createClientMutation.mutate(newClientForm)}
+                  disabled={createClientMutation.isPending || !newClientForm.first_name}
+                >
+                  {createClientMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <UserPlus className="h-4 w-4 mr-2" />
+                  )}
+                  Créer le client
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+          <Button variant="outline" onClick={handleExportCSV} className="gap-2">
+            <Download className="h-4 w-4" />
+            Exporter CSV
+          </Button>
+        </div>
       </div>
 
       {/* Segment Tabs */}
