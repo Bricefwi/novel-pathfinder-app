@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { COMPANY_CONFIG } from "@/config/constants";
+import pdfLogo from "@/assets/logo-cheval-pdf.png";
 
 export interface InvoiceData {
   invoice_number: string;
@@ -38,37 +39,12 @@ const paymentStatusLabels: Record<string, { label: string; color: string; bg: st
   paid: { label: "Payé", color: "#166534", bg: "#dcfce7" },
 };
 
-// Logo SVG inline pour garantir l'affichage dans le PDF
-const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" width="180" height="108">
-  <defs>
-    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#C9A227"/>
-      <stop offset="50%" style="stop-color:#B8860B"/>
-      <stop offset="100%" style="stop-color:#8B6914"/>
-    </linearGradient>
-    <linearGradient id="brownGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#8B4513"/>
-      <stop offset="100%" style="stop-color:#654321"/>
-    </linearGradient>
-  </defs>
-  <!-- Cercle extérieur -->
-  <ellipse cx="100" cy="50" rx="45" ry="42" fill="none" stroke="url(#goldGrad)" stroke-width="3"/>
-  <!-- Soleil -->
-  <circle cx="135" cy="22" r="8" fill="none" stroke="url(#goldGrad)" stroke-width="2"/>
-  <!-- Crinière -->
-  <path d="M65 35 Q50 25 55 45 Q45 35 52 55 Q42 48 50 62 L70 50 Z" fill="url(#goldGrad)"/>
-  <!-- Tête du cheval -->
-  <path d="M70 30 Q85 20 100 30 Q110 35 115 50 Q118 65 105 75 Q95 80 85 75 Q75 72 70 60 Q65 45 70 30" fill="url(#brownGrad)"/>
-  <!-- Oreille -->
-  <path d="M78 28 Q82 18 88 25 L85 32 Z" fill="url(#brownGrad)"/>
-  <!-- Nez -->
-  <ellipse cx="110" cy="58" rx="3" ry="2" fill="#C9A227"/>
-  <!-- Texte -->
-  <text x="100" y="100" text-anchor="middle" font-family="Georgia, serif" font-size="11" font-style="italic" fill="#B8860B">Ferme équestre</text>
-  <text x="100" y="115" text-anchor="middle" font-family="Georgia, serif" font-size="13" font-style="italic" font-weight="bold" fill="#B8860B">an Arwen</text>
-</svg>`;
-
 export const generateInvoicePDF = (data: InvoiceData): string => {
+  const logoUrl =
+    typeof window !== "undefined"
+      ? new URL(pdfLogo, window.location.origin).toString()
+      : pdfLogo;
+
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "Non défini";
     return format(new Date(dateStr), "d MMMM yyyy", { locale: fr });
@@ -118,6 +94,13 @@ export const generateInvoicePDF = (data: InvoiceData): string => {
     
     .logo-section {
       flex-shrink: 0;
+    }
+
+    .logo-img {
+      display: block;
+      width: 120px;
+      height: auto;
+      object-fit: contain;
     }
     
     .company-section {
@@ -482,7 +465,7 @@ export const generateInvoicePDF = (data: InvoiceData): string => {
   <div class="page">
     <div class="header">
       <div class="logo-section">
-        ${LOGO_SVG}
+        <img class="logo-img" src="${logoUrl}" alt="${COMPANY_CONFIG.name}" />
       </div>
       <div class="company-section">
         <div class="company-name">${COMPANY_CONFIG.name}</div>

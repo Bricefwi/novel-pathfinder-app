@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { COMPANY_CONFIG } from "@/config/constants";
+import pdfLogo from "@/assets/logo-cheval-pdf.png";
 
 export interface QuoteData {
   quote_number: string;
@@ -60,6 +61,11 @@ const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" 
 </svg>`;
 
 export const generateQuotePDF = (data: QuoteData): string => {
+  const logoUrl =
+    typeof window !== "undefined"
+      ? new URL(pdfLogo, window.location.origin).toString()
+      : pdfLogo;
+
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "À définir";
     return format(new Date(dateStr), "d MMMM yyyy", { locale: fr });
@@ -106,6 +112,13 @@ export const generateQuotePDF = (data: QuoteData): string => {
     
     .logo-section {
       flex-shrink: 0;
+    }
+
+    .logo-img {
+      display: block;
+      width: 120px;
+      height: auto;
+      object-fit: contain;
     }
     
     .company-section {
@@ -451,7 +464,7 @@ export const generateQuotePDF = (data: QuoteData): string => {
   <div class="page">
     <div class="header">
       <div class="logo-section">
-        ${LOGO_SVG}
+        <img class="logo-img" src="${logoUrl}" alt="${COMPANY_CONFIG.name}" />
       </div>
       <div class="company-section">
         <div class="company-name">${COMPANY_CONFIG.name}</div>
