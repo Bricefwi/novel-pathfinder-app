@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { PageTracker } from "@/components/app/PageTracker";
 import { CartDrawer } from "@/components/cart/CartDrawer";
-import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 
 // Pages chargées immédiatement (critiques pour le SEO et l'expérience initiale)
 import Index from "./pages/Index";
@@ -54,7 +53,6 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <GoogleAnalytics />
         <PageTracker />
         <CartDrawer />
         <Suspense fallback={<PageLoader />}>
