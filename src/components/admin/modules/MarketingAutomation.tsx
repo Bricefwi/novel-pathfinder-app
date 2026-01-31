@@ -222,12 +222,12 @@ Pour vous désinscrire, répondez à cet email.`
             </CardContent>
           </Card>
 
-          {/* Info Box */}
-          <Card className="border-amber-200 bg-amber-50/20 dark:bg-amber-950/20">
+          {/* Info Box - Domaine vérifié */}
+          <Card className="border-green-200 bg-green-50/20 dark:bg-green-950/20">
             <CardContent className="pt-4">
-              <p className="text-sm text-amber-800 dark:text-amber-200">
-                <strong>💡 Conseil :</strong> Testez toujours votre email avant l'envoi final.
-                Pour envoyer à une liste d'abonnés, configurez votre domaine vérifié dans Resend.
+              <p className="text-sm text-green-800 dark:text-green-200">
+                <strong>✅ Domaine vérifié :</strong> Les emails sont envoyés depuis{" "}
+                <code className="bg-green-100 dark:bg-green-900 px-1 rounded">newsletter@ferme-equestre-arwen.com</code>
               </p>
             </CardContent>
           </Card>
