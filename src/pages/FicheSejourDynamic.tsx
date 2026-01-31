@@ -39,6 +39,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useActivityBySlug } from "@/hooks/useActivities";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { TravelDiarySection } from "@/components/sejour/TravelDiarySection";
+import { TravelDiaryData, LegacyTravelDiary } from "@/types/travel-diary";
 
 // Default images for fallback
 import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
@@ -470,6 +472,12 @@ const FicheSejourDynamic = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* Travel Diary Section */}
+            <TravelDiarySection 
+              travelDiary={sejour.travel_diary as TravelDiaryData | LegacyTravelDiary | null}
+              activityTitle={sejour.title}
+            />
           </div>
         </div>
       </section>
