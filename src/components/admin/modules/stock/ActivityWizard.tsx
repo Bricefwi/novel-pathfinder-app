@@ -174,6 +174,7 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
       // Cast travel_diary to JSON type for Supabase
       const travelDiaryJson = formData.travel_diary as unknown as { [key: string]: string };
       
+      // Build payload - preserve existing images if none were changed
       const payload = {
         country: formData.country,
         region: formData.region,
@@ -190,40 +191,81 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
         inclusions: formData.inclusions,
         exclusions: formData.exclusions,
         requirements: formData.requirements,
-        images: formData.images,
-        featured_image: formData.images[0] || formData.featured_image,
         travel_diary: travelDiaryJson,
         is_active: true,
+        // Only update images if they exist, otherwise preserve existing
+        ...(formData.images.length > 0 
+          ? { 
+              images: formData.images,
+              featured_image: formData.images[0] 
+            } 
+          : activity?.featured_image 
+            ? { featured_image: activity.featured_image }
+            : {}
+        ),
       };
 
-      if (isEditing && activity) {
-        const { error } = await supabase
+      // MODE UPDATE: Target specific ID
+      if (isEditing && activity?.id) {
+        console.log("[ActivityWizard] MODE UPDATE - ID:", activity.id);
+        console.log("[ActivityWizard] Payload:", JSON.stringify(payload, null, 2));
+        
+        const { data, error } = await supabase
           .from("activities")
           .update(payload as any)
-          .eq("id", activity.id);
-        if (error) throw error;
+          .eq("id", activity.id)
+          .select()
+          .single();
+        
+        if (error) {
+          console.error("[ActivityWizard] UPDATE Error:", error);
+          throw error;
+        }
+        
+        console.log("[ActivityWizard] UPDATE Success:", data);
+        return { mode: "update", data };
       } else {
-        const { error } = await supabase
+        // MODE CREATE: Insert new activity
+        console.log("[ActivityWizard] MODE INSERT");
+        console.log("[ActivityWizard] Payload:", JSON.stringify(payload, null, 2));
+        
+        const { data, error } = await supabase
           .from("activities")
-          .insert(payload as any);
-        if (error) throw error;
+          .insert(payload as any)
+          .select()
+          .single();
+        
+        if (error) {
+          console.error("[ActivityWizard] INSERT Error:", error);
+          throw error;
+        }
+        
+        console.log("[ActivityWizard] INSERT Success:", data);
+        return { mode: "insert", data };
       }
     },
-    onSuccess: () => {
-      toast.success(isEditing ? "Séjour mis à jour avec succès" : "Séjour créé avec succès");
+    onSuccess: (result) => {
+      const message = result?.mode === "update" 
+        ? `✓ Séjour "${formData.title}" mis à jour avec succès` 
+        : `✓ Séjour "${formData.title}" créé avec succès`;
+      toast.success(message);
+      
+      // Invalidate ALL related queries for immediate UI refresh
       queryClient.invalidateQueries({ queryKey: ["stock-management"] });
       queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
       queryClient.invalidateQueries({ queryKey: ["activities"] });
       queryClient.invalidateQueries({ queryKey: ["sejours-grouped"] });
+      queryClient.invalidateQueries({ queryKey: ["activity"] });
+      
       onComplete();
       setStep(1);
     },
     onError: (error: any) => {
-      console.error("Save error:", error);
+      console.error("[ActivityWizard] Save error:", error);
       if (error.code === "23505") {
         toast.error("Ce slug existe déjà. Choisissez un autre titre.");
       } else {
-        toast.error("Erreur lors de la sauvegarde");
+        toast.error(`Erreur lors de la sauvegarde: ${error.message || "Erreur inconnue"}`);
       }
     },
   });
