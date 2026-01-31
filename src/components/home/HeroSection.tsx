@@ -4,12 +4,16 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 // Import des images authentiques
+import heroBanniereLacBretagne from "@/assets/hero-banniere-lac-bretagne.jpg";
 import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
 import marocDesertNuages from "@/assets/maroc-desert-nuages.jpg";
-import bretagneVillegeChevaux from "@/assets/bretagne-village-chevaux.jpg";
 import marocCanyonCavaliers from "@/assets/maroc-canyon-cavaliers.jpg";
 
 const heroSlides = [
+  {
+    image: heroBanniereLacBretagne,
+    alt: "Cheval au bord d'un lac en Bretagne avec vue sur un clocher",
+  },
   {
     image: cavaliersPlageCoucherSoleil,
     alt: "Cavaliers sur la plage au coucher du soleil en Bretagne",
@@ -17,10 +21,6 @@ const heroSlides = [
   {
     image: marocDesertNuages,
     alt: "Désert marocain avec nuages spectaculaires",
-  },
-  {
-    image: bretagneVillegeChevaux,
-    alt: "Village breton typique avec chevaux",
   },
   {
     image: marocCanyonCavaliers,
