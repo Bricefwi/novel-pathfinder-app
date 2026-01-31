@@ -57,6 +57,16 @@ const handler = async (req: Request): Promise<Response> => {
       .select("*")
       .eq("id", invoice_id)
       .single();
+    
+    // Valider l'email destinataire
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (invoice && !emailRegex.test(invoice.client_email)) {
+      console.error("[send-invoice-email] Invalid email format:", invoice.client_email);
+      return new Response(
+        JSON.stringify({ error: "Format d'email invalide" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     if (invoiceError || !invoice) {
       console.error("[send-invoice-email] Invoice not found:", invoiceError);
@@ -66,8 +76,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Utiliser le domaine vérifié ferme-equestre-arwen.com
     const systemSenderEmail = Deno.env.get("EMAIL_FROM_INVOICES") || "Factures An Arwen <factures@ferme-equestre-arwen.com>";
     const appUrl = Deno.env.get("APP_URL") || "https://novel-pathfinder-app.lovable.app";
+    
+    console.log("[send-invoice-email] Using sender:", systemSenderEmail, "to:", invoice.client_email);
 
     const emailHtml = `
 <!DOCTYPE html>

@@ -83,9 +83,21 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`[send-quote-email] Authorized - proceeding with email send`);
 
-    // Récupérer les secrets
+    // Valider l'email destinataire
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(quoteData.client_email)) {
+      console.error("[send-quote-email] Invalid email format:", quoteData.client_email);
+      return new Response(
+        JSON.stringify({ error: "Format d'email invalide" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Récupérer les secrets - utiliser le domaine vérifié ferme-equestre-arwen.com
     const systemSenderEmail = Deno.env.get("EMAIL_FROM_QUOTES") || "Devis An Arwen <devis@ferme-equestre-arwen.com>";
     const appUrl = Deno.env.get("APP_URL") || "https://novel-pathfinder-app.lovable.app";
+    
+    console.log("[send-quote-email] Using sender:", systemSenderEmail);
 
     const emailHtml = `
 <!DOCTYPE html>
