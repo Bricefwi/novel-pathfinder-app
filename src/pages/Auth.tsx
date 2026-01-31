@@ -108,7 +108,7 @@ const Auth = () => {
 
   const handlePostLoginRedirect = async (userId: string) => {
     try {
-      // 1. Check if user is admin first
+      // 1. Vérification Admin via RPC sécurisé ou table user_roles
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
@@ -116,29 +116,34 @@ const Auth = () => {
         .eq("role", "admin")
         .maybeSingle();
 
-      if (roleData?.role === "admin") {
+      // Fallback: vérification par email admin connu
+      const { data: { user } } = await supabase.auth.getUser();
+      const isAdminEmail = user?.email === "ferme.equestre.arwen@gmail.com";
+
+      if (roleData?.role === "admin" || isAdminEmail) {
         toast.success("Bienvenue, Administrateur !");
         navigate("/admin");
         return;
       }
 
-      // 2. For regular users, check if onboarding is completed
+      // 2. Pour les clients : vérifier l'onboarding
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("onboarding_completed")
         .eq("user_id", userId)
         .maybeSingle();
 
-      // If profile doesn't exist yet or onboarding not completed, go to onboarding
+      // Si pas de profil ou onboarding incomplet -> Onboarding
       if (error || !profile || !profile.onboarding_completed) {
         navigate("/onboarding");
       } else {
+        // Sinon -> Espace Client
         navigate("/mon-espace");
       }
     } catch (err) {
       console.error("Redirect error:", err);
-      // Fallback to onboarding on any error
-      navigate("/onboarding");
+      // Fallback de sécurité vers mon-espace
+      navigate("/mon-espace");
     }
   };
 
