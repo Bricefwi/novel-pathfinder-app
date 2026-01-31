@@ -1,7 +1,6 @@
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { COMPANY_CONFIG } from "@/config/constants";
-import pdfLogo from "@/assets/logo-cheval-pdf.png";
 
 export interface QuoteData {
   quote_number: string;
@@ -63,8 +62,8 @@ const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" 
 export const generateQuotePDF = (data: QuoteData): string => {
   const logoUrl =
     typeof window !== "undefined"
-      ? new URL(pdfLogo, window.location.origin).toString()
-      : pdfLogo;
+      ? new URL("/images/logo-cheval-pdf.png", window.location.origin).toString()
+      : "/images/logo-cheval-pdf.png";
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "À définir";

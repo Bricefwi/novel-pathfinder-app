@@ -1,7 +1,6 @@
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { COMPANY_CONFIG } from "@/config/constants";
-import pdfLogo from "@/assets/logo-cheval-pdf.png";
 
 export interface InvoiceData {
   invoice_number: string;
@@ -42,8 +41,8 @@ const paymentStatusLabels: Record<string, { label: string; color: string; bg: st
 export const generateInvoicePDF = (data: InvoiceData): string => {
   const logoUrl =
     typeof window !== "undefined"
-      ? new URL(pdfLogo, window.location.origin).toString()
-      : pdfLogo;
+      ? new URL("/images/logo-cheval-pdf.png", window.location.origin).toString()
+      : "/images/logo-cheval-pdf.png";
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "Non défini";
