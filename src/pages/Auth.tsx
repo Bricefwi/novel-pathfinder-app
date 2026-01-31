@@ -108,7 +108,21 @@ const Auth = () => {
 
   const handlePostLoginRedirect = async (userId: string) => {
     try {
-      // Check if onboarding is completed
+      // 1. Check if user is admin first
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (roleData?.role === "admin") {
+        toast.success("Bienvenue, Administrateur !");
+        navigate("/admin");
+        return;
+      }
+
+      // 2. For regular users, check if onboarding is completed
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("onboarding_completed")

@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   MapPin, 
@@ -16,8 +17,11 @@ import {
   Loader2,
   Lightbulb,
   Target,
-  Sparkles
+  Sparkles,
+  History,
+  Search
 } from "lucide-react";
+import { AdminClientTimeline } from "./AdminClientTimeline";
 
 interface DestinationStats {
   name: string;
@@ -84,6 +88,9 @@ export function AdminClientInsights() {
   const [chatTopics, setChatTopics] = useState<{ topic: string; count: number }[]>([]);
   const [marketingOpportunities, setMarketingOpportunities] = useState<MarketingOpportunity[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
+  
+  // Timeline search
+  const [timelineSearchEmail, setTimelineSearchEmail] = useState("");
 
   useEffect(() => {
     fetchAllData();
@@ -437,6 +444,10 @@ export function AdminClientInsights() {
             <Lightbulb className="h-4 w-4" />
             Opportunités
           </TabsTrigger>
+          <TabsTrigger value="timeline" className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            Historique Client
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="destinations">
@@ -706,6 +717,34 @@ export function AdminClientInsights() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="timeline">
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Search className="h-5 w-5 text-primary" />
+                  Rechercher un client
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-4 items-end">
+                  <div className="flex-1">
+                    <label className="text-sm text-muted-foreground mb-1 block">Email du client</label>
+                    <Input
+                      type="email"
+                      placeholder="client@example.com"
+                      value={timelineSearchEmail}
+                      onChange={(e) => setTimelineSearchEmail(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <AdminClientTimeline clientEmail={timelineSearchEmail || undefined} />
+          </div>
         </TabsContent>
       </Tabs>
     </div>
