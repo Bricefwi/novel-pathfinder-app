@@ -130,11 +130,12 @@ export const AdminQuotesInvoices = () => {
   // Create quote mutation
   const createQuoteMutation = useMutation({
     mutationFn: async (quoteData: Partial<QuoteData>) => {
-      // Generate quote number
+      // 1) Generate quote number
       const { data: numberData, error: numberError } = await supabase.rpc("generate_quote_number");
       if (numberError) throw numberError;
 
-      const { data, error } = await supabase
+      // 2) Insert into DB first (Status: draft)
+      const { data: newQuote, error: insertError } = await supabase
         .from("quotes")
         .insert({
           quote_number: numberData,
@@ -154,56 +155,70 @@ export const AdminQuotesInvoices = () => {
           payment_option: quoteData.payment_option || "deposit",
           valid_until: quoteData.valid_until,
           notes: quoteData.notes,
-          status: "draft",
+          status: "draft", // Always start as draft
         })
         .select()
         .single();
-      if (error) throw error;
-      
-      // Envoyer automatiquement le devis par email
+
+      if (insertError) throw insertError;
+      return newQuote;
+    },
+    onSuccess: async (newQuote, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-quotes"] });
+      toast.success("Devis créé avec succès (Brouillon)");
+      setIsQuoteDialogOpen(false);
+
+      // 3) Attempt to send email separately
+      toast.info("Tentative d'envoi de l'email...");
+
       try {
-        const { error: emailError } = await supabase.functions.invoke("send-quote-email", {
+        const { data: emailData, error: emailError } = await supabase.functions.invoke("send-quote-email", {
           body: {
-            quote_number: numberData,
-            client_name: quoteData.client_name,
-            client_email: quoteData.client_email,
-            activity_title: quoteData.activity_title,
-            activity_duration: quoteData.activity_duration,
-            start_date: quoteData.start_date,
-            end_date: quoteData.end_date,
-            participants: quoteData.participants,
-            unit_price: quoteData.unit_price,
-            total_price: quoteData.total_price,
-            deposit_amount: quoteData.deposit_amount,
-            deposit_percentage: quoteData.deposit_percentage || 30,
-            valid_until: quoteData.valid_until,
-            notes: quoteData.notes,
+            quote_id: newQuote.id,
+            quote_number: newQuote.quote_number,
+            client_name: variables.client_name,
+            client_email: variables.client_email,
+            activity_title: variables.activity_title,
+            activity_duration: variables.activity_duration,
+            start_date: variables.start_date,
+            end_date: variables.end_date,
+            participants: variables.participants,
+            unit_price: variables.unit_price,
+            total_price: variables.total_price,
+            deposit_amount: variables.deposit_amount,
+            deposit_percentage: variables.deposit_percentage ?? 30,
+            valid_until: variables.valid_until,
+            notes: variables.notes,
           },
         });
-        
-        if (emailError) {
-          console.error("Email error:", emailError);
-          toast.warning("Devis créé mais l'email n'a pas pu être envoyé");
-        } else {
-          // Mettre à jour le statut à "sent"
-          await supabase
-            .from("quotes")
-            .update({ status: "sent" })
-            .eq("id", data.id);
+
+        if (emailError || emailData?.error) {
+          throw new Error(emailError?.message || emailData?.error || "Erreur inconnue");
         }
-      } catch (emailErr) {
-        console.error("Email sending failed:", emailErr);
+
+        // 4) Update status to 'sent' ONLY if email success
+        const { error: updateError } = await supabase
+          .from("quotes")
+          .update({ status: "sent" })
+          .eq("id", newQuote.id);
+
+        if (updateError) {
+          console.error("Erreur update statut devis:", updateError);
+          toast.warning("Email envoyé mais le statut n'a pas pu être mis à jour. Rafraîchissez la page.");
+        } else {
+          toast.success("Email envoyé et statut mis à jour !");
+          queryClient.invalidateQueries({ queryKey: ["admin-quotes"] });
+        }
+      } catch (err) {
+        console.error("Erreur envoi email:", err);
+        toast.warning(
+          "Le devis est créé mais l'email n'a pas pu être envoyé. Veuillez réessayer manuellement via le bouton d'envoi."
+        );
       }
-      
-      return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-quotes"] });
-      toast.success("Devis créé et envoyé par email");
-      setIsQuoteDialogOpen(false);
-    },
-    onError: () => {
-      toast.error("Erreur lors de la création du devis");
+    onError: (err) => {
+      console.error("Erreur création:", err);
+      toast.error("Erreur lors de la création du devis en base de données.");
     },
   });
 
