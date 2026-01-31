@@ -24,17 +24,18 @@ export interface ProfileForCompletion {
 export const calculateProfileCompletion = (p: ProfileForCompletion | null): number => {
   if (!p) return 0;
   
+  // Note: riding_experience_years can be 0 (valid value), so we check !== null/undefined
   const fields = [
-    p.first_name,
-    p.last_name,
-    p.phone,
-    p.riding_level,
-    p.riding_experience_years,
+    !!p.first_name,
+    !!p.last_name,
+    !!p.phone,
+    !!p.riding_level,
+    p.riding_experience_years !== null && p.riding_experience_years !== undefined,
     (p.dream_destinations?.length ?? 0) > 0,
     (p.preferred_trip_types?.length ?? 0) > 0,
     (p.interests?.length ?? 0) > 0,
     (p.riding_style?.length ?? 0) > 0,
-    p.travel_companions,
+    !!p.travel_companions,
   ];
   
   const filled = fields.filter(Boolean).length;

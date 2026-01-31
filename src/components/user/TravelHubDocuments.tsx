@@ -30,7 +30,13 @@ import {
   Upload,
   FolderLock,
   Eye,
-  CreditCard
+  CreditCard,
+  BookOpen,
+  MapPin,
+  Utensils,
+  Backpack,
+  Phone,
+  Info
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -38,6 +44,16 @@ import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { downloadQuotePDF, type QuoteData } from "@/components/pdf/QuotePDFGenerator";
 import { downloadInvoicePDF, type InvoiceData } from "@/components/pdf/InvoicePDFGenerator";
+
+// Interface pour le carnet de voyage
+interface TravelDiary {
+  pourquoi_sejour?: string;
+  itineraire?: string;
+  hebergements?: string;
+  equipement?: string;
+  infos_pratiques?: string;
+  contacts?: string;
+}
 
 interface TravelHubDocumentsProps {
   userId: string;
@@ -47,6 +63,7 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
   const queryClient = useQueryClient();
   const [selectedQuote, setSelectedQuote] = useState<any>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [selectedTravelDiary, setSelectedTravelDiary] = useState<{ title: string; diary: TravelDiary } | null>(null);
   const [validationOpen, setValidationOpen] = useState(false);
   const [cguAccepted, setCguAccepted] = useState(false);
   const [cgvAccepted, setCgvAccepted] = useState(false);
@@ -77,6 +94,50 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
+    },
+  });
+
+  // Fetch travel diaries from confirmed bookings/quotes
+  const { data: travelDiaries = [], isLoading: diariesLoading } = useQuery({
+    queryKey: ["user-travel-diaries", userId],
+    queryFn: async () => {
+      const userEmail = (await supabase.auth.getUser()).data.user?.email;
+      
+      // Get accepted quotes with activity_id
+      const { data: acceptedQuotes } = await supabase
+        .from("quotes")
+        .select("activity_id, activity_title")
+        .eq("client_email", userEmail)
+        .in("status", ["accepted", "validated"]);
+
+      // Get confirmed bookings with activity_id
+      const { data: confirmedBookings } = await supabase
+        .from("bookings")
+        .select("activity_id")
+        .eq("user_id", userId)
+        .in("status", ["confirmed", "completed"]);
+
+      // Combine unique activity IDs
+      const activityIds = new Set<string>();
+      acceptedQuotes?.forEach(q => q.activity_id && activityIds.add(q.activity_id));
+      confirmedBookings?.forEach(b => b.activity_id && activityIds.add(b.activity_id));
+
+      if (activityIds.size === 0) return [];
+
+      // Fetch activities with travel_diary
+      const { data: activities, error } = await supabase
+        .from("activities")
+        .select("id, title, travel_diary")
+        .in("id", Array.from(activityIds))
+        .not("travel_diary", "is", null);
+
+      if (error) throw error;
+
+      // Filter out activities with empty travel diaries
+      return (activities || []).filter(a => {
+        const diary = a.travel_diary as TravelDiary | null;
+        return diary && (diary.pourquoi_sejour || diary.itineraire || diary.hebergements);
+      });
     },
   });
 
@@ -204,9 +265,10 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
     return Math.round(((invoice.amount_paid || 0) / invoice.total_amount) * 100);
   };
 
-  const isLoading = quotesLoading || invoicesLoading;
+  const isLoading = quotesLoading || invoicesLoading || diariesLoading;
 
-  if (isLoading) {
+  // Check if any travel diary exists
+  const hasTravelDiaries = travelDiaries.length > 0;
     return (
       <div className="space-y-4">
         {[1, 2, 3].map(i => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
@@ -361,6 +423,54 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
           )}
         </TabsContent>
 
+        {/* Carnets de Voyage Tab */}
+        <TabsContent value="carnets" className="space-y-4">
+          {travelDiaries.length === 0 ? (
+            <Card className="border-border/50">
+              <CardContent className="py-12">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                    <BookOpen className="h-8 w-8 text-primary" />
+                  </div>
+                  <h3 className="font-serif text-xl font-bold mb-2">Carnets de Voyage</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Vos carnets de voyage seront disponibles ici après validation de votre réservation.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            travelDiaries.map((activity: any) => (
+              <Card key={activity.id} className="border-border/50 hover:shadow-md transition-shadow">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <BookOpen className="h-6 w-6 text-primary" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold">{activity.title}</h4>
+                        <p className="text-sm text-muted-foreground">Carnet de voyage complet</p>
+                      </div>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setSelectedTravelDiary({ 
+                        title: activity.title, 
+                        diary: activity.travel_diary as TravelDiary 
+                      })}
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Consulter
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </TabsContent>
+
         {/* Digital Vault Tab */}
         <TabsContent value="vault">
           <Card className="border-border/50 border-dashed">
@@ -499,6 +609,91 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Travel Diary Sheet */}
+      <Sheet open={!!selectedTravelDiary} onOpenChange={() => setSelectedTravelDiary(null)}>
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+          {selectedTravelDiary && (
+            <>
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                  Carnet de Voyage
+                </SheetTitle>
+                <SheetDescription>{selectedTravelDiary.title}</SheetDescription>
+              </SheetHeader>
+              <div className="mt-6 space-y-6">
+                {selectedTravelDiary.diary.pourquoi_sejour && (
+                  <div>
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <Info className="h-4 w-4 text-primary" />
+                      Pourquoi ce séjour ?
+                    </h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {selectedTravelDiary.diary.pourquoi_sejour}
+                    </p>
+                  </div>
+                )}
+                {selectedTravelDiary.diary.itineraire && (
+                  <div className="border-t border-border pt-4">
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      Itinéraire
+                    </h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {selectedTravelDiary.diary.itineraire}
+                    </p>
+                  </div>
+                )}
+                {selectedTravelDiary.diary.hebergements && (
+                  <div className="border-t border-border pt-4">
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <Utensils className="h-4 w-4 text-primary" />
+                      Hébergements
+                    </h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {selectedTravelDiary.diary.hebergements}
+                    </p>
+                  </div>
+                )}
+                {selectedTravelDiary.diary.equipement && (
+                  <div className="border-t border-border pt-4">
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <Backpack className="h-4 w-4 text-primary" />
+                      Équipement
+                    </h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {selectedTravelDiary.diary.equipement}
+                    </p>
+                  </div>
+                )}
+                {selectedTravelDiary.diary.infos_pratiques && (
+                  <div className="border-t border-border pt-4">
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <Info className="h-4 w-4 text-primary" />
+                      Infos pratiques
+                    </h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {selectedTravelDiary.diary.infos_pratiques}
+                    </p>
+                  </div>
+                )}
+                {selectedTravelDiary.diary.contacts && (
+                  <div className="border-t border-border pt-4">
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-primary" />
+                      Contacts
+                    </h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {selectedTravelDiary.diary.contacts}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

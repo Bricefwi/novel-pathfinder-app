@@ -80,6 +80,7 @@ export type Database = {
           short_description: string | null
           slug: string
           title: string
+          travel_diary: Json | null
           updated_at: string
         }
         Insert: {
@@ -106,6 +107,7 @@ export type Database = {
           short_description?: string | null
           slug: string
           title: string
+          travel_diary?: Json | null
           updated_at?: string
         }
         Update: {
@@ -132,6 +134,7 @@ export type Database = {
           short_description?: string | null
           slug?: string
           title?: string
+          travel_diary?: Json | null
           updated_at?: string
         }
         Relationships: []
