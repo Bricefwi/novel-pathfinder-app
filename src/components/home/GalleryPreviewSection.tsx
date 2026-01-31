@@ -88,22 +88,23 @@ export function GalleryPreviewSection() {
           </Link>
         </div>
 
-        {/* Gallery Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 auto-rows-[200px]">
+        {/* Gallery Grid - Responsive avec auto-rows adaptatif */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 auto-rows-[150px] sm:auto-rows-[200px]">
           {galleryImages.map((image, index) => (
             <div
               key={index}
-              className={`${image.span} group relative overflow-hidden rounded-2xl cursor-pointer`}
+              className={`${image.span} group relative overflow-hidden rounded-xl sm:rounded-2xl cursor-pointer`}
               onClick={() => openLightbox(index)}
             >
               <img
                 src={image.src}
                 alt={image.alt}
                 className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-125"
+                loading="lazy"
               />
               <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/40 transition-all duration-300" />
-              <div className="absolute inset-0 flex items-end p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <p className="text-card text-sm font-medium drop-shadow-lg">{image.alt}</p>
+              <div className="absolute inset-0 flex items-end p-2 sm:p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <p className="text-card text-xs sm:text-sm font-medium drop-shadow-lg line-clamp-2">{image.alt}</p>
               </div>
             </div>
           ))}
