@@ -74,9 +74,13 @@ export async function sendEmailWithAudit(params: {
     return { success: false, error: "Configuration email manquante" };
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15_000);
+
   try {
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
+      signal: controller.signal,
       headers: {
         Authorization: `Bearer ${resendApiKey}`,
         "Content-Type": "application/json",
@@ -91,6 +95,14 @@ export async function sendEmailWithAudit(params: {
 
     if (!emailResponse.ok) {
       const errorText = await emailResponse.text();
+
+      // Logs détaillés pour debug (timeouts, auth, domaine non vérifié, etc.)
+      console.error("[email] Resend API error", {
+        status: emailResponse.status,
+        statusText: emailResponse.statusText,
+        body: errorText?.slice?.(0, 2000) ?? errorText,
+      });
+
       await logEmailAudit(params.supabase, {
         recipient: params.to,
         type: params.type,
@@ -98,7 +110,7 @@ export async function sendEmailWithAudit(params: {
         user_id: params.userId,
         reference_id: params.referenceId,
         status: "failed",
-        error_message: `Resend API error: ${errorText}`,
+        error_message: `Resend API error (${emailResponse.status}): ${errorText}`,
       });
       return { success: false, error: errorText };
     }
@@ -116,6 +128,9 @@ export async function sendEmailWithAudit(params: {
     return { success: true };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
+
+    console.error("[email] Error sending email:", errorMessage);
+
     await logEmailAudit(params.supabase, {
       recipient: params.to,
       type: params.type,
@@ -126,5 +141,7 @@ export async function sendEmailWithAudit(params: {
       error_message: errorMessage,
     });
     return { success: false, error: errorMessage };
+  } finally {
+    clearTimeout(timeoutId);
   }
 }

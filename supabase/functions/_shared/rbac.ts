@@ -7,18 +7,19 @@ import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-
  * @returns true si l'utilisateur est admin
  */
 export async function verifyAdminRole(supabase: SupabaseClient, userId: string): Promise<boolean> {
-  const { data: roleData, error } = await supabase
-    .from("user_roles")
-    .select("role")
-    .eq("user_id", userId)
-    .eq("role", "admin")
-    .single();
+  // IMPORTANT: utiliser la RPC SECURITY DEFINER pour éviter les blocages RLS côté Edge
+  // (sinon un vrai admin peut être vu comme non-admin et être bloqué)
+  const { data, error } = await supabase.rpc("has_role", {
+    _user_id: userId,
+    _role: "admin",
+  });
 
-  if (error || !roleData) {
+  if (error) {
+    console.error("[rbac] verifyAdminRole rpc error:", error);
     return false;
   }
 
-  return roleData.role === "admin";
+  return data === true;
 }
 
 /**

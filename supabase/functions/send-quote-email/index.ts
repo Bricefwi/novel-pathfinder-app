@@ -53,7 +53,8 @@ const handler = async (req: Request): Promise<Response> => {
     const quoteData: QuoteEmailRequest = await req.json();
     console.log("[send-quote-email] Processing quote:", quoteData.quote_number, "to:", quoteData.client_email);
     
-    // Authentification - optionnelle pour permettre les envois depuis l'admin
+    // Authentification - optionnelle (verify_jwt=false) pour permettre des exécutions admin/automatisées,
+    // mais si un token est présent on applique des règles strictes.
     const auth = await authenticateRequest(req);
     let isAdmin = false;
     let userId: string | undefined;
@@ -63,12 +64,36 @@ const handler = async (req: Request): Promise<Response> => {
       isAdmin = await verifyAdminRole(auth.supabase, auth.user.id);
       console.log(`[send-quote-email] Authenticated user: ${userId}, isAdmin: ${isAdmin}`);
       
-      // Si authentifié mais pas admin, vérifier si c'est le propriétaire du devis
+      // Si authentifié mais pas admin, vérifier la propriété:
+      // - priorité: quote_id (validation via RLS)
+      // - sinon: user_id fourni dans le body
       if (!isAdmin) {
-        const isOwner = quoteData.user_id ? auth.user.id === quoteData.user_id : false;
+        let isOwner = false;
+
+        if (quoteData.quote_id) {
+          const { data: ownedQuote, error: ownedQuoteError } = await auth.supabase
+            .from("quotes")
+            .select("id")
+            .eq("id", quoteData.quote_id)
+            .maybeSingle();
+
+          if (ownedQuoteError) {
+            console.error("[send-quote-email] Ownership check error (quotes):", ownedQuoteError);
+          }
+
+          isOwner = !!ownedQuote;
+        }
+
+        if (!isOwner && quoteData.user_id) {
+          isOwner = auth.user.id === quoteData.user_id;
+        }
+
         if (!isOwner) {
-          console.error("[send-quote-email] Permission denied for user:", auth.user.id);
-          return createAuthErrorResponse("Admin access or ownership required", 403, corsHeaders);
+          console.error("[send-quote-email] Permission denied for user:", auth.user.id, {
+            quote_id: quoteData.quote_id,
+            user_id: quoteData.user_id,
+          });
+          return createAuthErrorResponse("Admin access or quote ownership required", 403, corsHeaders);
         }
       }
     } else {
@@ -259,7 +284,14 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (!result.success) {
-      throw new Error(result.error);
+      console.error("[send-quote-email] Resend failure:", result.error);
+      return new Response(
+        JSON.stringify({ error: result.error || "Échec d'envoi email" }),
+        {
+          status: 502,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
     }
 
     console.log("[send-quote-email] Email sent successfully to:", quoteData.client_email);
