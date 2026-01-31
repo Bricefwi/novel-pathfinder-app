@@ -174,7 +174,7 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
       // Cast travel_diary to JSON type for Supabase
       const travelDiaryJson = formData.travel_diary as unknown as { [key: string]: string };
       
-      // Build payload - preserve existing images if none were changed
+      // Sécurisation des données numériques avec Number()
       const payload = {
         country: formData.country,
         region: formData.region,
@@ -183,10 +183,10 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
         description: formData.description,
         short_description: formData.short_description,
         riding_level: formData.riding_level,
-        max_participants: formData.max_participants,
+        max_participants: Number(formData.max_participants) || 8,
         duration: formData.duration,
-        price_from: formData.price_from,
-        price_to: formData.price_to,
+        price_from: Number(formData.price_from) || 0,
+        price_to: Number(formData.price_to) || 0,
         activity_type: formData.activity_type,
         inclusions: formData.inclusions,
         exclusions: formData.exclusions,
@@ -200,15 +200,16 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
               featured_image: formData.images[0] 
             } 
           : activity?.featured_image 
-            ? { featured_image: activity.featured_image }
+            ? { featured_image: activity.featured_image, images: activity.images }
             : {}
         ),
       };
 
+      console.log("[ActivityWizard] Sauvegarde activité:", isEditing ? "UPDATE" : "INSERT");
+
       // MODE UPDATE: Target specific ID
       if (isEditing && activity?.id) {
         console.log("[ActivityWizard] MODE UPDATE - ID:", activity.id);
-        console.log("[ActivityWizard] Payload:", JSON.stringify(payload, null, 2));
         
         const { data, error } = await supabase
           .from("activities")
@@ -225,13 +226,12 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
         console.log("[ActivityWizard] UPDATE Success:", data);
         return { mode: "update", data };
       } else {
-        // MODE CREATE: Insert new activity
+        // MODE CREATE: Insert new activity (insert attend un tableau)
         console.log("[ActivityWizard] MODE INSERT");
-        console.log("[ActivityWizard] Payload:", JSON.stringify(payload, null, 2));
         
         const { data, error } = await supabase
           .from("activities")
-          .insert(payload as any)
+          .insert([payload] as any)
           .select()
           .single();
         
