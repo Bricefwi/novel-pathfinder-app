@@ -10,21 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { ChevronRight, ChevronLeft, Check, MapPin, FileText, Users, Calendar, Euro, Image, BookOpen, AlertTriangle } from "lucide-react";
+import { ChevronRight, ChevronLeft, Check, MapPin, FileText, Users, Euro, Image, BookOpen, AlertTriangle } from "lucide-react";
 import { ImageUploader } from "./ImageUploader";
+import { TravelDiaryEditor, TravelDiaryData, DEFAULT_TRAVEL_DIARY } from "./TravelDiaryEditor";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Activity = Tables<"activities">;
-
-// Interface pour le carnet de voyage
-interface TravelDiary {
-  pourquoi_sejour: string;
-  itineraire: string;
-  hebergements: string;
-  equipement: string;
-  infos_pratiques: string;
-  contacts: string;
-}
 
 interface ActivityWizardProps {
   open: boolean;
@@ -80,21 +71,14 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
     requirements: [] as string[],
     images: [] as string[],
     featured_image: "",
-    travel_diary: {
-      pourquoi_sejour: "",
-      itineraire: "",
-      hebergements: "",
-      equipement: "",
-      infos_pratiques: "",
-      contacts: "",
-    } as TravelDiary,
+    travel_diary: DEFAULT_TRAVEL_DIARY as TravelDiaryData,
   });
 
   // Reset form when activity changes
   useEffect(() => {
     if (activity) {
       // Parse existing travel_diary from JSON
-      const existingDiary = (activity as any).travel_diary as TravelDiary | null;
+      const existingDiary = (activity as any).travel_diary as TravelDiaryData | null;
       
       setFormData({
         country: activity.country || "France",
@@ -114,14 +98,7 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
         requirements: activity.requirements || [],
         images: (activity.images as string[]) || [],
         featured_image: activity.featured_image || "",
-        travel_diary: existingDiary || {
-          pourquoi_sejour: "",
-          itineraire: "",
-          hebergements: "",
-          equipement: "",
-          infos_pratiques: "",
-          contacts: "",
-        },
+        travel_diary: existingDiary || DEFAULT_TRAVEL_DIARY,
       });
     } else {
       // Reset to defaults for new activity
@@ -143,14 +120,7 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
         requirements: [],
         images: [],
         featured_image: "",
-        travel_diary: {
-          pourquoi_sejour: "",
-          itineraire: "",
-          hebergements: "",
-          equipement: "",
-          infos_pratiques: "",
-          contacts: "",
-        },
+        travel_diary: DEFAULT_TRAVEL_DIARY,
       });
     }
     setStep(1);
@@ -300,11 +270,14 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
     setFormData((prev) => ({ ...prev, [field]: items }));
   };
 
-  // Check if travel diary is empty
+  // Check if travel diary is empty (nouvelle structure)
   const isTravelDiaryEmpty = () => {
     const d = formData.travel_diary;
-    return !d.pourquoi_sejour && !d.itineraire && !d.hebergements && 
-           !d.equipement && !d.infos_pratiques && !d.contacts;
+    const hasEditorial = d.editorial.title || d.editorial.content || d.editorial.organizer_word;
+    const hasItinerary = d.daily_itinerary.length > 0;
+    const hasPackingItems = d.packing_list.some(cat => cat.items.length > 0);
+    const hasPracticalInfo = d.practical_info.meeting_point || d.practical_info.flights_info || d.practical_info.required_documents;
+    return !hasEditorial && !hasItinerary && !hasPackingItems && !hasPracticalInfo;
   };
 
   return (
@@ -556,99 +529,27 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
           {/* Step 6: Carnet de Voyage */}
           {step === 6 && (
             <div className="space-y-4">
-              <div className="flex items-center gap-2 mb-2">
-                <BookOpen className="h-5 w-5 text-primary" />
-                <span className="font-medium">Carnet de Voyage</span>
-                <Badge variant="outline" className="ml-auto">Optionnel</Badge>
-              </div>
+              <Badge variant="outline" className="ml-auto">Optionnel</Badge>
               <p className="text-sm text-muted-foreground mb-4">
                 Ce document sera téléchargeable par les clients après réservation.
                 Vous pourrez le compléter ultérieurement.
               </p>
 
               {isTravelDiaryEmpty() && (
-                <Alert className="border-amber-500/30 bg-amber-500/10">
-                  <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400" />
-                  <AlertDescription className="text-amber-900 dark:text-amber-300">
+                <Alert className="border-warning/30 bg-warning/10">
+                  <AlertTriangle className="h-4 w-4 text-warning" />
+                  <AlertDescription className="text-warning-foreground">
                     Carnet de voyage non renseigné. Les clients ne pourront pas le télécharger.
                   </AlertDescription>
                 </Alert>
               )}
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Pourquoi ce séjour ?</Label>
-                  <Textarea
-                    value={formData.travel_diary.pourquoi_sejour}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      travel_diary: { ...formData.travel_diary, pourquoi_sejour: e.target.value }
-                    })}
-                    rows={3}
-                    placeholder="Décrivez ce qui rend ce séjour unique, les points forts..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Itinéraire jour par jour</Label>
-                  <Textarea
-                    value={formData.travel_diary.itineraire}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      travel_diary: { ...formData.travel_diary, itineraire: e.target.value }
-                    })}
-                    rows={4}
-                    placeholder="Jour 1: Arrivée et installation...&#10;Jour 2: Première randonnée..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Hébergements</Label>
-                  <Textarea
-                    value={formData.travel_diary.hebergements}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      travel_diary: { ...formData.travel_diary, hebergements: e.target.value }
-                    })}
-                    rows={2}
-                    placeholder="Type de logement, équipements, confort..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Équipement conseillé</Label>
-                  <Textarea
-                    value={formData.travel_diary.equipement}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      travel_diary: { ...formData.travel_diary, equipement: e.target.value }
-                    })}
-                    rows={2}
-                    placeholder="Liste du matériel à emporter..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Infos pratiques</Label>
-                  <Textarea
-                    value={formData.travel_diary.infos_pratiques}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      travel_diary: { ...formData.travel_diary, infos_pratiques: e.target.value }
-                    })}
-                    rows={2}
-                    placeholder="Climat, monnaie, visas, santé..."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Contacts sur place</Label>
-                  <Textarea
-                    value={formData.travel_diary.contacts}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      travel_diary: { ...formData.travel_diary, contacts: e.target.value }
-                    })}
-                    rows={2}
-                    placeholder="Guide local, numéros d'urgence, ambassade..."
-                  />
-                </div>
-              </div>
+              {/* Nouveau composant TravelDiaryEditor */}
+              <TravelDiaryEditor
+                value={formData.travel_diary}
+                onChange={(newDiary) => setFormData({ ...formData, travel_diary: newDiary })}
+                activityTitle={formData.title}
+              />
 
               {/* Summary */}
               <div className="mt-6 p-4 bg-muted/50 rounded-lg space-y-2">
