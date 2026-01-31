@@ -130,17 +130,18 @@ export function MarketingAutomation() {
         // Check if profile is complete - ALIGNÉ avec profile-utils.ts
         // 10 champs requis : first_name, last_name, phone, riding_level, riding_experience_years,
         // dream_destinations, preferred_trip_types, interests, riding_style, travel_companions
+        // Note: riding_experience_years can be 0 (valid), so check !== null
         const fields = [
-          profile.first_name,
-          profile.last_name,
-          profile.phone,
-          profile.riding_level,
-          profile.riding_experience_years,
+          !!profile.first_name,
+          !!profile.last_name,
+          !!profile.phone,
+          !!profile.riding_level,
+          profile.riding_experience_years !== null && profile.riding_experience_years !== undefined,
           (profile.dream_destinations?.length ?? 0) > 0,
           (profile.preferred_trip_types?.length ?? 0) > 0,
           (profile.interests?.length ?? 0) > 0,
           (profile.riding_style?.length ?? 0) > 0,
-          profile.travel_companions,  // <-- travel_companions, pas travel_style
+          !!profile.travel_companions,
         ];
         
         const isComplete = fields.filter(Boolean).length === 10;
@@ -149,47 +150,52 @@ export function MarketingAutomation() {
         }
       });
 
-      // Fetch emails for profiles
-      const userIds = profiles?.map(p => p.user_id) || [];
-      if (userIds.length > 0) {
-        // Get emails from newsletter_subscribers linked to profiles
-        const { data: profileEmails } = await supabase
-          .from("newsletter_subscribers")
-          .select("email, user_id")
-          .in("user_id", userIds);
+      // Fetch emails via the admin RPC (gets emails from auth.users)
+      const { data: userEmails, error: emailsError } = await supabase
+        .rpc("get_user_emails_for_profiles");
 
-        // Rebuild email lists
-        profiles?.forEach(profile => {
-          const email = profileEmails?.find(pe => pe.user_id === profile.user_id)?.email;
-          if (!email) return;
-
-          // ALIGNÉ avec profile-utils.ts
-          const fields = [
-            profile.first_name,
-            profile.last_name,
-            profile.phone,
-            profile.riding_level,
-            profile.riding_experience_years,
-            (profile.dream_destinations?.length ?? 0) > 0,
-            (profile.preferred_trip_types?.length ?? 0) > 0,
-            (profile.interests?.length ?? 0) > 0,
-            (profile.riding_style?.length ?? 0) > 0,
-            profile.travel_companions,  // <-- travel_companions, pas travel_style
-          ];
-          
-          if (fields.filter(Boolean).length === 10) {
-            completeEmails.push(email);
-          } else {
-            incompleteEmails.push(email);
-          }
-
-          // Add to destination segments
-          profile.dream_destinations?.forEach((dest: string) => {
-            if (!destinationEmails[dest]) destinationEmails[dest] = [];
-            destinationEmails[dest].push(email);
-          });
-        });
+      if (emailsError) {
+        console.warn("Could not fetch user emails (admin RPC):", emailsError);
       }
+
+      // Create email map from auth.users
+      const emailMap = new Map<string, string>();
+      (userEmails || []).forEach((u: { user_id: string; email: string }) => {
+        emailMap.set(u.user_id, u.email);
+      });
+
+      // Rebuild email lists using auth.users emails
+      profiles?.forEach(profile => {
+        const email = emailMap.get(profile.user_id);
+        if (!email) return;
+
+        // ALIGNÉ avec profile-utils.ts
+        // Note: riding_experience_years can be 0 (valid), so check !== null
+        const fields = [
+          !!profile.first_name,
+          !!profile.last_name,
+          !!profile.phone,
+          !!profile.riding_level,
+          profile.riding_experience_years !== null && profile.riding_experience_years !== undefined,
+          (profile.dream_destinations?.length ?? 0) > 0,
+          (profile.preferred_trip_types?.length ?? 0) > 0,
+          (profile.interests?.length ?? 0) > 0,
+          (profile.riding_style?.length ?? 0) > 0,
+          !!profile.travel_companions,
+        ];
+        
+        if (fields.filter(Boolean).length === 10) {
+          completeEmails.push(email);
+        } else {
+          incompleteEmails.push(email);
+        }
+
+        // Add to destination segments
+        profile.dream_destinations?.forEach((dest: string) => {
+          if (!destinationEmails[dest]) destinationEmails[dest] = [];
+          destinationEmails[dest].push(email);
+        });
+      });
 
       setCompleteProfileEmails(completeEmails);
       setIncompleteProfileEmails(incompleteEmails);

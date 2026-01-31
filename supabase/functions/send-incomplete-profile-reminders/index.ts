@@ -65,18 +65,19 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     // Filtrer les profils incomplets selon la logique de profile-utils.ts
+    // Note: riding_experience_years peut être 0 (valide), donc on check !== null
     const incompleteProfiles = profiles?.filter(profile => {
       const fields = [
-        profile.first_name,
-        profile.last_name,
-        profile.phone,
-        profile.riding_level,
-        profile.riding_experience_years,
+        !!profile.first_name,
+        !!profile.last_name,
+        !!profile.phone,
+        !!profile.riding_level,
+        profile.riding_experience_years !== null && profile.riding_experience_years !== undefined,
         (profile.dream_destinations?.length ?? 0) > 0,
         (profile.preferred_trip_types?.length ?? 0) > 0,
         (profile.interests?.length ?? 0) > 0,
         (profile.riding_style?.length ?? 0) > 0,
-        profile.travel_companions,
+        !!profile.travel_companions,
       ];
       return fields.filter(Boolean).length < 10;
     }) || [];
@@ -105,17 +106,18 @@ const handler = async (req: Request): Promise<Response> => {
       }
 
       // Calculer le pourcentage de complétion
+      // Note: riding_experience_years peut être 0 (valide), donc on check !== null
       const fields = [
-        profile.first_name,
-        profile.last_name,
-        profile.phone,
-        profile.riding_level,
-        profile.riding_experience_years,
+        !!profile.first_name,
+        !!profile.last_name,
+        !!profile.phone,
+        !!profile.riding_level,
+        profile.riding_experience_years !== null && profile.riding_experience_years !== undefined,
         (profile.dream_destinations?.length ?? 0) > 0,
         (profile.preferred_trip_types?.length ?? 0) > 0,
         (profile.interests?.length ?? 0) > 0,
         (profile.riding_style?.length ?? 0) > 0,
-        profile.travel_companions,
+        !!profile.travel_companions,
       ];
       const completionPercent = Math.round((fields.filter(Boolean).length / 10) * 100);
       const firstName = profile.first_name || "Cavalier";
