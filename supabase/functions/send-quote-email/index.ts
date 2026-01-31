@@ -118,8 +118,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Récupérer les secrets - utiliser le domaine vérifié ferme-equestre-arwen.com
-    const systemSenderEmail = Deno.env.get("EMAIL_FROM_QUOTES") || "Devis An Arwen <devis@ferme-equestre-arwen.com>";
+    // Utiliser le domaine vérifié ferme-equestre-arwen.com
+    const systemSenderEmail = "Ferme Arwen - Devis <devis@ferme-equestre-arwen.com>";
     const appUrl = Deno.env.get("APP_URL") || "https://novel-pathfinder-app.lovable.app";
     
     console.log("[send-quote-email] Using sender:", systemSenderEmail);

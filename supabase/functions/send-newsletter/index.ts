@@ -45,7 +45,7 @@ serve(async (req) => {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Ferme Arwen <onboarding@resend.dev>", // Mettre votre domaine vérifié ici dès que possible
+        from: "Ferme Arwen <newsletter@ferme-equestre-arwen.com>",
         to: to,
         subject: subject,
         html: content,
