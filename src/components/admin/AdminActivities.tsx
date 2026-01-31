@@ -180,7 +180,6 @@ export function AdminActivities() {
 
     if (editingActivity) {
       // Mode EDITION : on utilise l'ID existant pour UPDATE
-      console.log("📝 Updating activity:", editingActivity.id, activityData);
       const { data: updateData, error: updateError } = await supabase
         .from("activities")
         .update(activityData)
@@ -189,10 +188,6 @@ export function AdminActivities() {
         .single();
       
       error = updateError;
-      
-      if (!updateError && updateData) {
-        console.log("✅ Activity updated successfully:", updateData);
-      }
     } else {
       // Mode CREATION
       const { error: insertError } = await supabase

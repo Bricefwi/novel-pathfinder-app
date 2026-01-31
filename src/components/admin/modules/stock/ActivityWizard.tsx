@@ -175,12 +175,8 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
         ),
       };
 
-      console.log("[ActivityWizard] Sauvegarde activité:", isEditing ? "UPDATE" : "INSERT");
-
       // MODE UPDATE: Target specific ID
       if (isEditing && activity?.id) {
-        console.log("[ActivityWizard] MODE UPDATE - ID:", activity.id);
-        
         const { data, error } = await supabase
           .from("activities")
           .update(payload as any)
@@ -189,16 +185,13 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
           .single();
         
         if (error) {
-          console.error("[ActivityWizard] UPDATE Error:", error);
+          console.error("[ActivityWizard] Erreur UPDATE:", error);
           throw error;
         }
         
-        console.log("[ActivityWizard] UPDATE Success:", data);
         return { mode: "update", data };
       } else {
-        // MODE CREATE: Insert new activity (insert attend un tableau)
-        console.log("[ActivityWizard] MODE INSERT");
-        
+        // MODE CREATE: Insert new activity
         const { data, error } = await supabase
           .from("activities")
           .insert([payload] as any)
@@ -206,11 +199,10 @@ export function ActivityWizard({ open, onOpenChange, activity, onComplete }: Act
           .single();
         
         if (error) {
-          console.error("[ActivityWizard] INSERT Error:", error);
+          console.error("[ActivityWizard] Erreur INSERT:", error);
           throw error;
         }
         
-        console.log("[ActivityWizard] INSERT Success:", data);
         return { mode: "insert", data };
       }
     },

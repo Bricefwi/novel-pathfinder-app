@@ -39,6 +39,12 @@ const paymentStatusLabels: Record<string, { label: string; color: string; bg: st
 };
 
 export const generateInvoicePDF = (data: InvoiceData): string => {
+  // Validation des données requises
+  if (!data || !data.invoice_number) {
+    console.error("[InvoicePDF] Données de facture manquantes");
+    return "";
+  }
+
   const logoUrl =
     typeof window !== "undefined"
       ? new URL("/images/logo-cheval-pdf.png", window.location.origin).toString()
@@ -46,15 +52,51 @@ export const generateInvoicePDF = (data: InvoiceData): string => {
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "Non défini";
-    return format(new Date(dateStr), "d MMMM yyyy", { locale: fr });
+    try {
+      return format(new Date(dateStr), "d MMMM yyyy", { locale: fr });
+    } catch {
+      return "Date invalide";
+    }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(amount);
+  const formatCurrency = (amount?: number) => {
+    const safeAmount = typeof amount === 'number' ? amount : 0;
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(safeAmount);
   };
 
-  const status = paymentStatusLabels[data.payment_status] || paymentStatusLabels.pending;
-  const remainingAmount = data.total_amount - data.amount_paid;
+  // Valeurs sécurisées avec fallbacks
+  const safeData = {
+    invoice_number: data.invoice_number || 'N/A',
+    quote_number: data.quote_number || null,
+    client_name: data.client_name || 'Client non renseigné',
+    client_email: data.client_email || 'Email non renseigné',
+    client_phone: data.client_phone || null,
+    client_address: data.client_address || null,
+    activity_title: data.activity_title || 'Prestation',
+    activity_duration: data.activity_duration || null,
+    start_date: data.start_date || null,
+    end_date: data.end_date || null,
+    unit_price: data.unit_price ?? 0,
+    participants: data.participants ?? 1,
+    subtotal: data.subtotal ?? 0,
+    tax_rate: data.tax_rate ?? 0,
+    tax_amount: data.tax_amount ?? 0,
+    total_amount: data.total_amount ?? 0,
+    amount_paid: data.amount_paid ?? 0,
+    payment_status: data.payment_status || 'pending',
+    payment_date: data.payment_date || null,
+    payment_method: data.payment_method || null,
+    due_date: data.due_date || null,
+    client_validated: data.client_validated ?? false,
+    client_validated_at: data.client_validated_at || null,
+    cgu_accepted: data.cgu_accepted ?? false,
+    cgv_accepted: data.cgv_accepted ?? false,
+    notes: data.notes || null,
+    created_at: data.created_at || new Date().toISOString(),
+  };
+
+  const status = paymentStatusLabels[safeData.payment_status] || paymentStatusLabels.pending;
+  const remainingAmount = safeData.total_amount - safeData.amount_paid;
 
   const html = `
 <!DOCTYPE html>
@@ -480,8 +522,8 @@ export const generateInvoicePDF = (data: InvoiceData): string => {
 
     <div class="document-header">
       <div class="document-type">FACTURE</div>
-      <div class="document-number">N° ${data.invoice_number}</div>
-      <div class="document-date">Établie le ${formatDate(data.created_at)}</div>
+      <div class="document-number">N° ${safeData.invoice_number}</div>
+      <div class="document-date">Établie le ${formatDate(safeData.created_at)}</div>
       <span class="status-badge">${status.label}</span>
     </div>
 
@@ -489,27 +531,27 @@ export const generateInvoicePDF = (data: InvoiceData): string => {
       <div class="info-card">
         <div class="info-card-title">📋 Client</div>
         <div class="info-card-content">
-          <div class="client-name">${data.client_name}</div>
-          <p>✉️ ${data.client_email}</p>
-          ${data.client_phone ? `<p>📞 ${data.client_phone}</p>` : ""}
-          ${data.client_address ? `<p>📍 ${data.client_address}</p>` : ""}
+          <div class="client-name">${safeData.client_name}</div>
+          <p>✉️ ${safeData.client_email}</p>
+          ${safeData.client_phone ? `<p>📞 ${safeData.client_phone}</p>` : ""}
+          ${safeData.client_address ? `<p>📍 ${safeData.client_address}</p>` : ""}
         </div>
       </div>
       <div class="info-card highlight">
         <div class="info-card-title">📄 Références</div>
         <div class="info-card-content">
-          <p><strong>Facture :</strong> ${data.invoice_number}</p>
-          ${data.quote_number ? `<p><strong>Devis associé :</strong> ${data.quote_number}</p>` : ""}
-          <p><strong>Date d'émission :</strong> ${formatDate(data.created_at)}</p>
-          ${data.due_date ? `<p><strong>Échéance :</strong> ${formatDate(data.due_date)}</p>` : ""}
+          <p><strong>Facture :</strong> ${safeData.invoice_number}</p>
+          ${safeData.quote_number ? `<p><strong>Devis associé :</strong> ${safeData.quote_number}</p>` : ""}
+          <p><strong>Date d'émission :</strong> ${formatDate(safeData.created_at)}</p>
+          ${safeData.due_date ? `<p><strong>Échéance :</strong> ${formatDate(safeData.due_date)}</p>` : ""}
         </div>
       </div>
     </div>
 
     <div class="info-section validation">
-      <h3>${data.client_validated ? '✅ Validé par le client' : '⏳ En attente de validation'}</h3>
-      ${data.client_validated && data.client_validated_at ? `
-        <p>Validation effectuée le ${formatDate(data.client_validated_at)}</p>
+      <h3>${safeData.client_validated ? '✅ Validé par le client' : '⏳ En attente de validation'}</h3>
+      ${safeData.client_validated && safeData.client_validated_at ? `
+        <p>Validation effectuée le ${formatDate(safeData.client_validated_at)}</p>
       ` : `
         <p>Le client doit valider cette facture pour confirmer les conditions de la prestation.</p>
       `}
@@ -531,14 +573,14 @@ export const generateInvoicePDF = (data: InvoiceData): string => {
         <tbody>
           <tr>
             <td>
-              <div class="activity-name">${data.activity_title}</div>
-              ${data.start_date ? `<div class="activity-dates">${formatDate(data.start_date)} → ${formatDate(data.end_date)}</div>` : ""}
+              <div class="activity-name">${safeData.activity_title}</div>
+              ${safeData.start_date ? `<div class="activity-dates">${formatDate(safeData.start_date)} → ${formatDate(safeData.end_date)}</div>` : ""}
             </td>
-            <td>${data.activity_duration || "—"}</td>
-            <td>${data.start_date ? `${formatDate(data.start_date)}` : "À définir"}</td>
-            <td class="text-right">${formatCurrency(data.unit_price)}</td>
-            <td class="text-right">${data.participants}</td>
-            <td class="text-right"><strong>${formatCurrency(data.subtotal)}</strong></td>
+            <td>${safeData.activity_duration || "—"}</td>
+            <td>${safeData.start_date ? `${formatDate(safeData.start_date)}` : "À définir"}</td>
+            <td class="text-right">${formatCurrency(safeData.unit_price)}</td>
+            <td class="text-right">${safeData.participants}</td>
+            <td class="text-right"><strong>${formatCurrency(safeData.subtotal)}</strong></td>
           </tr>
         </tbody>
       </table>
@@ -548,20 +590,20 @@ export const generateInvoicePDF = (data: InvoiceData): string => {
       <table class="totals-table">
         <tr>
           <td>Sous-total HT</td>
-          <td class="text-right">${formatCurrency(data.subtotal)}</td>
+          <td class="text-right">${formatCurrency(safeData.subtotal)}</td>
         </tr>
         <tr>
-          <td>TVA (${data.tax_rate}%)</td>
-          <td class="text-right">${formatCurrency(data.tax_amount)}</td>
+          <td>TVA (${safeData.tax_rate}%)</td>
+          <td class="text-right">${formatCurrency(safeData.tax_amount)}</td>
         </tr>
         <tr class="total-row">
           <td>TOTAL TTC</td>
-          <td class="text-right">${formatCurrency(data.total_amount)}</td>
+          <td class="text-right">${formatCurrency(safeData.total_amount)}</td>
         </tr>
-        ${data.amount_paid > 0 ? `
+        ${safeData.amount_paid > 0 ? `
         <tr class="paid-row">
           <td>Montant réglé</td>
-          <td class="text-right">- ${formatCurrency(data.amount_paid)}</td>
+          <td class="text-right">- ${formatCurrency(safeData.amount_paid)}</td>
         </tr>
         ` : ""}
         <tr class="remaining-row">
@@ -571,31 +613,31 @@ export const generateInvoicePDF = (data: InvoiceData): string => {
       </table>
     </div>
 
-    ${data.payment_date ? `
+    ${safeData.payment_date ? `
     <div class="info-section">
       <h3>💳 Informations de paiement</h3>
-      <p><strong>Date de paiement :</strong> ${formatDate(data.payment_date)}</p>
-      ${data.payment_method ? `<p><strong>Mode de paiement :</strong> ${data.payment_method}</p>` : ""}
-      <p><strong>Montant réglé :</strong> ${formatCurrency(data.amount_paid)}</p>
+      <p><strong>Date de paiement :</strong> ${formatDate(safeData.payment_date)}</p>
+      ${safeData.payment_method ? `<p><strong>Mode de paiement :</strong> ${safeData.payment_method}</p>` : ""}
+      <p><strong>Montant réglé :</strong> ${formatCurrency(safeData.amount_paid)}</p>
     </div>
     ` : ""}
 
     <div class="legal-section">
       <h3>📜 Acceptation des conditions</h3>
       <div class="legal-item">
-        <span class="check-icon ${data.cgu_accepted ? 'valid' : 'invalid'}">${data.cgu_accepted ? '✓' : '✗'}</span>
-        <span>Conditions Générales d'Utilisation (CGU) ${data.cgu_accepted ? 'acceptées' : 'non acceptées'}</span>
+        <span class="check-icon ${safeData.cgu_accepted ? 'valid' : 'invalid'}">${safeData.cgu_accepted ? '✓' : '✗'}</span>
+        <span>Conditions Générales d'Utilisation (CGU) ${safeData.cgu_accepted ? 'acceptées' : 'non acceptées'}</span>
       </div>
       <div class="legal-item">
-        <span class="check-icon ${data.cgv_accepted ? 'valid' : 'invalid'}">${data.cgv_accepted ? '✓' : '✗'}</span>
-        <span>Conditions Générales de Vente (CGV) ${data.cgv_accepted ? 'acceptées' : 'non acceptées'}</span>
+        <span class="check-icon ${safeData.cgv_accepted ? 'valid' : 'invalid'}">${safeData.cgv_accepted ? '✓' : '✗'}</span>
+        <span>Conditions Générales de Vente (CGV) ${safeData.cgv_accepted ? 'acceptées' : 'non acceptées'}</span>
       </div>
     </div>
 
-    ${data.notes ? `
+    ${safeData.notes ? `
     <div class="info-section">
       <h3>📝 Notes</h3>
-      <p>${data.notes}</p>
+      <p>${safeData.notes}</p>
     </div>
     ` : ""}
 
