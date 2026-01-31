@@ -300,23 +300,26 @@ const PaysCard = ({
   const totalSejours = pays.regions.reduce((acc, region) => acc + region.sejours.length, 0);
   
   return (
-    <div 
-      className="group cursor-pointer rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl bg-card"
+    <button 
+      type="button"
       onClick={onClick}
+      className="group w-full text-left cursor-pointer rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+      aria-label={`Découvrir les voyages en ${pays.nom}`}
     >
       <div className="relative aspect-[4/3] overflow-hidden">
         <img
           src={pays.image}
-          alt={pays.nom}
+          alt={`Paysage de ${pays.nom}`}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
+        {/* Gradient renforcé pour meilleur contraste texte */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6">
-          <h3 className="font-serif text-2xl md:text-3xl font-bold text-primary-foreground mb-1">
+          <h3 className="font-serif text-2xl md:text-3xl font-bold text-white drop-shadow-lg mb-1">
             {pays.nom}
           </h3>
-          <p className="text-primary-foreground/80 text-sm">
+          <p className="text-white/90 text-sm drop-shadow">
             {totalSejours} voyage{totalSejours > 1 ? "s" : ""} • {pays.regions.length} région{pays.regions.length > 1 ? "s" : ""}
           </p>
         </div>
@@ -330,7 +333,7 @@ const PaysCard = ({
           <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 
@@ -345,14 +348,16 @@ const RegionCard = ({
   onClick: () => void;
 }) => {
   return (
-    <div 
-      className="group cursor-pointer rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl bg-card"
+    <button 
+      type="button"
       onClick={onClick}
+      className="group w-full text-left cursor-pointer rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all duration-300 hover:shadow-xl bg-card focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+      aria-label={`Explorer les séjours en ${region.nom}, ${paysNom}`}
     >
       <div className="relative aspect-[16/10] overflow-hidden">
         <img
           src={region.image}
-          alt={region.nom}
+          alt={`Paysage de ${region.nom}`}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
         />
@@ -361,9 +366,10 @@ const RegionCard = ({
             {paysNom.toUpperCase()}
           </Badge>
         </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
+        {/* Gradient renforcé pour meilleur contraste texte */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6">
-          <h3 className="font-serif text-xl md:text-2xl font-bold text-primary-foreground">
+          <h3 className="font-serif text-xl md:text-2xl font-bold text-white drop-shadow-lg">
             {region.nom}
           </h3>
         </div>
@@ -376,12 +382,12 @@ const RegionCard = ({
           <span className="text-foreground font-medium text-sm">
             {region.sejours.length} voyage{region.sejours.length > 1 ? "s" : ""} disponible{region.sejours.length > 1 ? "s" : ""}
           </span>
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors" aria-hidden="true">
             <ArrowRight className="h-5 w-5 text-primary group-hover:translate-x-0.5 transition-transform" />
           </div>
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 
