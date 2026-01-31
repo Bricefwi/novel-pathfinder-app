@@ -81,9 +81,10 @@ export function MarketingAutomation() {
     setLoading(true);
     try {
       // Fetch profiles data with user_id to get emails
+      // NOTE: Aligné avec profile-utils.ts - 10 champs requis
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, dream_destinations, riding_level, preferred_trip_types, interests, travel_style, phone, first_name, last_name, riding_experience_years, riding_style");
+        .select("user_id, dream_destinations, riding_level, preferred_trip_types, interests, travel_companions, phone, first_name, last_name, riding_experience_years, riding_style");
 
       // Fetch analytics events (page views, interactions)
       const { data: analyticsEvents } = await supabase
@@ -126,7 +127,9 @@ export function MarketingAutomation() {
           levelCounts[profile.riding_level] = (levelCounts[profile.riding_level] || 0) + 1;
         }
 
-        // Check if profile is complete
+        // Check if profile is complete - ALIGNÉ avec profile-utils.ts
+        // 10 champs requis : first_name, last_name, phone, riding_level, riding_experience_years,
+        // dream_destinations, preferred_trip_types, interests, riding_style, travel_companions
         const fields = [
           profile.first_name,
           profile.last_name,
@@ -137,7 +140,7 @@ export function MarketingAutomation() {
           (profile.preferred_trip_types?.length ?? 0) > 0,
           (profile.interests?.length ?? 0) > 0,
           (profile.riding_style?.length ?? 0) > 0,
-          profile.travel_style,
+          profile.travel_companions,  // <-- travel_companions, pas travel_style
         ];
         
         const isComplete = fields.filter(Boolean).length === 10;
@@ -160,6 +163,7 @@ export function MarketingAutomation() {
           const email = profileEmails?.find(pe => pe.user_id === profile.user_id)?.email;
           if (!email) return;
 
+          // ALIGNÉ avec profile-utils.ts
           const fields = [
             profile.first_name,
             profile.last_name,
@@ -170,7 +174,7 @@ export function MarketingAutomation() {
             (profile.preferred_trip_types?.length ?? 0) > 0,
             (profile.interests?.length ?? 0) > 0,
             (profile.riding_style?.length ?? 0) > 0,
-            profile.travel_style,
+            profile.travel_companions,  // <-- travel_companions, pas travel_style
           ];
           
           if (fields.filter(Boolean).length === 10) {
@@ -284,36 +288,34 @@ export function MarketingAutomation() {
     }
   };
 
-  // Send profile reminder
+  // Send profile reminder using dedicated edge function
   const handleSendRappel = async () => {
-    if (!rappelSubject || !rappelContent) {
-      toast.error("Veuillez remplir tous les champs");
-      return;
-    }
-
-    if (incompleteProfileEmails.length === 0) {
+    if (stats.incompleteProfiles === 0) {
       toast.error("Aucun profil incomplet trouvé");
       return;
     }
 
     setActionLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke("send-newsletter", {
-        body: {
-          subject: rappelSubject,
-          content: rappelContent,
-          targetEmails: incompleteProfileEmails,
-          testMode: false,
-        },
-      });
+      // Utiliser la nouvelle edge function dédiée
+      const { data, error } = await supabase.functions.invoke("send-incomplete-profile-reminders");
 
       if (error) throw error;
 
-      toast.success(`Rappel envoyé à ${incompleteProfileEmails.length} utilisateurs !`);
+      if (data?.sent_count > 0) {
+        toast.success(`🚀 Rappel envoyé à ${data.sent_count} utilisateur${data.sent_count > 1 ? 's' : ''} !`);
+      } else {
+        toast.info("Aucun rappel envoyé - tous les profils avec email sont complets");
+      }
+      
+      if (data?.failed_count > 0) {
+        toast.warning(`${data.failed_count} échec(s) d'envoi`);
+      }
+      
       setActiveAction(null);
     } catch (err) {
       console.error("Erreur envoi rappel:", err);
-      toast.error("Erreur lors de l'envoi du rappel");
+      toast.error("Erreur lors de l'envoi des rappels");
     } finally {
       setActionLoading(false);
     }
@@ -597,24 +599,28 @@ export function MarketingAutomation() {
               </Button>
             </div>
 
-            {/* Rappel profil */}
+            {/* Rappel profil - Bouton direct sans modal */}
             <div className="p-4 rounded-lg bg-background border">
               <div className="flex items-center gap-2 mb-2">
                 <Bell className="h-4 w-4 text-chart-2" />
                 <span className="font-medium text-sm">Rappel profil</span>
               </div>
               <p className="text-xs text-muted-foreground mb-3">
-                Notifier les {stats.incompleteProfiles} utilisateurs avec profil incomplet
+                Notifier les <strong>{stats.incompleteProfiles}</strong> utilisateurs avec profil incomplet
               </p>
               <Button 
                 variant="outline" 
                 size="sm" 
                 className="w-full gap-2"
-                onClick={() => setActiveAction("rappel")}
-                disabled={stats.incompleteProfiles === 0}
+                onClick={handleSendRappel}
+                disabled={stats.incompleteProfiles === 0 || actionLoading}
               >
-                <Clock className="h-3 w-3" />
-                Envoyer
+                {actionLoading ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Send className="h-3 w-3" />
+                )}
+                Envoyer les rappels
               </Button>
             </div>
 

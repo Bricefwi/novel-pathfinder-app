@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.send-invoice-email]
 verify_jwt = false
+
+[functions.send-incomplete-profile-reminders]
+verify_jwt = true
