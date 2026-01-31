@@ -20,53 +20,12 @@ import {
   FileText
 } from "lucide-react";
 
-// Interface pour le carnet de voyage enrichi
-export interface TravelDiaryData {
-  editorial: {
-    title: string;
-    content: string;
-    organizer_word: string;
-  };
-  daily_itinerary: {
-    day_number: number;
-    title: string;
-    description: string;
-    accommodation: string;
-    meals: string;
-  }[];
-  packing_list: {
-    category: string;
-    items: string[];
-  }[];
-  practical_info: {
-    meeting_point: string;
-    flights_info: string;
-    required_documents: string;
-  };
-}
+// Import centralisé des types
+import { TravelDiaryData, DEFAULT_TRAVEL_DIARY } from "@/types/travel-diary";
 
-// Structure par défaut
-export const DEFAULT_TRAVEL_DIARY: TravelDiaryData = {
-  editorial: {
-    title: "",
-    content: "",
-    organizer_word: "",
-  },
-  daily_itinerary: [],
-  packing_list: [
-    { category: "Tête", items: [] },
-    { category: "Buste", items: [] },
-    { category: "Jambes", items: [] },
-    { category: "Pieds & Mains", items: [] },
-    { category: "Pharmacie / Hygiène", items: [] },
-    { category: "Matériel à Cheval", items: [] },
-  ],
-  practical_info: {
-    meeting_point: "",
-    flights_info: "",
-    required_documents: "",
-  },
-};
+// Re-export pour compatibilité avec les imports existants
+export type { TravelDiaryData };
+export { DEFAULT_TRAVEL_DIARY };
 
 interface TravelDiaryEditorProps {
   value: TravelDiaryData;

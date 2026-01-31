@@ -54,40 +54,13 @@ import { fr } from "date-fns/locale";
 import { downloadQuotePDF, type QuoteData } from "@/components/pdf/QuotePDFGenerator";
 import { downloadInvoicePDF, type InvoiceData } from "@/components/pdf/InvoicePDFGenerator";
 
-// Interface pour le carnet de voyage enrichi (nouvelle structure)
-interface TravelDiaryData {
-  editorial: {
-    title: string;
-    content: string;
-    organizer_word: string;
-  };
-  daily_itinerary: {
-    day_number: number;
-    title: string;
-    description: string;
-    accommodation: string;
-    meals: string;
-  }[];
-  packing_list: {
-    category: string;
-    items: string[];
-  }[];
-  practical_info: {
-    meeting_point: string;
-    flights_info: string;
-    required_documents: string;
-  };
-}
-
-// Ancienne interface pour compatibilité
-interface LegacyTravelDiary {
-  pourquoi_sejour?: string;
-  itineraire?: string;
-  hebergements?: string;
-  equipement?: string;
-  infos_pratiques?: string;
-  contacts?: string;
-}
+// Import centralisé des types Travel Diary
+import { 
+  TravelDiaryData, 
+  LegacyTravelDiary, 
+  isNewDiaryFormat, 
+  hasDiaryContent 
+} from "@/types/travel-diary";
 
 interface TravelHubDocumentsProps {
   userId: string;
@@ -314,10 +287,7 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
     setCheckedItems(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
-  // Check if diary is new format
-  const isNewDiaryFormat = (diary: TravelDiaryData | LegacyTravelDiary): diary is TravelDiaryData => {
-    return 'editorial' in diary;
-  };
+  // Note: isNewDiaryFormat est importé depuis @/types/travel-diary
 
   const isLoading = quotesLoading || invoicesLoading || diariesLoading;
 
