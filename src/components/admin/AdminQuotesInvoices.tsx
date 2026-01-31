@@ -228,6 +228,12 @@ export const AdminQuotesInvoices = () => {
       const quote = quotes?.find(q => q.id === quoteId);
       if (!quote) throw new Error("Devis non trouvé");
 
+      // Vérifier que le devis est dans un état facturable (accepted ou sent)
+      const allowedStatuses = ["accepted", "sent", "validated"];
+      if (!allowedStatuses.includes(quote.status || "")) {
+        throw new Error("Seuls les devis acceptés ou envoyés peuvent être facturés");
+      }
+
       const { data: numberData, error: numberError } = await supabase.rpc("generate_invoice_number");
       if (numberError) throw numberError;
 
@@ -250,6 +256,7 @@ export const AdminQuotesInvoices = () => {
           subtotal: quote.total_price,
           total_amount: quote.total_price,
           status: "draft",
+          payment_status: "pending", // Important : la facture est "À payer"
         })
         .select()
         .single();
@@ -260,8 +267,9 @@ export const AdminQuotesInvoices = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-invoices"] });
       toast.success("Facture créée à partir du devis");
     },
-    onError: () => {
-      toast.error("Erreur lors de la création de la facture");
+    onError: (err) => {
+      const errorMessage = err instanceof Error ? err.message : "Erreur lors de la création de la facture";
+      toast.error(errorMessage);
     },
   });
 
@@ -307,6 +315,10 @@ export const AdminQuotesInvoices = () => {
       queryClient.invalidateQueries({ queryKey: ["admin-quotes"] });
       toast.success(`Devis dupliqué : ${data.quote_number}`);
       setDuplicatingQuote(null);
+
+      // Ouvrir automatiquement le dialogue d'édition avec le nouveau devis
+      setEditingQuote(data);
+      setIsQuoteDialogOpen(true);
     },
     onError: () => {
       toast.error("Erreur lors de la duplication du devis");
