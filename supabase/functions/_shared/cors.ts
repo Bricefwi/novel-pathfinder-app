@@ -15,9 +15,16 @@ export const ALLOWED_ORIGINS = [
  * @returns Headers CORS appropriés
  */
 export function getCorsHeaders(origin: string | null): Record<string, string> {
-  const isAllowed = origin && ALLOWED_ORIGINS.some(allowed => 
-    origin === allowed || origin.includes("lovable.app")
-  );
+  const isAllowed =
+    !!origin &&
+    ALLOWED_ORIGINS.some(
+      (allowed) =>
+        origin === allowed ||
+        // Autoriser les environnements de prévisualisation Lovable
+        origin.includes("lovable.app") ||
+        // Autoriser le domaine de preview interne (utilisé notamment par le dev server)
+        origin.includes("lovableproject.com")
+    );
   
   return {
     "Access-Control-Allow-Origin": isAllowed ? origin : "null",

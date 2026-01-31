@@ -865,13 +865,14 @@ export const AdminQuotesInvoices = () => {
                                 onClick={() => handleSendInvoiceEmail(invoice)}
                                 disabled={sendingInvoiceEmail === invoice.id}
                                 title="Envoyer la facture par email"
+                                className="gap-2"
                               >
                                 {sendingInvoiceEmail === invoice.id ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
                                   <Mail className="h-4 w-4" />
                                 )}
-                                <span className="sr-only sm:not-sr-only sm:ml-2">Email</span>
+                                <span className="hidden sm:inline">Envoyer facture</span>
                               </Button>
                               <Button size="sm" variant="outline" onClick={() => handleDownloadInvoice(invoice)} title="Télécharger PDF">
                                 <Download className="h-4 w-4" />
