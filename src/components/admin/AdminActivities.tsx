@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ const COUNTRY_OPTIONS = Object.keys(COUNTRIES_HIERARCHY);
 
 export function AdminActivities() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [activitySlots, setActivitySlots] = useState<Record<string, ActivitySlot[]>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -131,9 +133,12 @@ export function AdminActivities() {
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Créneau ajouté" });
+      toast({ title: "Créneau ajouté avec succès ✓" });
       fetchSlotsForActivity(selectedActivityForSlots.id);
       setNewSlot({ start_date: null, end_date: null, price: "", max_participants: "8" });
+      // Invalider les queries React Query pour rafraîchir les vues
+      queryClient.invalidateQueries({ queryKey: ["stock-management"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
     }
   };
 
@@ -148,6 +153,9 @@ export function AdminActivities() {
       if (selectedActivityForSlots) {
         fetchSlotsForActivity(selectedActivityForSlots.id);
       }
+      // Invalider les queries React Query pour rafraîchir les vues
+      queryClient.invalidateQueries({ queryKey: ["stock-management"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
     }
   };
 
@@ -171,12 +179,22 @@ export function AdminActivities() {
     const isNewActivity = !editingActivity;
 
     if (editingActivity) {
-      const { error: updateError } = await supabase
+      // Mode EDITION : on utilise l'ID existant pour UPDATE
+      console.log("📝 Updating activity:", editingActivity.id, activityData);
+      const { data: updateData, error: updateError } = await supabase
         .from("activities")
         .update(activityData)
-        .eq("id", editingActivity.id);
+        .eq("id", editingActivity.id)
+        .select()
+        .single();
+      
       error = updateError;
+      
+      if (!updateError && updateData) {
+        console.log("✅ Activity updated successfully:", updateData);
+      }
     } else {
+      // Mode CREATION
       const { error: insertError } = await supabase
         .from("activities")
         .insert([activityData]);
@@ -184,9 +202,17 @@ export function AdminActivities() {
     }
 
     if (error) {
+      console.error("❌ Activity save error:", error);
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: editingActivity ? "Activité mise à jour" : "Activité créée" });
+      toast({ title: editingActivity ? "Activité mise à jour avec succès ✓" : "Activité créée avec succès" });
+      
+      // Invalider TOUTES les queries React Query qui dépendent des activités
+      queryClient.invalidateQueries({ queryKey: ["stock-management"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
+      queryClient.invalidateQueries({ queryKey: ["activities"] });
+      queryClient.invalidateQueries({ queryKey: ["sejours-grouped"] });
+      queryClient.invalidateQueries({ queryKey: ["activity"] });
       
       // Send notification to subscribers for new activities
       if (isNewActivity && activityData.is_active) {
@@ -241,11 +267,22 @@ export function AdminActivities() {
   const handleDelete = async (id: string) => {
     if (!confirm("Supprimer cette activité ?")) return;
 
+    // D'abord supprimer les slots liés
+    const { error: slotsError } = await supabase.from("activity_slots").delete().eq("activity_id", id);
+    if (slotsError) {
+      console.error("Error deleting slots:", slotsError);
+    }
+
     const { error } = await supabase.from("activities").delete().eq("id", id);
     if (error) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     } else {
       toast({ title: "Activité supprimée" });
+      // Invalider les queries React Query
+      queryClient.invalidateQueries({ queryKey: ["stock-management"] });
+      queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
+      queryClient.invalidateQueries({ queryKey: ["activities"] });
+      queryClient.invalidateQueries({ queryKey: ["sejours-grouped"] });
       fetchActivities();
     }
   };
