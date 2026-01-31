@@ -824,18 +824,51 @@ export function CRM360() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Contact Info */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span className="truncate">{selectedClient.email || "Email non renseigné"}</span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg border">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Mail className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground">Email</p>
+                      <p className="text-sm font-medium truncate">
+                        {selectedClient.email ? (
+                          <a href={`mailto:${selectedClient.email}`} className="text-primary hover:underline">
+                            {selectedClient.email}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground italic">Non renseigné</span>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{selectedClient.phone || "Téléphone non renseigné"}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-chart-2/10 flex items-center justify-center">
+                      <Phone className="h-4 w-4 text-chart-2" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground">Téléphone</p>
+                      <p className="text-sm font-medium truncate">
+                        {selectedClient.phone ? (
+                          <a href={`tel:${selectedClient.phone}`} className="hover:underline">
+                            {selectedClient.phone}
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground italic">Non renseigné</span>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{selectedClient.riding_level || "Niveau non défini"}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 rounded-full bg-chart-4/10 flex items-center justify-center">
+                      <Star className="h-4 w-4 text-chart-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground">Niveau équestre</p>
+                      <p className="text-sm font-medium capitalize">
+                        {selectedClient.riding_level || <span className="text-muted-foreground italic">Non défini</span>}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
