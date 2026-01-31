@@ -319,6 +319,20 @@ const FicheSejourDynamic = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
+                    {/* If all slots are full, show a notice */}
+                    {sejour.slots.every(
+                      (s) => (s.max_participants || 0) - (s.current_participants || 0) <= 0
+                    ) && (
+                      <div className="mb-4 p-4 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-center">
+                        <p className="font-semibold">Toutes les dates sont complètes</p>
+                        <p className="text-sm mt-1">
+                          De nouvelles dates seront bientôt annoncées. Contactez-nous pour être prévenu !
+                        </p>
+                        <Button variant="outline" size="sm" className="mt-3" onClick={handleQuickReserve}>
+                          Demander une autre date
+                        </Button>
+                      </div>
+                    )}
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -331,13 +345,15 @@ const FicheSejourDynamic = () => {
                       <TableBody>
                         {sejour.slots.map((slot) => {
                           const placesRestantes = (slot.max_participants || 0) - (slot.current_participants || 0);
+                          const isComplete = placesRestantes <= 0;
+
                           return (
                             <TableRow
                               key={slot.id}
-                              className={`cursor-pointer transition-colors ${
-                                selectedSlotId === slot.id ? "bg-primary/5" : "hover:bg-muted/50"
+                              className={`${isComplete ? "opacity-50 cursor-default" : "cursor-pointer"} transition-colors ${
+                                selectedSlotId === slot.id && !isComplete ? "bg-primary/5" : "hover:bg-muted/50"
                               }`}
-                              onClick={() => setSelectedSlotId(slot.id)}
+                              onClick={() => !isComplete && setSelectedSlotId(slot.id)}
                             >
                               <TableCell className="font-medium">
                                 {format(new Date(slot.start_date), "dd MMM", { locale: fr })} - {format(new Date(slot.end_date), "dd MMM yyyy", { locale: fr })}
@@ -346,12 +362,16 @@ const FicheSejourDynamic = () => {
                                 {slot.price?.toLocaleString("fr-FR")}€
                               </TableCell>
                               <TableCell>
-                                <Badge variant={placesRestantes <= 2 ? "destructive" : "secondary"}>
-                                  {placesRestantes} place{placesRestantes > 1 ? "s" : ""}
-                                </Badge>
+                                {isComplete ? (
+                                  <Badge variant="destructive">Complet</Badge>
+                                ) : (
+                                  <Badge variant={placesRestantes <= 2 ? "destructive" : "secondary"}>
+                                    {placesRestantes} place{placesRestantes > 1 ? "s" : ""}
+                                  </Badge>
+                                )}
                               </TableCell>
                               <TableCell>
-                                {selectedSlotId === slot.id && (
+                                {selectedSlotId === slot.id && !isComplete && (
                                   <Check className="h-5 w-5 text-primary" />
                                 )}
                               </TableCell>
