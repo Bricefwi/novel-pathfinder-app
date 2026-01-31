@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.send-incomplete-profile-reminders]
 verify_jwt = true
+
+[functions.send-newsletter]
+verify_jwt = false
