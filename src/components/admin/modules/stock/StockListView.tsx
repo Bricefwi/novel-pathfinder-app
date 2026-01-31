@@ -126,7 +126,14 @@ export function StockListView({ activities, onEdit }: StockListViewProps) {
                     </span>
                     <span className="flex items-center gap-1">
                       <Users className="h-3 w-3" />
-                      {activity.max_participants || 0} places
+                      {(() => {
+                        const totalMax = activity.slots.reduce((a, s) => a + (s.max_participants || 0), 0);
+                        const totalCurrent = activity.slots.reduce((a, s) => a + (s.current_participants || 0), 0);
+                        const remaining = totalMax - totalCurrent;
+                        return remaining <= 0
+                          ? <span className="font-semibold text-destructive">Complet</span>
+                          : `${remaining} places restantes`;
+                      })()}
                     </span>
                     <span className="flex items-center gap-1">
                       <Euro className="h-3 w-3" />
