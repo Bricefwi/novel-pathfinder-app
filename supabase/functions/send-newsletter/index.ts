@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+// Email expéditeur sur domaine vérifié
+const SENDER_EMAIL = "Ferme Arwen <newsletter@ferme-equestre-arwen.com>";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -32,8 +35,7 @@ serve(async (req) => {
     }
 
     // 2. Définir les destinataires
-    // Si c'est un test, on envoie seulement à l'email indiqué.
-    // Sinon, on met l'admin en copie
+    // Mode test: envoyer à l'email spécifié, sinon à l'admin
     const to = testEmail ? [testEmail] : ["ferme.equestre.arwen@gmail.com"];
     console.log(`[send-newsletter] Envoi email à : ${to.join(", ")}`);
 
@@ -45,7 +47,7 @@ serve(async (req) => {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: "Ferme Arwen <newsletter@ferme-equestre-arwen.com>",
+        from: SENDER_EMAIL,
         to: to,
         subject: subject,
         html: content,
@@ -56,6 +58,20 @@ serve(async (req) => {
     
     if (!res.ok) {
       console.error("[send-newsletter] Erreur Resend:", data);
+      
+      // Gestion spécifique de l'erreur de validation de domaine
+      if (data.statusCode === 403 && data.name === "validation_error") {
+        const errorMsg = `Domaine non vérifié sur Resend. Veuillez vérifier votre domaine sur https://resend.com/domains ou envoyer à votre propre adresse email.`;
+        return new Response(JSON.stringify({ 
+          error: errorMsg,
+          details: data.message,
+          action: "verify_domain"
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400,
+        });
+      }
+      
       throw new Error(data.message || "Erreur lors de l'envoi Resend");
     }
 
