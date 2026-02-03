@@ -94,17 +94,19 @@ const Planning = () => {
   const fetchData = async () => {
     setLoading(true);
     
-    // Fetch activity slots with activity details
+    const today = format(new Date(), "yyyy-MM-dd");
+    
+    // Fetch ALL future activity slots with activity details (not limited by currentMonth)
     const { data: slots } = await supabase
       .from("activity_slots")
       .select(`
         *,
         activity:activities(title, location, activity_type, featured_image)
       `)
-      .gte("start_date", format(subMonths(currentMonth, 1), "yyyy-MM-dd"))
-      .lte("end_date", format(addMonths(currentMonth, 2), "yyyy-MM-dd"));
+      .gte("end_date", today)
+      .order("start_date", { ascending: true });
 
-    // Fetch accommodation availability
+    // Fetch accommodation availability for visible calendar range
     const { data: accommodation } = await supabase
       .from("accommodation_slots")
       .select("*")
