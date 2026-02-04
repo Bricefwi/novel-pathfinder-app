@@ -150,8 +150,9 @@ const Auth = () => {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     const { error } = await lovable.auth.signInWithOAuth("google", {
-      // Use a stable, explicit path to match authorized redirect URIs (avoids Google redirect_uri_mismatch)
-      redirect_uri: `${window.location.origin}/auth`,
+      // Keep the default behavior (origin) to match OAuth broker expectations.
+      // Redirect URI mismatches are typically fixed in backend OAuth redirect URL settings.
+      redirect_uri: window.location.origin,
     });
     if (error) {
       const msg = (error.message || "").toLowerCase();
