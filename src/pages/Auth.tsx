@@ -51,6 +51,21 @@ const Auth = () => {
     setResendLoading(false);
   };
 
+  // Listener global pour capturer les événements d'authentification (notamment OAuth callback)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        // Éviter les doubles redirections si déjà en cours de traitement
+        if (loading || googleLoading) return;
+        
+        toast.success("Connexion réussie !");
+        await handlePostLoginRedirect(session.user.id);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate, loading, googleLoading]);
+
   useEffect(() => {
     checkSessionAndRedirect();
   }, []);
