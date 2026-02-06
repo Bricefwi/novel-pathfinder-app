@@ -15,8 +15,6 @@ interface EmailAuditEntry {
 
 /**
  * Enregistre un envoi d'email dans le log d'audit
- * @param supabase Client Supabase avec service role
- * @param entry Détails de l'email envoyé
  */
 export async function logEmailAudit(
   supabase: SupabaseClient,
@@ -45,23 +43,22 @@ export async function logEmailAudit(
 }
 
 /**
- * Envoie un email via Resend et l'enregistre
- * @param params Paramètres de l'email
- * @returns Résultat de l'envoi
+ * Envoie un email via Brevo (anciennement Sendinblue) et l'enregistre
  */
 export async function sendEmailWithAudit(params: {
   supabase: SupabaseClient;
   to: string;
   from: string;
+  fromName?: string;
   subject: string;
   html: string;
   type: EmailType;
   userId?: string;
   referenceId?: string;
 }): Promise<{ success: boolean; error?: string }> {
-  const resendApiKey = Deno.env.get("RESEND_API_KEY");
-  
-  if (!resendApiKey) {
+  const brevoApiKey = Deno.env.get("BREVO_API_KEY");
+
+  if (!brevoApiKey) {
     await logEmailAudit(params.supabase, {
       recipient: params.to,
       type: params.type,
@@ -69,7 +66,7 @@ export async function sendEmailWithAudit(params: {
       user_id: params.userId,
       reference_id: params.referenceId,
       status: "failed",
-      error_message: "Missing RESEND_API_KEY",
+      error_message: "Missing BREVO_API_KEY",
     });
     return { success: false, error: "Configuration email manquante" };
   }
@@ -78,26 +75,30 @@ export async function sendEmailWithAudit(params: {
   const timeoutId = setTimeout(() => controller.abort(), 15_000);
 
   try {
-    const emailResponse = await fetch("https://api.resend.com/emails", {
+    const emailResponse = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       signal: controller.signal,
       headers: {
-        Authorization: `Bearer ${resendApiKey}`,
+        "api-key": brevoApiKey,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: params.from,
-        to: params.to,
+        sender: {
+          name: params.fromName || params.from.split("<")[0].trim() || "Ferme Arwen",
+          email: params.from.includes("<")
+            ? params.from.match(/<(.+)>/)?.[1] || params.from
+            : params.from,
+        },
+        to: [{ email: params.to }],
         subject: params.subject,
-        html: params.html,
+        htmlContent: params.html,
       }),
     });
 
     if (!emailResponse.ok) {
       const errorText = await emailResponse.text();
 
-      // Logs détaillés pour debug (timeouts, auth, domaine non vérifié, etc.)
-      console.error("[email] Resend API error", {
+      console.error("[email] Brevo API error", {
         status: emailResponse.status,
         statusText: emailResponse.statusText,
         body: errorText?.slice?.(0, 2000) ?? errorText,
@@ -110,12 +111,13 @@ export async function sendEmailWithAudit(params: {
         user_id: params.userId,
         reference_id: params.referenceId,
         status: "failed",
-        error_message: `Resend API error (${emailResponse.status}): ${errorText}`,
+        error_message: `Brevo API error (${emailResponse.status}): ${errorText}`,
       });
       return { success: false, error: errorText };
     }
 
-    // Succès
+    await emailResponse.text(); // consume body
+
     await logEmailAudit(params.supabase, {
       recipient: params.to,
       type: params.type,

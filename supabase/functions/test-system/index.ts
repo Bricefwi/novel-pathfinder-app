@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -65,22 +65,22 @@ const handler = async (req: Request): Promise<Response> => {
 
     switch (test) {
       case "email": {
-        if (!RESEND_API_KEY) {
-          result = { success: false, error: "RESEND_API_KEY not configured" };
+        if (!BREVO_API_KEY) {
+          result = { success: false, error: "BREVO_API_KEY not configured" };
           break;
         }
 
-        const res = await fetch("https://api.resend.com/emails", {
+        const res = await fetch("https://api.brevo.com/v3/smtp/email", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${RESEND_API_KEY}`,
+            "api-key": BREVO_API_KEY,
           },
           body: JSON.stringify({
-            from: "Ferme Équestre An Arwen <onboarding@resend.dev>",
-            to: [adminEmail || user.email],
+            sender: { name: "Ferme Arwen", email: "notifications@ferme-equestre-arwen.com" },
+            to: [{ email: adminEmail || user.email }],
             subject: "🔧 Test System - Email Fonctionnel",
-            html: `
+            htmlContent: `
               <div style="font-family: sans-serif; padding: 20px;">
                 <h1 style="color: #6B8E7F;">✅ Test Email Réussi</h1>
                 <p>Ce message confirme que le système d'envoi d'emails fonctionne correctement.</p>
