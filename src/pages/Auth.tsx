@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Eye, EyeOff, Mail, Loader2, KeyRound, Lock } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import cavaliersSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
-import { signInWithOAuthWebMessage } from "@/lib/oauth-web-message";
+
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -165,65 +165,19 @@ const Auth = () => {
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
-
-    // Sur domaine publié (hors iframe), le flux par redirection ne garantit pas la persistance
-    // de session selon la config/redirects du domaine. On force donc le mode web_message (popup)
-    // pour récupérer les tokens et créer la session côté app.
-    let isInIframe = false;
     try {
-      isInIframe = window.self !== window.top;
-    } catch {
-      isInIframe = true;
-    }
-
-    try {
-      if (!isInIframe) {
-        const { tokens, error } = await signInWithOAuthWebMessage("google", {
-          redirect_uri: `${window.location.origin}/auth`,
-          extraParams: {
-            prompt: "select_account",
-          },
-        });
-
-        if (error) {
-          toast.error("Erreur de connexion Google : " + error.message);
-          return;
-        }
-
-        if (!tokens) {
-          toast.error("Erreur de connexion Google : aucun token reçu");
-          return;
-        }
-
-        const { data: { session }, error: sessionError } = await supabase.auth.setSession(tokens);
-        if (sessionError || !session?.user) {
-          toast.error("Connexion Google : impossible de créer la session");
-          return;
-        }
-
-        toast.success("Connexion réussie !");
-        await handlePostLoginRedirect(session.user.id);
-        return;
-      }
-
-      // En preview (iframe), on garde le flux géré par Lovable.
-      const { error } = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: `${window.location.origin}/auth`,
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
         extraParams: {
           prompt: "select_account",
         },
       });
 
-      if (error) {
-        const msg = (error.message || "").toLowerCase();
-        if (msg.includes("provider is not enabled") || msg.includes("unsupported provider")) {
-          toast.error(
-            "Connexion Google indisponible pour l'instant : activez Google dans le backend (Users → Auth Settings → Google Settings), ou créez un compte par email."
-          );
-        } else {
-          toast.error("Erreur de connexion Google : " + error.message);
-        }
+      if (result?.error) {
+        toast.error("Erreur de connexion Google : " + result.error.message);
       }
+    } catch (err: any) {
+      toast.error("Erreur de connexion Google : " + (err?.message || "Erreur inconnue"));
     } finally {
       setGoogleLoading(false);
     }
