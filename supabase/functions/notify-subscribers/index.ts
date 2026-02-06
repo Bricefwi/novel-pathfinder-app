@@ -4,7 +4,7 @@ import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { authenticateRequest, verifyAdminRole, createAuthErrorResponse } from "../_shared/rbac.ts";
 import { logEmailAudit, EmailType } from "../_shared/email-audit.ts";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
 
 interface NotifySubscribersRequest {
   type: "nouvelle_activite" | "nouveau_sejour" | "nouvel_article";
@@ -121,17 +121,17 @@ const handler = async (req: Request): Promise<Response> => {
       const batch = subscriberEmails.slice(i, i + batchSize);
       
       try {
-        const res = await fetch("https://api.resend.com/emails", {
+        const res = await fetch("https://api.brevo.com/v3/smtp/email", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${RESEND_API_KEY}`,
+            "api-key": BREVO_API_KEY!,
           },
           body: JSON.stringify({
-            from: senderEmail,
-            to: batch,
+            sender: { name: "Newsletter An Arwen", email: "newsletter@ferme-equestre-arwen.com" },
+            to: batch.map((email: string) => ({ email })),
             subject: subject,
-            html: htmlContent,
+            htmlContent: htmlContent,
           }),
         });
 

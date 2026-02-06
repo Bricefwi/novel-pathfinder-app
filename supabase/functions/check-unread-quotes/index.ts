@@ -27,21 +27,12 @@ const handler = async (req: Request): Promise<Response> => {
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
   const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
   const APP_URL = Deno.env.get("APP_URL") || "https://novel-pathfinder-app.lovable.app";
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     console.error("[check-unread-quotes] Missing Supabase credentials");
     return new Response(
       JSON.stringify({ error: "Missing Supabase credentials" }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
-  }
-
-  if (!RESEND_API_KEY) {
-    console.error("[check-unread-quotes] Missing RESEND_API_KEY");
-    return new Response(
-      JSON.stringify({ error: "Missing RESEND_API_KEY" }),
       { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }

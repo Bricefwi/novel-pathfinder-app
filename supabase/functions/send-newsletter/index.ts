@@ -1,9 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-// Email expéditeur sur domaine vérifié
-const SENDER_EMAIL = "Ferme Arwen <newsletter@ferme-equestre-arwen.com>";
+const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+const SENDER_EMAIL = "newsletter@ferme-equestre-arwen.com";
+const SENDER_NAME = "Ferme Arwen";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,7 +16,6 @@ interface NewsletterRequest {
 }
 
 serve(async (req) => {
-  // 1. Gérer les requêtes préliminaires (CORS)
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -25,57 +23,43 @@ serve(async (req) => {
   try {
     const { subject, content, testEmail }: NewsletterRequest = await req.json();
 
-    if (!RESEND_API_KEY) {
-      console.error("[send-newsletter] RESEND_API_KEY is missing");
-      throw new Error("La clé API RESEND_API_KEY est manquante dans Supabase.");
+    if (!BREVO_API_KEY) {
+      console.error("[send-newsletter] BREVO_API_KEY is missing");
+      throw new Error("La clé API BREVO_API_KEY est manquante.");
     }
 
     if (!subject || !content) {
       throw new Error("Le sujet et le contenu sont requis");
     }
 
-    // 2. Définir les destinataires
-    // Mode test: envoyer à l'email spécifié, sinon à l'admin
-    const to = testEmail ? [testEmail] : ["ferme.equestre.arwen@gmail.com"];
-    console.log(`[send-newsletter] Envoi email à : ${to.join(", ")}`);
+    const to = testEmail
+      ? [{ email: testEmail }]
+      : [{ email: "ferme.equestre.arwen@gmail.com" }];
 
-    // 3. Appel direct à l'API Resend
-    const res = await fetch("https://api.resend.com/emails", {
+    console.log(`[send-newsletter] Envoi email via Brevo à : ${to.map(t => t.email).join(", ")}`);
+
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "api-key": BREVO_API_KEY,
       },
       body: JSON.stringify({
-        from: SENDER_EMAIL,
-        to: to,
-        subject: subject,
-        html: content,
+        sender: { name: SENDER_NAME, email: SENDER_EMAIL },
+        to,
+        subject,
+        htmlContent: content,
       }),
     });
 
     const data = await res.json();
-    
+
     if (!res.ok) {
-      console.error("[send-newsletter] Erreur Resend:", data);
-      
-      // Gestion spécifique de l'erreur de validation de domaine
-      if (data.statusCode === 403 && data.name === "validation_error") {
-        const errorMsg = `Domaine non vérifié sur Resend. Veuillez vérifier votre domaine sur https://resend.com/domains ou envoyer à votre propre adresse email.`;
-        return new Response(JSON.stringify({ 
-          error: errorMsg,
-          details: data.message,
-          action: "verify_domain"
-        }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 400,
-        });
-      }
-      
-      throw new Error(data.message || "Erreur lors de l'envoi Resend");
+      console.error("[send-newsletter] Erreur Brevo:", data);
+      throw new Error(data.message || `Erreur Brevo (${res.status})`);
     }
 
-    console.log("[send-newsletter] Email envoyé avec succès:", data);
+    console.log("[send-newsletter] Email envoyé avec succès via Brevo:", data);
 
     return new Response(JSON.stringify({ success: true, data }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -83,7 +67,7 @@ serve(async (req) => {
     });
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
-    console.error("[send-newsletter] Erreur Function:", errorMessage);
+    console.error("[send-newsletter] Erreur:", errorMessage);
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
