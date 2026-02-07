@@ -213,10 +213,20 @@ const DemandeDevis = () => {
   const totalPrice = basePrice * totalParticipants;
   const depositAmount = Math.ceil(totalPrice * 0.2); // 20% deposit
 
-  // Pre-fill from URL params
+  // Pre-fill from URL params (sejour, activityId, participants, slot, date)
   useEffect(() => {
     const sejourParam = searchParams.get("sejour");
-    if (sejourParam) {
+    const activityIdParam = searchParams.get("activityId");
+    const participantsParam = searchParams.get("participants");
+    const slotParam = searchParams.get("slot");
+
+    // Match by activity ID first, then by title
+    if (activityIdParam) {
+      const matchById = sejours.find(s => s.id === activityIdParam);
+      if (matchById) {
+        setForm(prev => ({ ...prev, selectedSejour: matchById.id }));
+      }
+    } else if (sejourParam) {
       const sejourLower = sejourParam.toLowerCase();
       const matchingSejour = sejours.find(s => 
         s.title.toLowerCase().includes(sejourLower) ||
@@ -225,6 +235,19 @@ const DemandeDevis = () => {
       if (matchingSejour) {
         setForm(prev => ({ ...prev, selectedSejour: matchingSejour.id }));
       }
+    }
+
+    // Pre-fill participants
+    if (participantsParam) {
+      const count = parseInt(participantsParam, 10);
+      if (!isNaN(count) && count >= 1) {
+        setForm(prev => ({ ...prev, adultsCount: count }));
+      }
+    }
+
+    // Pre-fill slot
+    if (slotParam) {
+      setForm(prev => ({ ...prev, selectedSlot: slotParam }));
     }
   }, [searchParams, sejours]);
 

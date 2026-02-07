@@ -93,8 +93,7 @@ export const DestinationCard = ({
                 {duree}
               </Badge>
               <Badge
-                variant="secondary"
-                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-muted text-foreground text-xs sm:text-sm"
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary text-primary-foreground text-xs sm:text-sm"
               >
                 <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 {niveau}
