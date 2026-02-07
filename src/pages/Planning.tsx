@@ -237,25 +237,38 @@ const Planning = () => {
     setSubmitting(true);
 
     try {
-      // Call the notify-admin edge function
-      const { error } = await supabase.functions.invoke("notify-admin", {
-        body: {
-          type: "disponibilite",
-          data: {
-            name: requestForm.name,
-            email: requestForm.email,
-            phone: requestForm.phone,
-            date: selectedDate ? format(selectedDate, "dd/MM/yyyy") : undefined,
-            activityTitle: selectedActivity?.activity?.title,
-            accommodationName: requestType === "accommodation" ? "Yourte An Arwen" : undefined,
-            message: requestForm.message,
+      // Appel direct à l'edge function sans passer par supabase.functions.invoke
+      // car les visiteurs non connectés n'ont pas de token JWT
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-admin`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
-        },
-      });
+          body: JSON.stringify({
+            type: "disponibilite",
+            data: {
+              name: requestForm.name,
+              email: requestForm.email,
+              phone: requestForm.phone,
+              date: selectedDate ? format(selectedDate, "dd/MM/yyyy") : undefined,
+              activityTitle: selectedActivity?.activity?.title,
+              accommodationName: requestType === "accommodation" ? "Yourte An Arwen" : undefined,
+              message: requestForm.message,
+            },
+          }),
+        }
+      );
 
-      if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("[Planning] notify-admin error:", response.status, errorData);
+        throw new Error(errorData.error || `Erreur serveur (${response.status})`);
+      }
 
-      // Also save to contact_requests table
+      // Sauvegarder aussi dans contact_requests
       await supabase.from("contact_requests").insert({
         name: requestForm.name,
         email: requestForm.email,
@@ -270,7 +283,7 @@ const Planning = () => {
       setRequestForm(prev => ({ ...prev, message: "" }));
     } catch (error: any) {
       console.error("Error sending availability request:", error);
-      toast.error("Erreur lors de l'envoi. Veuillez réessayer.");
+      toast.error(error.message || "Erreur lors de l'envoi. Veuillez réessayer.");
     } finally {
       setSubmitting(false);
     }

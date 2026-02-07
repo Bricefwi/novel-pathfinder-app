@@ -66,6 +66,14 @@ type ContentBlock =
   | { type: 'paragraph'; text: string }
   | { type: 'image'; src: string; alt: string };
 
+/** Normalise une URL pour garantir un protocole absolu */
+const normalizeUrl = (url: string): string => {
+  if (!url) return url;
+  const trimmed = url.trim();
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+  return `https://${trimmed}`;
+};
+
 const EcoSystemeArticle = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -425,7 +433,7 @@ const EcoSystemeArticle = () => {
                           <div>
                             <p className="text-sm font-medium text-foreground">Site web</p>
                             <a 
-                              href={article.location_website}
+                              href={normalizeUrl(article.location_website)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-sm text-primary hover:underline flex items-center gap-1"
@@ -453,7 +461,7 @@ const EcoSystemeArticle = () => {
                     {article.location_website && (
                       <Button asChild className="w-full mt-6">
                         <a 
-                          href={article.location_website}
+                          href={normalizeUrl(article.location_website)}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
