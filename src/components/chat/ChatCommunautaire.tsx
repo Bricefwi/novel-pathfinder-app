@@ -144,7 +144,7 @@ const ChatCommunautaire = () => {
   // Auto-scroll to bottom
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
   }, [messages]);
 
@@ -264,7 +264,7 @@ const ChatCommunautaire = () => {
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
-        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+        <ScrollArea className="flex-1 p-4">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
               <p className="text-muted-foreground">Chargement...</p>
@@ -284,7 +284,7 @@ const ChatCommunautaire = () => {
                 <div key={date}>
                   <div className="flex items-center gap-2 my-4">
                     <div className="flex-1 h-px bg-border" />
-                    <span className="text-xs text-muted-foreground px-2">{date}</span>
+                    <span className="text-xs text-muted-foreground px-2 whitespace-nowrap">{date}</span>
                     <div className="flex-1 h-px bg-border" />
                   </div>
                   <div className="space-y-3">
@@ -293,30 +293,30 @@ const ChatCommunautaire = () => {
                       return (
                         <div
                           key={message.id}
-                          className={`flex gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
+                          className={`flex gap-2 sm:gap-3 ${isOwn ? 'flex-row-reverse' : ''}`}
                         >
                           <Avatar className="h-8 w-8 shrink-0">
                             <AvatarFallback className={isOwn ? 'bg-primary text-primary-foreground' : 'bg-muted'}>
                               {getInitials(message.user_id)}
                             </AvatarFallback>
                           </Avatar>
-                          <div className={`max-w-[75%] ${isOwn ? 'text-right' : ''}`}>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`text-xs font-medium ${isOwn ? 'text-primary' : 'text-foreground'}`}>
+                          <div className={`min-w-0 max-w-[80%] sm:max-w-[75%] ${isOwn ? 'text-right' : ''}`}>
+                            <div className={`flex items-center gap-2 mb-1 ${isOwn ? 'justify-end' : ''}`}>
+                              <span className={`text-xs font-medium truncate ${isOwn ? 'text-primary' : 'text-foreground'}`}>
                                 {isOwn ? 'Vous' : getDisplayName(message.user_id)}
                               </span>
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-xs text-muted-foreground shrink-0">
                                 {formatTime(message.created_at)}
                               </span>
                             </div>
                             <div
-                              className={`rounded-2xl px-4 py-2 inline-block ${
+                              className={`rounded-2xl px-3 py-2 sm:px-4 inline-block text-left ${
                                 isOwn
                                   ? 'bg-primary text-primary-foreground rounded-br-sm'
                                   : 'bg-muted text-foreground rounded-bl-sm'
                               }`}
                             >
-                              <p className="text-sm whitespace-pre-wrap break-words">
+                              <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">
                                 {message.content}
                               </p>
                             </div>
@@ -327,6 +327,7 @@ const ChatCommunautaire = () => {
                   </div>
                 </div>
               ))}
+              <div ref={scrollRef} />
             </div>
           )}
         </ScrollArea>
