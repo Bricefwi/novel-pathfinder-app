@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { MapPin, Phone, Mail, Send } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -40,7 +41,7 @@ const contactSchema = z.object({
 
 const Contact = () => {
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", subject: "", message: "", gdprAccepted: false });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,7 +79,7 @@ const Contact = () => {
       toast.error("Erreur lors de l'envoi. Veuillez réessayer.");
     } else {
       toast.success("Message envoyé avec succès !");
-      setForm({ name: "", email: "", phone: "", subject: "", message: "" });
+      setForm({ name: "", email: "", phone: "", subject: "", message: "", gdprAccepted: false });
     }
   };
 
@@ -111,7 +112,17 @@ const Contact = () => {
                   <div><Label htmlFor="subject">Sujet</Label><Input id="subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} /></div>
                 </div>
                 <div><Label htmlFor="message">Message *</Label><Textarea id="message" rows={5} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} required /></div>
-                <Button type="submit" size="lg" disabled={loading}><Send className="mr-2 h-4 w-4" />{loading ? "Envoi..." : "Envoyer"}</Button>
+                <div className="flex items-start space-x-2">
+                  <Checkbox
+                    id="gdpr"
+                    checked={form.gdprAccepted || false}
+                    onCheckedChange={(checked) => setForm({ ...form, gdprAccepted: !!checked })}
+                  />
+                  <Label htmlFor="gdpr" className="text-sm text-muted-foreground cursor-pointer leading-relaxed">
+                    J'accepte la <a href="/politique-confidentialite" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">politique de confidentialité</a> *
+                  </Label>
+                </div>
+                <Button type="submit" size="lg" disabled={loading || !form.gdprAccepted}><Send className="mr-2 h-4 w-4" />{loading ? "Envoi..." : "Envoyer"}</Button>
               </form>
             </div>
 

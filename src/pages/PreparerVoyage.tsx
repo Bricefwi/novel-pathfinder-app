@@ -47,7 +47,13 @@ const PreparerVoyage = () => {
   };
 
   const handlePrint = () => {
-    window.print();
+    // Temporarily show all content for printing
+    const originalTab = activeTab;
+    setActiveTab('__print_all__');
+    setTimeout(() => {
+      window.print();
+      setActiveTab(originalTab);
+    }, 100);
   };
 
   const contentData = {
@@ -204,15 +210,15 @@ const PreparerVoyage = () => {
     { id: 'destinations', label: 'Destinations', icon: <Map className="w-5 h-5" /> },
   ];
 
-  const renderContent = () => {
-    const data = contentData[activeTab as keyof typeof contentData];
+  const renderSection = (tabKey: string) => {
+    const data = contentData[tabKey as keyof typeof contentData];
     return (
-      <div className="animate-in fade-in duration-300">
+      <div className="animate-in fade-in duration-300 print:animate-none" key={tabKey}>
         <header className="mb-6 border-b border-border pb-4">
-          <div className={`inline-flex p-3 rounded-xl ${data.color} mb-3`}>
+          <div className={`inline-flex p-3 rounded-xl ${data.color} mb-3 print:hidden`}>
             {data.icon}
           </div>
-          <h2 className="text-3xl font-serif font-bold text-foreground">{data.title}</h2>
+          <h2 className="text-3xl font-serif font-bold text-foreground print:text-2xl">{data.title}</h2>
           {'intro' in data && data.intro && (
             <p className="mt-2 text-muted-foreground italic">{data.intro}</p>
           )}
@@ -221,16 +227,16 @@ const PreparerVoyage = () => {
         
         <div className="grid gap-6">
           {data.sections.map((section, idx) => (
-            <div key={idx} className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
-              <div className="bg-muted px-6 py-4 border-b border-border flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-primary"></div>
+            <div key={idx} className="bg-card rounded-xl shadow-sm border border-border overflow-hidden print:shadow-none print:border-gray-300">
+              <div className="bg-muted px-6 py-4 border-b border-border flex items-center gap-2 print:bg-gray-100">
+                <div className="h-2 w-2 rounded-full bg-primary print:hidden"></div>
                 <h3 className="font-bold text-lg text-card-foreground">{section.title}</h3>
               </div>
               <div className="p-6">
-                <ul className="space-y-4">
+                <ul className="space-y-4 print:space-y-2">
                   {section.items.map((item, i) => (
-                    <li key={i} className="flex gap-3 items-start text-muted-foreground leading-relaxed">
-                      <CheckSquare className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    <li key={i} className="flex gap-3 items-start text-muted-foreground leading-relaxed print:text-black print:text-sm">
+                      <CheckSquare className="w-5 h-5 text-primary shrink-0 mt-0.5 print:text-black" />
                       <span>{item}</span>
                     </li>
                   ))}
@@ -241,6 +247,17 @@ const PreparerVoyage = () => {
         </div>
       </div>
     );
+  };
+
+  const renderContent = () => {
+    if (activeTab === '__print_all__') {
+      return (
+        <div className="space-y-12">
+          {Object.keys(contentData).map(key => renderSection(key))}
+        </div>
+      );
+    }
+    return renderSection(activeTab);
   };
 
   const NavItem = ({ id, label, icon }: { id: string; label: string; icon: React.ReactNode }) => (
@@ -291,7 +308,7 @@ const PreparerVoyage = () => {
     <Layout>
       <SEOHead {...seoConfigs.preparerVoyage} />
       {/* Hero Section avec Vidéo */}
-      <section className="relative">
+      <section className="relative print:hidden">
         <div className="relative h-[60vh] min-h-[400px] overflow-hidden">
           <video 
             ref={videoRef}
@@ -339,13 +356,19 @@ const PreparerVoyage = () => {
         </div>
       </section>
 
+      {/* Print Header - visible only when printing */}
+      <div className="hidden print:block text-center mb-8">
+        <h1 className="text-3xl font-bold mb-2">Préparer Votre Voyage — Mémo Cavalier</h1>
+        <p className="text-sm">Ferme Équestre An Arwen • Guide complet pour randonneurs équestres</p>
+      </div>
+
       {/* Main Content */}
       <section className="py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col lg:flex-row gap-8">
             
             {/* Mobile Navigation */}
-            <div className="lg:hidden">
+            <div className="lg:hidden print:hidden">
               <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                 <SheetTrigger asChild>
                   <Button variant="outline" className="w-full flex items-center gap-2">
@@ -362,7 +385,7 @@ const PreparerVoyage = () => {
             </div>
 
             {/* Desktop Sidebar */}
-            <aside className="hidden lg:flex lg:w-72 shrink-0 flex-col gap-6 sticky top-24 h-fit">
+            <aside className="hidden lg:flex lg:w-72 shrink-0 flex-col gap-6 sticky top-24 h-fit print:hidden">
               <SidebarContent />
             </aside>
 

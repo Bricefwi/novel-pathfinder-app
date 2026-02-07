@@ -108,10 +108,10 @@ export const CartDrawer = () => {
 
   const handleCheckout = () => {
     closeCart();
-    // Build query params from cart items
     const firstItem = items[0];
     if (firstItem) {
       const params = new URLSearchParams();
+      params.set("activityId", firstItem.id);
       params.set("sejour", firstItem.title);
       if (firstItem.slotId) params.set("slot", firstItem.slotId);
       if (firstItem.startDate) params.set("date", firstItem.startDate);
