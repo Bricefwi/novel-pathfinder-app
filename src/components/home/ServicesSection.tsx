@@ -1,9 +1,8 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Compass, Home, Calendar } from "lucide-react";
+import { ArrowRight, Compass, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
 import yourteInterieur from "@/assets/yourte-interieur.jpg";
-import bretagneVillageChevaux from "@/assets/bretagne-village-chevaux.jpg";
 
 const services = [
   {
@@ -23,15 +22,6 @@ const services = [
     image: yourteInterieur,
     href: "/hebergement",
     accent: "from-secondary/80 to-secondary",
-  },
-  {
-    icon: Calendar,
-    title: "Événements",
-    description:
-      "Anniversaires, team building, baptêmes... Célébrez vos moments importants dans un cadre unique.",
-    image: bretagneVillageChevaux,
-    href: "/contact",
-    accent: "from-chart-1/80 to-chart-1",
   },
 ];
 
@@ -53,8 +43,8 @@ export function ServicesSection() {
           </p>
         </div>
 
-        {/* Services Grid - Responsive avec transition md */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Services Grid - 2 colonnes centrées */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto">
           {services.map((service, index) => (
             <Link
               key={service.title}
@@ -70,7 +60,7 @@ export function ServicesSection() {
                 loading="lazy"
               />
 
-              {/* Overlay - gradient sombre uniquement */}
+              {/* Overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/30 to-transparent group-hover:from-foreground/90 transition-all" />
 
               {/* Content */}

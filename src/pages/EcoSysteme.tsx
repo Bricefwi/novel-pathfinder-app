@@ -89,6 +89,14 @@ const suggestionCategories = [
   { id: "nature", label: "Nature & Écologie", icon: Trees },
 ];
 
+/** Normalise une URL pour garantir un protocole absolu */
+const normalizeUrl = (url: string): string => {
+  if (!url) return url;
+  const trimmed = url.trim();
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+  return `https://${trimmed}`;
+};
+
 const ArticleCard = ({ article }: { article: EcosystemArticle }) => {
   const config = categoryConfig[article.category || "decouverte"] || categoryConfig["decouverte"];
   const IconComponent = config.icon;
@@ -154,7 +162,7 @@ const ArticleCard = ({ article }: { article: EcosystemArticle }) => {
           )}
           {article.location_website && (
             <a 
-              href={article.location_website}
+              href={normalizeUrl(article.location_website)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
