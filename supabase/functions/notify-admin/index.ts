@@ -4,8 +4,8 @@ import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { authenticateRequest } from "../_shared/rbac.ts";
 import { sendEmailWithAudit } from "../_shared/email-audit.ts";
 import {
-  EMAIL_SENDERS, wrapInBrandedLayout,
-  greeting, paragraph, separator,
+  EMAIL_SENDERS, wrapInBrandedLayout, getAppUrl,
+  greeting, paragraph, separator, badge,
 } from "../_shared/email-templates.ts";
 
 interface NotifyAdminRequest {
@@ -27,6 +27,17 @@ interface NotifyAdminRequest {
 }
 
 const PUBLIC_TYPES = ["disponibilite", "contact", "reservation", "devis"];
+
+// Admin emails to notify (comma-separated env var or fallbacks)
+function getAdminEmails(): string[] {
+  const envEmails = Deno.env.get("ADMIN_NOTIFICATION_EMAILS");
+  if (envEmails) {
+    return envEmails.split(",").map((e) => e.trim()).filter(Boolean);
+  }
+  const single = Deno.env.get("ADMIN_NOTIFICATION_EMAIL");
+  if (single) return [single.trim()];
+  return ["contact@ferme-equestre-arwen.com"];
+}
 
 const handler = async (req: Request): Promise<Response> => {
   const origin = req.headers.get("origin");
@@ -58,63 +69,112 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const adminEmail = Deno.env.get("ADMIN_NOTIFICATION_EMAIL") || "contact@ferme-equestre-arwen.com";
+    const supabaseService = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
+    const appUrl = getAppUrl();
+    const adminEmails = getAdminEmails();
+
+    // ══════════════════════════════════════════════════════════════════
+    // 1. ACCUSÉ DE RÉCEPTION → CLIENT
+    // ══════════════════════════════════════════════════════════════════
+    const ackResult = await sendClientAcknowledgment(supabaseService, type, data, appUrl);
+    if (!ackResult.success) {
+      console.warn("[notify-admin] Client acknowledgment failed:", ackResult.error);
+    } else {
+      console.log("[notify-admin] Client acknowledgment sent to:", data.email);
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // 2. NOTIFICATION → TOUS LES ADMINS
+    // ══════════════════════════════════════════════════════════════════
     let subject = "";
     let bodyContent = "";
     let subtitle = "";
 
     switch (type) {
       case "devis":
-        subject = `📋 Nouvelle demande de devis de ${data.name}`;
+        subject = `🚨 URGENT – Nouvelle demande de devis de ${data.name}`;
         subtitle = "Nouvelle demande de devis";
         bodyContent = buildDevisBody(data);
         break;
       case "disponibilite":
-        subject = `📅 Demande de disponibilité – ${data.activityTitle || data.accommodationName || "Hébergement"}`;
+        subject = `🚨 Demande de disponibilité – ${data.activityTitle || data.accommodationName || "Hébergement"}`;
         subtitle = "Demande de disponibilité";
         bodyContent = buildDisponibiliteBody(data);
         break;
       case "reservation":
-        subject = `🐴 Nouvelle réservation de ${data.name}`;
+        subject = `🚨 URGENT – Nouvelle réservation de ${data.name}`;
         subtitle = "Nouvelle réservation";
         bodyContent = buildReservationBody(data);
         break;
       case "contact":
       default:
-        subject = `✉️ Nouveau message de ${data.name}`;
+        subject = `🚨 Nouveau message de ${data.name}`;
         subtitle = "Nouveau message de contact";
         bodyContent = buildContactBody(data);
     }
 
-    const emailHtml = wrapInBrandedLayout(subtitle, bodyContent, {
-      preheader: subject,
-    });
+    // Add urgent call-to-action directing admins to unified inbox
+    const urgentCta = `
+      ${separator()}
+      <table role="presentation" style="width:100%;background:#FEF3C7;border-radius:12px;border:2px solid #F59E0B;margin:20px 0;">
+        <tr><td style="padding:20px;text-align:center;">
+          <p style="margin:0 0 8px 0;color:#92400E;font-size:16px;font-weight:700;">⚡ Action requise</p>
+          <p style="margin:0 0 15px 0;color:#78350F;font-size:14px;">
+            Cette demande doit être traitée dans les plus brefs délais.
+          </p>
+          <a href="${appUrl}/admin" style="display:inline-block;background-color:#6B8E7F;color:#ffffff;text-decoration:none;padding:14px 35px;border-radius:8px;font-size:15px;font-weight:600;font-family:Georgia,serif;">
+            📬 Ouvrir la Boîte Mail Unifiée
+          </a>
+        </td></tr>
+      </table>
+    `;
 
-    const supabaseService = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    );
+    bodyContent += urgentCta;
+
+    const emailHtml = wrapInBrandedLayout(subtitle, bodyContent, {
+      preheader: `${subject} – Action requise immédiatement`,
+    });
 
     const sender = EMAIL_SENDERS.notifications;
-    const result = await sendEmailWithAudit({
-      supabase: supabaseService,
-      to: adminEmail,
-      from: `${sender.name} <${sender.email}>`,
-      subject,
-      html: emailHtml,
-      type: "notification",
-      userId,
-    });
 
-    if (!result.success) throw new Error(result.error);
+    // Send to ALL admins in parallel
+    const adminResults = await Promise.allSettled(
+      adminEmails.map((adminEmail) =>
+        sendEmailWithAudit({
+          supabase: supabaseService,
+          to: adminEmail,
+          from: `${sender.name} <${sender.email}>`,
+          subject,
+          html: emailHtml,
+          type: "notification",
+          userId,
+        })
+      )
+    );
 
-    console.log("[notify-admin] Email sent successfully");
+    const allSent = adminResults.every(
+      (r) => r.status === "fulfilled" && r.value.success
+    );
+    const anySent = adminResults.some(
+      (r) => r.status === "fulfilled" && r.value.success
+    );
 
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    if (!anySent) {
+      throw new Error("Failed to send notification to any admin");
+    }
+
+    console.log(
+      `[notify-admin] Sent to ${adminResults.filter((r) => r.status === "fulfilled" && r.value.success).length}/${adminEmails.length} admins`
+    );
+
+    return new Response(
+      JSON.stringify({ success: true, adminsNotified: adminEmails.length, allSent }),
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+    );
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("[notify-admin] Error:", errorMessage);
@@ -125,7 +185,138 @@ const handler = async (req: Request): Promise<Response> => {
   }
 };
 
-// ── Body builders ───────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+// CLIENT ACKNOWLEDGMENT EMAIL
+// ══════════════════════════════════════════════════════════════════════
+
+async function sendClientAcknowledgment(
+  supabase: ReturnType<typeof createClient>,
+  type: string,
+  data: NotifyAdminRequest["data"],
+  appUrl: string
+): Promise<{ success: boolean; error?: string }> {
+  const firstName = data.name.split(" ")[0];
+
+  let subject = "";
+  let subtitle = "";
+  let bodyContent = "";
+
+  switch (type) {
+    case "devis":
+    case "reservation":
+      subject = `✅ Votre demande a bien été reçue – ${data.activityTitle || "An Arwen"}`;
+      subtitle = "Confirmation de réception";
+      bodyContent = [
+        greeting(firstName),
+        paragraph(
+          `Nous avons bien reçu votre demande${data.activityTitle ? ` pour <strong>${data.activityTitle}</strong>` : ""} et nous vous remercions de votre confiance. 🐴`
+        ),
+        `<table role="presentation" style="width:100%;background-color:#F0FFF4;border-radius:12px;border-left:4px solid #6B8E7F;margin:20px 0;">
+          <tr><td style="padding:20px;">
+            <p style="margin:0 0 8px 0;color:#065F46;font-size:15px;font-weight:600;">🕐 Prochaine étape</p>
+            <p style="margin:0;color:#047857;font-size:14px;line-height:1.6;">
+              Notre équipe prend en charge votre demande et vous recontactera <strong>dans les plus brefs délais</strong> (généralement sous 24 à 48h ouvrées) avec un devis personnalisé et toutes les informations nécessaires.
+            </p>
+          </td></tr>
+        </table>`,
+        data.totalPrice
+          ? `<table role="presentation" style="width:100%;background-color:#F5F3F0;border-radius:12px;margin:15px 0;">
+              <tr><td style="padding:20px;">
+                <p style="margin:0 0 5px 0;color:#666;font-size:13px;">Récapitulatif estimatif</p>
+                ${data.activityTitle ? `<p style="margin:0 0 5px 0;color:#333;font-size:15px;font-weight:600;">🐎 ${data.activityTitle}</p>` : ""}
+                ${data.participants ? `<p style="margin:0 0 5px 0;color:#666;font-size:14px;">👥 ${data.participants} participant${data.participants > 1 ? "s" : ""}</p>` : ""}
+                <p style="margin:0;color:#6B8E7F;font-size:18px;font-weight:700;font-family:Georgia,serif;">💰 ${data.totalPrice} €</p>
+              </td></tr>
+            </table>`
+          : "",
+        paragraph(
+          `En attendant, n'hésitez pas à consulter nos <a href="${appUrl}/destinations" style="color:#6B8E7F;text-decoration:underline;">destinations</a> ou à <a href="${appUrl}/preparer-voyage" style="color:#6B8E7F;text-decoration:underline;">préparer votre voyage</a>.`
+        ),
+        separator(),
+        paragraph(
+          `Si vous avez la moindre question, vous pouvez nous répondre directement à cet email ou nous appeler au <strong>06 59 22 62 70</strong>.`
+        ),
+        `<p style="margin:20px 0 0 0;color:#333;font-size:15px;line-height:1.6;">
+          À très bientôt en selle ! 🌿<br/>
+          <strong>L'équipe An Arwen</strong>
+        </p>`,
+      ].join("");
+      break;
+
+    case "contact":
+    default:
+      subject = `✅ Message bien reçu – Ferme Équestre An Arwen`;
+      subtitle = "Confirmation de réception";
+      bodyContent = [
+        greeting(firstName),
+        paragraph(
+          `Nous avons bien reçu votre message et nous vous remercions de nous avoir contactés. 🐴`
+        ),
+        `<table role="presentation" style="width:100%;background-color:#F0FFF4;border-radius:12px;border-left:4px solid #6B8E7F;margin:20px 0;">
+          <tr><td style="padding:20px;">
+            <p style="margin:0 0 8px 0;color:#065F46;font-size:15px;font-weight:600;">🕐 Délai de réponse</p>
+            <p style="margin:0;color:#047857;font-size:14px;line-height:1.6;">
+              Nous traitons chaque message avec attention. Vous recevrez une réponse personnalisée <strong>sous 24 à 48h ouvrées</strong>.
+            </p>
+          </td></tr>
+        </table>`,
+        paragraph(
+          `Pour toute urgence, n'hésitez pas à nous appeler directement au <strong>06 59 22 62 70</strong>.`
+        ),
+        separator(),
+        `<p style="margin:20px 0 0 0;color:#333;font-size:15px;line-height:1.6;">
+          À très bientôt ! 🌿<br/>
+          <strong>L'équipe An Arwen</strong>
+        </p>`,
+      ].join("");
+      break;
+
+    case "disponibilite":
+      subject = `✅ Demande de disponibilité reçue – ${data.activityTitle || data.accommodationName || "An Arwen"}`;
+      subtitle = "Confirmation de réception";
+      bodyContent = [
+        greeting(firstName),
+        paragraph(
+          `Votre demande de disponibilité${data.activityTitle ? ` pour <strong>${data.activityTitle}</strong>` : ""}${data.accommodationName ? ` pour <strong>${data.accommodationName}</strong>` : ""} a bien été enregistrée. 🐴`
+        ),
+        `<table role="presentation" style="width:100%;background-color:#F0FFF4;border-radius:12px;border-left:4px solid #6B8E7F;margin:20px 0;">
+          <tr><td style="padding:20px;">
+            <p style="margin:0 0 8px 0;color:#065F46;font-size:15px;font-weight:600;">🕐 Prochaine étape</p>
+            <p style="margin:0;color:#047857;font-size:14px;line-height:1.6;">
+              Nous vérifions nos disponibilités et vous recontacterons <strong>dans les plus brefs délais</strong> avec une proposition adaptée.
+            </p>
+          </td></tr>
+        </table>`,
+        paragraph(
+          `Pour toute urgence, appelez-nous au <strong>06 59 22 62 70</strong>.`
+        ),
+        separator(),
+        `<p style="margin:20px 0 0 0;color:#333;font-size:15px;line-height:1.6;">
+          À très bientôt ! 🌿<br/>
+          <strong>L'équipe An Arwen</strong>
+        </p>`,
+      ].join("");
+      break;
+  }
+
+  const emailHtml = wrapInBrandedLayout(subtitle, bodyContent, {
+    preheader: subject,
+    ctaUrl: `${appUrl}/mon-espace`,
+    ctaLabel: "Accéder à mon Espace Voyage",
+  });
+
+  const sender = EMAIL_SENDERS.contact;
+  return sendEmailWithAudit({
+    supabase,
+    to: data.email,
+    from: `${sender.name} <${sender.email}>`,
+    subject,
+    html: emailHtml,
+    type: "notification",
+  });
+}
+
+// ── Admin body builders ─────────────────────────────────────────────
 
 function contactLine(label: string, value: string, href?: string): string {
   const display = href ? `<a href="${href}" style="color:#6B8E7F;text-decoration:none;">${value}</a>` : value;
