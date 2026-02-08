@@ -74,13 +74,34 @@ const Contact = () => {
     };
     
     const { error } = await supabase.from("contact_requests").insert([sanitizedData]);
-    setLoading(false);
+    
     if (error) {
+      setLoading(false);
       toast.error("Erreur lors de l'envoi. Veuillez réessayer.");
-    } else {
-      toast.success("Message envoyé avec succès !");
-      setForm({ name: "", email: "", phone: "", subject: "", message: "", gdprAccepted: false });
+      return;
     }
+
+    // Notify admins + send client acknowledgment
+    try {
+      await supabase.functions.invoke("notify-admin", {
+        body: {
+          type: "contact",
+          data: {
+            name: sanitizedData.name,
+            email: sanitizedData.email,
+            phone: sanitizedData.phone,
+            subject: sanitizedData.subject,
+            message: sanitizedData.message,
+          },
+        },
+      });
+    } catch (emailError) {
+      console.error("Error sending notification:", emailError);
+    }
+
+    setLoading(false);
+    toast.success("Message envoyé avec succès ! Vous recevrez un accusé de réception par email.");
+    setForm({ name: "", email: "", phone: "", subject: "", message: "", gdprAccepted: false });
   };
 
   return (
