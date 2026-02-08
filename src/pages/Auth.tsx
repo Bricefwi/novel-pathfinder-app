@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -8,15 +8,18 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
-import { Eye, EyeOff, Mail, Loader2, KeyRound, Lock } from "lucide-react";
+import { Eye, EyeOff, Mail, Loader2, KeyRound, Lock, ShieldCheck } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import cavaliersSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
-
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [isResetPassword, setIsResetPassword] = useState(false);
+  const [isOtpStep, setIsOtpStep] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
@@ -28,7 +31,56 @@ const Auth = () => {
   const [lastName, setLastName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [otpCountdown, setOtpCountdown] = useState(0);
   const navigate = useNavigate();
+
+  // Countdown timer for OTP resend
+  useEffect(() => {
+    if (otpCountdown <= 0) return;
+    const timer = setTimeout(() => setOtpCountdown(otpCountdown - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [otpCountdown]);
+
+  const handleResendOtp = async () => {
+    if (otpCountdown > 0 || !otpEmail) return;
+    setResendLoading(true);
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email: otpEmail,
+    });
+    if (error) {
+      toast.error("Erreur lors du renvoi : " + error.message);
+    } else {
+      toast.success("Nouveau code envoyé ! Vérifiez votre boîte email.");
+      setOtpCountdown(60);
+    }
+    setResendLoading(false);
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otpCode.length !== 6) {
+      toast.error("Veuillez entrer le code à 6 chiffres");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: otpEmail,
+        token: otpCode,
+        type: 'signup',
+      });
+      if (error) {
+        toast.error("Code invalide ou expiré. Veuillez réessayer.");
+      } else if (data.user) {
+        toast.success("Email vérifié ! Bienvenue chez An Arwen 🐴");
+        setIsOtpStep(false);
+        await handlePostLoginRedirect(data.user.id);
+      }
+    } catch (err: any) {
+      toast.error("Erreur de vérification : " + (err?.message || "Erreur inconnue"));
+    }
+    setLoading(false);
+  };
 
   const handleResendConfirmation = async () => {
     if (!email) {
@@ -39,14 +91,14 @@ const Auth = () => {
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email: email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth`,
-      },
     });
     if (error) {
       toast.error("Erreur lors de l'envoi : " + error.message);
     } else {
-      toast.success("Email de confirmation renvoyé ! Vérifiez votre boîte de réception.");
+      toast.success("Code de confirmation renvoyé ! Vérifiez votre boîte de réception.");
+      setOtpEmail(email);
+      setIsOtpStep(true);
+      setOtpCountdown(60);
     }
     setResendLoading(false);
   };
@@ -213,7 +265,7 @@ const Auth = () => {
           toast.error("Email ou mot de passe incorrect");
           setShowResendButton(false);
         } else if (error.message.includes("Email not confirmed")) {
-          toast.error("Veuillez confirmer votre email avant de vous connecter");
+          toast.error("Veuillez confirmer votre email. Un code de vérification vous a été envoyé.");
           setShowResendButton(true);
         } else {
           toast.error(error.message);
@@ -229,7 +281,6 @@ const Auth = () => {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth`,
           data: { first_name: firstName, last_name: lastName },
         },
       });
@@ -240,21 +291,141 @@ const Auth = () => {
           toast.error(error.message);
         }
       } else if (data.user) {
-        // If email confirmation is required, session will be null until user clicks the link.
         if (data.session) {
+          // Auto-confirm is enabled, redirect directly
           toast.success("Inscription réussie ! Bienvenue chez An Arwen 🐴");
           await handlePostLoginRedirect(data.user.id);
         } else {
-          toast.success(
-            "Compte créé ! Vérifiez votre email et cliquez sur le lien de confirmation, puis connectez-vous."
-          );
-          setIsLogin(true);
-          setShowResendButton(true);
+          // Email confirmation required - show OTP input
+          toast.success("Un code de vérification à 6 chiffres a été envoyé à votre email !");
+          setOtpEmail(email);
+          setIsOtpStep(true);
+          setOtpCountdown(60);
         }
       }
     }
     setLoading(false);
   };
+
+  // ═══════════════════════════════════════════
+  // OTP VERIFICATION STEP
+  // ═══════════════════════════════════════════
+  if (isOtpStep) {
+    return (
+      <Layout>
+        <section className="min-h-screen flex">
+          {/* Left Column - Image (Desktop only) */}
+          <div className="hidden lg:flex lg:w-1/2 relative">
+            <img
+              src={cavaliersSoleil}
+              alt="Cavaliers au coucher du soleil"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-background/80 to-background/20" />
+            <div className="relative z-10 flex flex-col justify-end p-12 text-foreground">
+              <blockquote className="space-y-4">
+                <p className="text-2xl font-serif italic leading-relaxed">
+                  "Plus qu'un mot de passe, votre aventure mérite une vérification."
+                </p>
+              </blockquote>
+              <div className="mt-8 flex items-center gap-4">
+                <div className="h-1 w-12 bg-primary rounded" />
+                <span className="text-sm font-medium">Ferme Équestre An Arwen</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column - OTP Form */}
+          <div className="w-full lg:w-1/2 flex items-center justify-center p-6 lg:p-12">
+            <div className="w-full max-w-md space-y-8">
+              <div className="text-center space-y-2">
+                <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+                  <ShieldCheck className="h-8 w-8 text-primary" />
+                </div>
+                <h1 className="font-serif text-3xl font-bold">Vérification de votre email</h1>
+                <p className="text-muted-foreground">
+                  Un code à 6 chiffres a été envoyé à <strong className="text-foreground">{otpEmail}</strong>
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex justify-center">
+                  <InputOTP
+                    maxLength={6}
+                    value={otpCode}
+                    onChange={setOtpCode}
+                  >
+                    <InputOTPGroup>
+                      <InputOTPSlot index={0} />
+                      <InputOTPSlot index={1} />
+                      <InputOTPSlot index={2} />
+                      <InputOTPSlot index={3} />
+                      <InputOTPSlot index={4} />
+                      <InputOTPSlot index={5} />
+                    </InputOTPGroup>
+                  </InputOTP>
+                </div>
+
+                <Button
+                  onClick={handleVerifyOtp}
+                  className="w-full h-12 text-base gap-2"
+                  disabled={loading || otpCode.length !== 6}
+                >
+                  {loading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <>
+                      <ShieldCheck className="h-4 w-4" />
+                      Vérifier mon code
+                    </>
+                  )}
+                </Button>
+
+                <div className="text-center space-y-2">
+                  <p className="text-sm text-muted-foreground">
+                    Vous n'avez pas reçu le code ?
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-primary"
+                    onClick={handleResendOtp}
+                    disabled={resendLoading || otpCountdown > 0}
+                  >
+                    {resendLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    {otpCountdown > 0
+                      ? `Renvoyer dans ${otpCountdown}s`
+                      : "Renvoyer le code"}
+                  </Button>
+                </div>
+
+                <p className="text-center text-xs text-muted-foreground">
+                  Pensez à vérifier vos spams si vous ne trouvez pas l'email.
+                </p>
+
+                <p className="text-center text-sm text-muted-foreground">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOtpStep(false);
+                      setOtpCode("");
+                      setIsLogin(true);
+                    }}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    ← Retour à la connexion
+                  </button>
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -575,7 +746,7 @@ const Auth = () => {
                   ) : (
                     <Mail className="h-4 w-4" />
                   )}
-                  Renvoyer l'email de confirmation
+                  Renvoyer le code de vérification
                 </Button>
               )}
             </form>
