@@ -1,8 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import {
+  EMAIL_SENDERS, wrapInBrandedLayout,
+} from "../_shared/email-templates.ts";
 
 const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
-const SENDER_EMAIL = "newsletter@ferme-equestre-arwen.com";
-const SENDER_NAME = "Ferme Arwen";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,6 +39,14 @@ serve(async (req) => {
 
     console.log(`[send-newsletter] Envoi email via Brevo à : ${to.map(t => t.email).join(", ")}`);
 
+    // Wrap the content in the branded layout
+    const htmlContent = wrapInBrandedLayout("Newsletter", content, {
+      preheader: subject,
+      unsubscribeUrl: `${Deno.env.get("APP_URL") || "https://ferme-equestre-arwen.com"}/mon-espace`,
+    });
+
+    const sender = EMAIL_SENDERS.newsletter;
+
     const res = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
@@ -45,10 +54,10 @@ serve(async (req) => {
         "api-key": BREVO_API_KEY,
       },
       body: JSON.stringify({
-        sender: { name: SENDER_NAME, email: SENDER_EMAIL },
+        sender: { name: sender.name, email: sender.email },
         to,
         subject,
-        htmlContent: content,
+        htmlContent,
       }),
     });
 
