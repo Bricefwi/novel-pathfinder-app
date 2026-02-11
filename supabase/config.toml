@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.send-newsletter]
 verify_jwt = false
+
+[functions.send-reply]
+verify_jwt = true
