@@ -172,11 +172,12 @@ export function UnifiedInbox() {
       return;
     }
 
+    if (sendingReply) return; // Double-click guard
+
     setSendingReply(true);
     try {
-      const { error } = await supabase.functions.invoke("notify-admin", {
+      const { data, error } = await supabase.functions.invoke("send-reply", {
         body: {
-          type: "reply",
           to: selectedItem.email,
           subject: `Re: ${selectedItem.subject || "Votre demande"}`,
           message: replyMessage,
@@ -186,20 +187,22 @@ export function UnifiedInbox() {
       });
 
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       toast.success(`Réponse envoyée à ${selectedItem.email}`);
       setReplyMessage("");
       
-      // Mark as read and potentially archive
+      // Mark as read
       await supabase
         .from("contact_requests")
         .update({ is_read: true })
         .eq("id", selectedItem.id);
       
       queryClient.invalidateQueries({ queryKey: ["unified-inbox"] });
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error sending reply:", err);
-      toast.error("Erreur lors de l'envoi de la réponse");
+      const detail = err?.message || "Erreur inconnue";
+      toast.error(`Erreur lors de l'envoi : ${detail}`);
     } finally {
       setSendingReply(false);
     }

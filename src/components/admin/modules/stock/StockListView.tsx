@@ -107,6 +107,8 @@ export function StockListView({ activities, onEdit }: StockListViewProps) {
       queryClient.invalidateQueries({ queryKey: ["stock-management"] });
       queryClient.invalidateQueries({ queryKey: ["calendar-events"] });
       queryClient.invalidateQueries({ queryKey: ["activities"] });
+      queryClient.invalidateQueries({ queryKey: ["sejours-grouped"] });
+      queryClient.invalidateQueries({ queryKey: ["control-tower"] });
       setEditSlot(null);
     },
     onError: (error) => {

@@ -148,7 +148,9 @@ serve(async (req) => {
       } else {
         const errData = await res.text();
         totalFailed += batch.length;
-        console.error(`[send-newsletter] Batch failed:`, errData);
+        console.error(`[send-newsletter] Batch failed (status ${res.status}):`, errData);
+        console.error(`[send-newsletter] Sender used: ${sender.name} <${sender.email}>`);
+        console.error(`[send-newsletter] Recipients in batch:`, batch.join(", "));
       }
 
       // Small delay between batches to respect rate limits
