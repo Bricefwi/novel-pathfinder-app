@@ -18,6 +18,7 @@ export type AdminModule =
   | "crm"
   | "inbox"
   | "marketing"
+  | "automations"
   | "analytics"
   | "traffic"
   | "audit"
