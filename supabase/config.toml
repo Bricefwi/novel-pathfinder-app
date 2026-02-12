@@ -47,3 +47,6 @@ verify_jwt = true
 
 [functions.custom-email-sender]
 verify_jwt = false
+
+[functions.relance-devis-expires]
+verify_jwt = false
