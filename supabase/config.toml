@@ -68,3 +68,24 @@ verify_jwt = false
 
 [functions.notification-nouvel-avis]
 verify_jwt = false
+
+[functions.relance-panier-abandonne]
+verify_jwt = false
+
+[functions.demande-avis-externe]
+verify_jwt = false
+
+[functions.reengagement-inactif]
+verify_jwt = false
+
+[functions.confirmation-reservation]
+verify_jwt = false
+
+[functions.rappel-paiement]
+verify_jwt = false
+
+[functions.programme-parrainage]
+verify_jwt = false
+
+[functions.resume-hebdo-admin]
+verify_jwt = false
