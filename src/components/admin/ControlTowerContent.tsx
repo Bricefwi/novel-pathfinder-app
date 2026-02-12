@@ -19,6 +19,7 @@ import { StockManagement } from "./modules/StockManagement";
 import { CRM360 } from "./modules/CRM360";
 import { UnifiedInbox } from "./modules/UnifiedInbox";
 import { MarketingAutomation } from "./modules/MarketingAutomation";
+import { AutomationsDashboard } from "./modules/AutomationsDashboard";
 import { AnalyticsDashboard } from "./modules/AnalyticsDashboard";
 import { TrafficAnalytics } from "./modules/TrafficAnalytics";
 import { SiteAudit } from "./modules/SiteAudit";
@@ -50,6 +51,8 @@ export function ControlTowerContent({ activeModule, onModuleChange }: ControlTow
         return <UnifiedInbox />;
       case "marketing":
         return <MarketingAutomation />;
+      case "automations":
+        return <AutomationsDashboard />;
       case "analytics":
         return <AnalyticsDashboard />;
       case "audit":

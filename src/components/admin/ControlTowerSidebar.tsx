@@ -24,6 +24,7 @@ import {
   Megaphone,
   BarChart3,
   Globe,
+  Zap,
   MapPin,
   FileText,
   Image,
@@ -63,6 +64,7 @@ const CORE_MODULES = [
 
 const GROWTH_MODULES = [
   { id: "marketing" as const, label: "Marketing Automation", icon: Megaphone, badge: "SOON" },
+  { id: "automations" as const, label: "Automatisations Email", icon: Zap, badge: "NEW" },
   { id: "analytics" as const, label: "Analytics Business", icon: BarChart3, badge: "NEW" },
   { id: "traffic" as const, label: "Trafic Web", icon: Globe, badge: "NEW" },
 ];
