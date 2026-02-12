@@ -50,3 +50,18 @@ verify_jwt = false
 
 [functions.relance-devis-expires]
 verify_jwt = false
+
+[functions.suivi-post-sejour]
+verify_jwt = false
+
+[functions.rappel-j7-sejour]
+verify_jwt = false
+
+[functions.anniversaire-client]
+verify_jwt = false
+
+[functions.bienvenue-nouveau-client]
+verify_jwt = false
+
+[functions.notification-nouvel-avis]
+verify_jwt = false
