@@ -12,10 +12,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+interface SegmentFilters {
+  ridingLevels?: string[];
+  tripTypes?: string[];
+  dreamDestinations?: string[];
+  specificEmails?: string[];
+}
+
 interface NewsletterRequest {
   subject: string;
   content: string;
   testEmail?: string;
+  filters?: SegmentFilters;
 }
 
 serve(async (req) => {
@@ -24,7 +32,7 @@ serve(async (req) => {
   }
 
   try {
-    const { subject, content, testEmail }: NewsletterRequest = await req.json();
+    const { subject, content, testEmail, filters }: NewsletterRequest = await req.json();
 
     if (!BREVO_API_KEY) {
       console.error("[send-newsletter] BREVO_API_KEY is missing");
@@ -42,7 +50,6 @@ serve(async (req) => {
 
     const appUrl = Deno.env.get("APP_URL") || "https://ferme-equestre-arwen.com";
 
-    // Wrap the content in the branded layout
     const htmlContent = wrapInBrandedLayout("Newsletter", content, {
       preheader: subject,
       unsubscribeUrl: `${appUrl}/mon-espace`,
@@ -50,136 +57,166 @@ serve(async (req) => {
 
     const sender = EMAIL_SENDERS.newsletter;
 
-    // ── TEST MODE: send to a single test email ──
+    // ── TEST MODE ──
     if (testEmail) {
       console.log(`[send-newsletter] Mode test → envoi à : ${testEmail}`);
-
       const result = await sendEmailWithAudit({
-        supabase,
-        to: testEmail,
+        supabase, to: testEmail,
         from: `${sender.name} <${sender.email}>`,
-        subject: `[TEST] ${subject}`,
-        html: htmlContent,
-        type: "newsletter",
+        subject: `[TEST] ${subject}`, html: htmlContent, type: "newsletter",
       });
-
       if (!result.success) throw new Error(result.error);
-
       return new Response(JSON.stringify({ success: true, sent: 1, mode: "test" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
       });
     }
 
-    // ── PRODUCTION MODE: fetch all active subscribers ──
-    const { data: subscribers, error: fetchError } = await supabase
-      .from("newsletter_subscribers")
-      .select("email")
-      .eq("is_active", true);
-
-    if (fetchError) {
-      console.error("[send-newsletter] Error fetching subscribers:", fetchError);
-      throw new Error("Impossible de récupérer les abonnés");
+    // ── SPECIFIC EMAILS (from CRM selection) ──
+    if (filters?.specificEmails && filters.specificEmails.length > 0) {
+      console.log(`[send-newsletter] Mode sélection CRM → ${filters.specificEmails.length} destinataires`);
+      const recipientList = filters.specificEmails.map(e => e.toLowerCase());
+      const result = await sendBatches(recipientList, sender, subject, htmlContent, supabase, filters);
+      return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
+      });
     }
 
-    // Also include profiles that opted in to newsletter
-    const { data: profileSubscribers } = await supabase
-      .from("profiles")
-      .select("user_id")
-      .eq("newsletter_subscribed", true);
+    // ── SEGMENTED / ALL MODE ──
+    const hasFilters = filters && (
+      (filters.ridingLevels && filters.ridingLevels.length > 0) ||
+      (filters.tripTypes && filters.tripTypes.length > 0) ||
+      (filters.dreamDestinations && filters.dreamDestinations.length > 0)
+    );
 
-    // Get emails for profile subscribers
+    // Get all user emails
+    const { data: userEmails } = await supabase.rpc("get_user_emails_for_profiles");
+    const emailMap = new Map<string, string>();
+    (userEmails || []).forEach((u: { user_id: string; email: string }) => {
+      emailMap.set(u.user_id, u.email.toLowerCase());
+    });
+
     let profileEmails: string[] = [];
-    if (profileSubscribers && profileSubscribers.length > 0) {
-      const { data: userEmails } = await supabase
-        .rpc("get_user_emails_for_profiles");
+
+    if (hasFilters) {
+      // Build segmented query
+      let query = supabase.from("profiles").select("user_id, riding_level, preferred_trip_types, dream_destinations")
+        .eq("newsletter_subscribed", true);
+
+      const { data: filteredProfiles } = await query;
       
-      if (userEmails) {
+      if (filteredProfiles) {
+        profileEmails = filteredProfiles
+          .filter(p => {
+            // Riding level filter
+            if (filters!.ridingLevels && filters!.ridingLevels.length > 0) {
+              if (!p.riding_level || !filters!.ridingLevels.includes(p.riding_level)) return false;
+            }
+            // Trip types filter
+            if (filters!.tripTypes && filters!.tripTypes.length > 0) {
+              const userTypes = p.preferred_trip_types || [];
+              if (!filters!.tripTypes.some(t => userTypes.includes(t))) return false;
+            }
+            // Dream destinations filter
+            if (filters!.dreamDestinations && filters!.dreamDestinations.length > 0) {
+              const userDests = (p.dream_destinations || []).map((d: string) => d.toLowerCase());
+              if (!filters!.dreamDestinations.some(d => userDests.some((ud: string) => ud.includes(d.toLowerCase())))) return false;
+            }
+            return true;
+          })
+          .map(p => emailMap.get(p.user_id))
+          .filter((e): e is string => !!e);
+      }
+    } else {
+      // No filters: all newsletter subscribers
+      const { data: profileSubscribers } = await supabase
+        .from("profiles").select("user_id").eq("newsletter_subscribed", true);
+      
+      if (profileSubscribers) {
         const subscribedUserIds = new Set(profileSubscribers.map(p => p.user_id));
-        profileEmails = userEmails
-          .filter((u: { user_id: string; email: string }) => subscribedUserIds.has(u.user_id))
-          .map((u: { user_id: string; email: string }) => u.email);
+        profileEmails = Array.from(subscribedUserIds)
+          .map(uid => emailMap.get(uid))
+          .filter((e): e is string => !!e);
       }
     }
 
-    // Merge and deduplicate all recipient emails
+    // Also include newsletter_subscribers table
+    const { data: subscribers } = await supabase
+      .from("newsletter_subscribers").select("email").eq("is_active", true);
+
+    // Merge and deduplicate
     const allEmails = new Set<string>();
     subscribers?.forEach(s => allEmails.add(s.email.toLowerCase()));
-    profileEmails.forEach(e => allEmails.add(e.toLowerCase()));
+    profileEmails.forEach(e => allEmails.add(e));
 
     const recipientList = Array.from(allEmails);
 
     if (recipientList.length === 0) {
-      console.warn("[send-newsletter] Aucun abonné actif trouvé");
       return new Response(
-        JSON.stringify({ success: false, error: "Aucun abonné actif. Ajoutez des abonnés depuis le CRM ou via le formulaire newsletter du site." }),
+        JSON.stringify({ success: false, error: "Aucun abonné correspondant aux critères." }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
-    console.log(`[send-newsletter] Envoi à ${recipientList.length} abonnés`);
-
-    // Send in batches of 50 (Brevo supports multiple recipients per call)
-    const BATCH_SIZE = 50;
-    let totalSent = 0;
-    let totalFailed = 0;
-
-    for (let i = 0; i < recipientList.length; i += BATCH_SIZE) {
-      const batch = recipientList.slice(i, i + BATCH_SIZE);
-
-      // Use Brevo's batch sending (BCC approach for privacy)
-      const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "api-key": BREVO_API_KEY,
-        },
-        body: JSON.stringify({
-          sender: { name: sender.name, email: sender.email },
-          to: batch.map(email => ({ email })),
-          subject,
-          htmlContent,
-        }),
-      });
-
-      if (res.ok) {
-        totalSent += batch.length;
-        console.log(`[send-newsletter] Batch ${Math.floor(i / BATCH_SIZE) + 1} envoyé (${batch.length} emails)`);
-      } else {
-        const errData = await res.text();
-        totalFailed += batch.length;
-        console.error(`[send-newsletter] Batch failed (status ${res.status}):`, errData);
-        console.error(`[send-newsletter] Sender used: ${sender.name} <${sender.email}>`);
-        console.error(`[send-newsletter] Recipients in batch:`, batch.join(", "));
-      }
-
-      // Small delay between batches to respect rate limits
-      if (i + BATCH_SIZE < recipientList.length) {
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    }
-
-    // Log the campaign send
-    await supabase.from("email_audit_log").insert({
-      recipient: `newsletter_campaign_${recipientList.length}_recipients`,
-      type: "newsletter",
-      subject,
-      status: totalFailed === 0 ? "sent" : "sent",
-      error_message: totalFailed > 0 ? `${totalFailed} emails échoués sur ${recipientList.length}` : null,
+    console.log(`[send-newsletter] Envoi à ${recipientList.length} abonnés (filtres: ${hasFilters ? "oui" : "non"})`);
+    const result = await sendBatches(recipientList, sender, subject, htmlContent, supabase, filters);
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
     });
 
-    console.log(`[send-newsletter] Terminé: ${totalSent} envoyés, ${totalFailed} échoués`);
-
-    return new Response(
-      JSON.stringify({ success: true, sent: totalSent, failed: totalFailed, total: recipientList.length }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-    );
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Erreur inconnue";
     console.error("[send-newsletter] Erreur:", errorMessage);
     return new Response(JSON.stringify({ error: errorMessage }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500,
     });
   }
 });
+
+async function sendBatches(
+  recipientList: string[],
+  sender: { name: string; email: string },
+  subject: string,
+  htmlContent: string,
+  supabase: any,
+  filters?: SegmentFilters
+) {
+  const BATCH_SIZE = 50;
+  let totalSent = 0;
+  let totalFailed = 0;
+
+  for (let i = 0; i < recipientList.length; i += BATCH_SIZE) {
+    const batch = recipientList.slice(i, i + BATCH_SIZE);
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "api-key": BREVO_API_KEY! },
+      body: JSON.stringify({
+        sender: { name: sender.name, email: sender.email },
+        to: batch.map(email => ({ email })),
+        subject, htmlContent,
+      }),
+    });
+
+    if (res.ok) {
+      totalSent += batch.length;
+    } else {
+      totalFailed += batch.length;
+      console.error(`[send-newsletter] Batch failed:`, await res.text());
+    }
+
+    if (i + BATCH_SIZE < recipientList.length) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+
+  // Audit log
+  const filterDesc = filters ? JSON.stringify(filters) : "tous";
+  await supabase.from("email_audit_log").insert({
+    recipient: `newsletter_campaign_${recipientList.length}_recipients`,
+    type: "newsletter",
+    subject,
+    status: "sent",
+    error_message: totalFailed > 0 ? `${totalFailed} échoués sur ${recipientList.length} | Filtres: ${filterDesc}` : null,
+  });
+
+  return { success: true, sent: totalSent, failed: totalFailed, total: recipientList.length };
+}
