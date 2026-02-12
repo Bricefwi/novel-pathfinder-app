@@ -8,7 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Zap, Mail, CheckCircle2, XCircle, Clock, RefreshCw, BarChart3,
-  PartyPopper, FileText, CalendarCheck, Star, UserPlus, Send, AlertTriangle
+  PartyPopper, FileText, CalendarCheck, Star, UserPlus, Send, AlertTriangle,
+  ShoppingCart, Globe, UserX, CreditCard, Gift, ClipboardList
 } from "lucide-react";
 import { format, subDays, startOfDay } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -31,6 +32,13 @@ const AUTOMATION_TYPES = [
   { type: "suivi_post_sejour", label: "Suivi post-séjour", icon: Star, color: "text-purple-600", cron: "Cron quotidien 10h" },
   { type: "anniversaire", label: "Anniversaire client", icon: PartyPopper, color: "text-pink-600", cron: "Cron quotidien 7h" },
   { type: "notification_avis", label: "Notification nouvel avis", icon: Send, color: "text-indigo-600", cron: "Cron toutes les 30 min" },
+  { type: "abandonné", label: "Relance panier abandonné", icon: ShoppingCart, color: "text-red-600", cron: "Cron quotidien 11h" },
+  { type: "Google", label: "Avis Google/Facebook", icon: Globe, color: "text-yellow-600", cron: "Cron quotidien 11h30" },
+  { type: "manque", label: "Réengagement inactif", icon: UserX, color: "text-gray-600", cron: "Cron lundi 9h" },
+  { type: "confirmée", label: "Confirmation réservation", icon: CheckCircle2, color: "text-emerald-600", cron: "Cron toutes les 30 min" },
+  { type: "paiement", label: "Rappel de paiement", icon: CreditCard, color: "text-amber-600", cron: "Cron quotidien 8h30" },
+  { type: "parrainage", label: "Programme de parrainage", icon: Gift, color: "text-rose-600", cron: "Cron 1er du mois" },
+  { type: "hebdo", label: "Résumé hebdo admin", icon: ClipboardList, color: "text-cyan-600", cron: "Cron lundi 8h" },
   { type: "newsletter", label: "Newsletter / Campagne", icon: Mail, color: "text-teal-600", cron: "Manuel" },
   { type: "quote_notification", label: "Notification devis", icon: FileText, color: "text-amber-600", cron: "Cron toutes les 20 min" },
   { type: "profile_reminder", label: "Relance profil incomplet", icon: AlertTriangle, color: "text-yellow-600", cron: "Cron quotidien" },

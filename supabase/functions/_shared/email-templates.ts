@@ -32,7 +32,7 @@ const COMPANY = {
   siret: "80266354200016",
   tva: "Non assujetti à la TVA – art. 293 B du CGI",
   website: "https://ferme-equestre-arwen.com",
-  logoUrl: "https://ferme-equestre-arwen.com/logo-an-arwen.png",
+  logoUrl: "https://ferme-equestre-arwen.com/images/logo-cheval-email.png",
   social: {
     facebook: "https://www.facebook.com/fermeequestrearwen/",
     instagram: "https://www.instagram.com/fermeequestreanarwen/",
