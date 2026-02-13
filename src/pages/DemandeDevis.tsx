@@ -135,6 +135,7 @@ const fitnessLevels = [
 const DemandeDevis = () => {
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(false);
+  const [initialPrefillDone, setInitialPrefillDone] = useState(false);
   const [form, setForm] = useState<Partial<DevisForm>>({
     name: "",
     email: "",
@@ -143,7 +144,7 @@ const DemandeDevis = () => {
     selectedSlot: "",
     adultsCount: 1,
     childrenCount: 0,
-    ridingLevel: "intermediaire", // Default value to prevent "Required" error
+    ridingLevel: "intermediaire",
     newsletter: false,
     paymentOption: "deposit",
   });
@@ -213,18 +214,22 @@ const DemandeDevis = () => {
   const totalPrice = basePrice * totalParticipants;
   const depositAmount = Math.ceil(totalPrice * 0.2); // 20% deposit
 
-  // Pre-fill from URL params (sejour, activityId, participants, slot, date)
+  // Pre-fill from URL params ONCE when activities are loaded
   useEffect(() => {
+    if (initialPrefillDone || sejours.length === 0) return;
+
     const sejourParam = searchParams.get("sejour");
     const activityIdParam = searchParams.get("activityId");
     const participantsParam = searchParams.get("participants");
     const slotParam = searchParams.get("slot");
 
+    const updates: Partial<DevisForm> = {};
+
     // Match by activity ID first, then by title
     if (activityIdParam) {
       const matchById = sejours.find(s => s.id === activityIdParam);
       if (matchById) {
-        setForm(prev => ({ ...prev, selectedSejour: matchById.id }));
+        updates.selectedSejour = matchById.id;
       }
     } else if (sejourParam) {
       const sejourLower = sejourParam.toLowerCase();
@@ -233,7 +238,7 @@ const DemandeDevis = () => {
         sejourLower.includes(s.title.toLowerCase().split(" ")[0])
       );
       if (matchingSejour) {
-        setForm(prev => ({ ...prev, selectedSejour: matchingSejour.id }));
+        updates.selectedSejour = matchingSejour.id;
       }
     }
 
@@ -241,15 +246,20 @@ const DemandeDevis = () => {
     if (participantsParam) {
       const count = parseInt(participantsParam, 10);
       if (!isNaN(count) && count >= 1) {
-        setForm(prev => ({ ...prev, adultsCount: count }));
+        updates.adultsCount = count;
       }
     }
 
     // Pre-fill slot
     if (slotParam) {
-      setForm(prev => ({ ...prev, selectedSlot: slotParam }));
+      updates.selectedSlot = slotParam;
     }
-  }, [searchParams, sejours]);
+
+    if (Object.keys(updates).length > 0) {
+      setForm(prev => ({ ...prev, ...updates }));
+    }
+    setInitialPrefillDone(true);
+  }, [searchParams, sejours, initialPrefillDone]);
 
   const updateField = <K extends keyof DevisForm>(field: K, value: DevisForm[K]) => {
     setForm((prev) => ({ ...prev, [field]: value }));
