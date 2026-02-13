@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { PageTracker } from "@/components/app/PageTracker";
 import { CartDrawer } from "@/components/cart/CartDrawer";
+import { TranslationProvider } from "@/contexts/TranslationContext";
 
 // Pages chargées immédiatement (critiques pour le SEO et l'expérience initiale)
 import Index from "./pages/Index";
@@ -49,6 +50,7 @@ const PageLoader = ({ message = "Chargement..." }: { message?: string }) => (
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <TranslationProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
@@ -99,6 +101,7 @@ const App = () => (
         </Suspense>
       </BrowserRouter>
     </TooltipProvider>
+    </TranslationProvider>
   </QueryClientProvider>
 );
 

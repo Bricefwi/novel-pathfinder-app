@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/tooltip";
 import { calculateProfileCompletion, type ProfileForCompletion } from "@/lib/profile-utils";
 import { CartButton } from "@/components/cart/CartButton";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 const navigation = [
   { name: "Accueil", href: "/" },
@@ -238,7 +239,10 @@ export function Header() {
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2">
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+            
             {/* Cart Button */}
             <CartButton />
             
