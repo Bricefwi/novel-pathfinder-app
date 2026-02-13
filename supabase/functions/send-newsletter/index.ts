@@ -1,16 +1,15 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
+  authenticateRequest, verifyAdminRole, createAuthErrorResponse,
+} from "../_shared/rbac.ts";
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import {
   EMAIL_SENDERS, wrapInBrandedLayout,
 } from "../_shared/email-templates.ts";
 import { sendEmailWithAudit } from "../_shared/email-audit.ts";
 
 const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
 
 interface SegmentFilters {
   ridingLevels?: string[];
@@ -27,11 +26,25 @@ interface NewsletterRequest {
 }
 
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return handleCorsPreflightRequest(origin);
   }
 
   try {
+    // ── AUTH: Vérifier que l'appelant est un admin authentifié ──
+    const auth = await authenticateRequest(req);
+    if (!auth) {
+      return createAuthErrorResponse("Authentication required", 401, corsHeaders);
+    }
+
+    const isAdmin = await verifyAdminRole(auth.supabase, auth.user.id);
+    if (!isAdmin) {
+      return createAuthErrorResponse("Admin access required", 403, corsHeaders);
+    }
+
     const { subject, content, testEmail, filters }: NewsletterRequest = await req.json();
 
     if (!BREVO_API_KEY) {
