@@ -89,3 +89,6 @@ verify_jwt = false
 
 [functions.resume-hebdo-admin]
 verify_jwt = false
+
+[functions.translate-page]
+verify_jwt = false

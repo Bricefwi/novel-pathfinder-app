@@ -1,7 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useTranslation } from "@/contexts/TranslationContext";
+import { useAutoTranslate } from "@/hooks/useAutoTranslate";
 
 // Import des images authentiques
 import heroBanniereLacBretagne from "@/assets/hero-banniere-lac-bretagne.jpg";
@@ -29,7 +31,18 @@ const heroSlides = [
 ];
 
 export function HeroSection() {
+  const { t } = useTranslation();
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  const textsToTranslate = useMemo(() => [
+    "✨ Randonnées équestres en Bretagne & Maroc",
+    "Quand la sérénité du voyage",
+    "rencontre l'aventure",
+    "Vivez des moments uniques au rythme du cheval, entre les légendes bretonnes et les dunes marocaines. Une expérience inoubliable vous attend.",
+    "Découvrir nos randonnées",
+    "Demander un devis",
+  ], []);
+  useAutoTranslate(textsToTranslate);
 
   const nextSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
@@ -107,28 +120,27 @@ export function HeroSection() {
           {/* Badge */}
           <div className="inline-flex items-center px-4 py-2 rounded-full bg-background/20 backdrop-blur-md border border-background/30 shadow-lg">
             <span className="text-sm text-primary-foreground font-medium drop-shadow-md">
-              ✨ Randonnées équestres en Bretagne & Maroc
+              {t("✨ Randonnées équestres en Bretagne & Maroc")}
             </span>
           </div>
 
           {/* Title with text shadow */}
           <h1 className="font-serif text-4xl md:text-5xl lg:text-7xl font-bold text-primary-foreground leading-tight drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-            Quand la sérénité du voyage
+            {t("Quand la sérénité du voyage")}
             <br />
-            <span className="text-primary drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">rencontre l'aventure</span>
+            <span className="text-primary drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]">{t("rencontre l'aventure")}</span>
           </h1>
 
           {/* Subtitle with shadow */}
           <p className="text-lg md:text-xl text-primary-foreground/95 max-w-2xl mx-auto leading-relaxed drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
-            Vivez des moments uniques au rythme du cheval, entre les légendes bretonnes
-            et les dunes marocaines. Une expérience inoubliable vous attend.
+            {t("Vivez des moments uniques au rythme du cheval, entre les légendes bretonnes et les dunes marocaines. Une expérience inoubliable vous attend.")}
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <Link to="/destinations">
               <Button size="lg" className="min-w-[200px] text-base">
-                Découvrir nos randonnées
+                {t("Découvrir nos randonnées")}
               </Button>
             </Link>
             <Link to="/contact">
@@ -137,7 +149,7 @@ export function HeroSection() {
                 variant="outline"
                 className="min-w-[200px] text-base bg-card/10 border-card/30 text-card hover:bg-card/20 hover:text-card"
               >
-                Demander un devis
+                {t("Demander un devis")}
               </Button>
             </Link>
           </div>
