@@ -37,6 +37,7 @@ const EcoSysteme = lazy(() => import("./pages/EcoSysteme"));
 const EcoSystemeArticle = lazy(() => import("./pages/EcoSystemeArticle"));
 const ProposerLieu = lazy(() => import("./pages/ProposerLieu"));
 const AgentFAQ = lazy(() => import("./pages/AgentFAQ"));
+const ArticleDetail = lazy(() => import("./pages/ArticleDetail"));
 
 const queryClient = new QueryClient();
 
@@ -68,6 +69,7 @@ const App = () => (
             <Route path="/planning" element={<Planning />} />
             <Route path="/hebergement" element={<Hebergement />} />
             <Route path="/carnet-de-voyage" element={<CarnetVoyage />} />
+            <Route path="/carnet-de-voyage/:slug" element={<ArticleDetail />} />
             <Route path="/galerie" element={<Galerie />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/demande-devis" element={<DemandeDevis />} />
