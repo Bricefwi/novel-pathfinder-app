@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { FileText, Plus, Download, Eye, Receipt, CheckCircle, Mail, Loader2, Copy } from "lucide-react";
+import { FileText, Plus, Download, Eye, Receipt, CheckCircle, Mail, Loader2, Copy, CreditCard } from "lucide-react";
 import { downloadQuotePDF, type QuoteData } from "@/components/pdf/QuotePDFGenerator";
 import { downloadInvoicePDF, type InvoiceData } from "@/components/pdf/InvoicePDFGenerator";
 
@@ -51,6 +51,7 @@ export const AdminQuotesInvoices = () => {
   const [sendingInvoiceEmail, setSendingInvoiceEmail] = useState<string | null>(null);
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
   const [duplicatingQuote, setDuplicatingQuote] = useState<string | null>(null);
+  const [sendingPaymentLink, setSendingPaymentLink] = useState<string | null>(null);
   const [editingQuote, setEditingQuote] = useState<typeof quotes extends (infer T)[] ? T : never | null>(null);
 
   // Send test email function
@@ -469,6 +470,50 @@ export const AdminQuotesInvoices = () => {
     }
   };
 
+  // Send Stripe payment link
+  const handleSendPaymentLink = async (params: {
+    id: string;
+    type: "quote" | "invoice";
+    client_name: string;
+    client_email: string;
+    activity_title: string;
+    amount: number;
+    payment_type: "full" | "deposit";
+    deposit_percentage?: number;
+  }) => {
+    setSendingPaymentLink(params.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout-session", {
+        body: {
+          ...(params.type === "invoice" ? { invoice_id: params.id } : { quote_id: params.id }),
+          client_name: params.client_name,
+          client_email: params.client_email,
+          activity_title: params.activity_title,
+          amount: params.amount,
+          payment_type: params.payment_type,
+          deposit_percentage: params.deposit_percentage,
+        },
+      });
+
+      if (error) throw new Error(error.message);
+      if (data?.error) throw new Error(data.error);
+
+      if (data?.url) {
+        await navigator.clipboard.writeText(data.url);
+        toast.success(
+          `Lien de paiement copié ! (${data.payment_type === "deposit" ? "Acompte" : "Total"} : ${Number(data.amount).toFixed(2)} €)`,
+          { description: `Collez-le dans un email pour ${params.client_name}` }
+        );
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Erreur inconnue";
+      console.error("Payment link error:", err);
+      toast.error(`Erreur lors de la création du lien de paiement: ${errorMessage}`);
+    } finally {
+      setSendingPaymentLink(null);
+    }
+  };
+
   const quotePrefillRef = useRef<{ client_name?: string; client_email?: string; client_phone?: string; subject?: string; message?: string; participants?: number; preferred_date?: string; activity_id?: string } | null>(null);
 
   // Check for prefill data from Inbox on mount
@@ -853,6 +898,28 @@ export const AdminQuotesInvoices = () => {
                             >
                               <Receipt className="h-4 w-4" />
                             </Button>
+                            <Button 
+                              size="sm" 
+                              variant="default"
+                              onClick={() => handleSendPaymentLink({
+                                id: quote.id,
+                                type: "quote",
+                                client_name: quote.client_name,
+                                client_email: quote.client_email,
+                                activity_title: quote.activity_title,
+                                amount: Number(quote.total_price),
+                                payment_type: quote.payment_option === "full" ? "full" : "deposit",
+                                deposit_percentage: Number(quote.deposit_percentage) || 30,
+                              })}
+                              disabled={sendingPaymentLink === quote.id}
+                              title="Générer un lien de paiement Stripe"
+                            >
+                              {sendingPaymentLink === quote.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <CreditCard className="h-4 w-4" />
+                              )}
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -940,6 +1007,31 @@ export const AdminQuotesInvoices = () => {
                               <Button size="sm" variant="outline" onClick={() => handleDownloadInvoice(invoice)} title="Télécharger PDF">
                                 <Download className="h-4 w-4" />
                               </Button>
+                              {invoice.payment_status !== "paid" && (
+                                <Button 
+                                  size="sm" 
+                                  variant="default"
+                                  onClick={() => handleSendPaymentLink({
+                                    id: invoice.id,
+                                    type: "invoice",
+                                    client_name: invoice.client_name,
+                                    client_email: invoice.client_email,
+                                    activity_title: invoice.activity_title,
+                                    amount: Number(invoice.total_amount),
+                                    payment_type: "full",
+                                  })}
+                                  disabled={sendingPaymentLink === invoice.id}
+                                  title="Générer un lien de paiement Stripe"
+                                  className="gap-2"
+                                >
+                                  {sendingPaymentLink === invoice.id ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <CreditCard className="h-4 w-4" />
+                                  )}
+                                  <span className="hidden sm:inline">Paiement</span>
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
