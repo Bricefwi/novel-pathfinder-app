@@ -30,6 +30,13 @@ Règles :
 - Signer "L'équipe de la Ferme Équestre An Arwen"
 - Ne PAS inclure de header/footer/wrapper HTML, juste le contenu du corps
 - Écrire en français
+- IMPORTANT : Pour TOUS les liens, utilise UNIQUEMENT le domaine https://www.ferme-equestre-an-arwen.com
+  Exemples de liens valides :
+  - Page destinations : https://www.ferme-equestre-an-arwen.com/destinations
+  - Page contact : https://www.ferme-equestre-an-arwen.com/contact
+  - Page hébergement : https://www.ferme-equestre-an-arwen.com/hebergement
+  - Demande de devis : https://www.ferme-equestre-an-arwen.com/demande-devis
+  - N'invente JAMAIS de lien fictif ou placeholder. Utilise uniquement ces URLs réelles.
 
 Tonalité demandée : ${tone || "engageant et chaleureux"}
 ${audience ? `Public cible : ${audience}` : ""}`;
