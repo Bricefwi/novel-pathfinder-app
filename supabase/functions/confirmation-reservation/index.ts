@@ -98,7 +98,23 @@ serve(async (req) => {
         referenceId: booking.id,
       });
 
-      if (result.success) sentCount++;
+      // Send BCC copies to all admins
+      if (result.success) {
+        sentCount++;
+        const adminEmails = (Deno.env.get("ADMIN_NOTIFICATION_EMAILS") || "").split(",").map(e => e.trim()).filter(Boolean);
+        for (const adminEmail of adminEmails) {
+          if (adminEmail.toLowerCase() === booking.contact_email.toLowerCase()) continue;
+          await sendEmailWithAudit({
+            supabase,
+            to: adminEmail,
+            from: `${sender.name} <${sender.email}>`,
+            subject: `[Copie] Réservation confirmée – ${activityTitle} → ${booking.contact_name}`,
+            html,
+            type: "notification",
+            referenceId: booking.id,
+          });
+        }
+      }
       await new Promise(r => setTimeout(r, 300));
     }
 

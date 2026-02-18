@@ -157,6 +157,23 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log("[send-quote-email] Email sent successfully to:", quoteData.client_email);
+
+    // Send BCC copies to all admins
+    const adminEmails = (Deno.env.get("ADMIN_NOTIFICATION_EMAILS") || "").split(",").map(e => e.trim()).filter(Boolean);
+    for (const adminEmail of adminEmails) {
+      if (adminEmail.toLowerCase() === quoteData.client_email.toLowerCase()) continue;
+      await sendEmailWithAudit({
+        supabase: supabaseService,
+        to: adminEmail,
+        from: `${sender.name} <${sender.email}>`,
+        subject: `[Copie] Devis ${quoteData.quote_number} – ${quoteData.activity_title} → ${quoteData.client_name}`,
+        html: emailHtml,
+        type: "quote",
+        referenceId: quoteData.quote_id,
+      });
+    }
+    console.log(`[send-quote-email] Admin copies sent to ${adminEmails.length} admins`);
+
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
