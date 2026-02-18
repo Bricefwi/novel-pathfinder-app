@@ -61,7 +61,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const appUrl = Deno.env.get("APP_URL") || "https://ferme-equestre-arwen.com";
+    const appUrl = Deno.env.get("APP_URL") || "https://www.ferme-equestre-an-arwen.com";
 
     const htmlContent = wrapInBrandedLayout("Newsletter", content, {
       preheader: subject,
