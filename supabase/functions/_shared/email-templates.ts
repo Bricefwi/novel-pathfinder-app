@@ -32,10 +32,13 @@ const COMPANY = {
   siret: "80266354200016",
   tva: "Non assujetti à la TVA – art. 293 B du CGI",
   website: "https://www.ferme-equestre-an-arwen.com",
+  websiteDisplay: "www.ferme-equestre-an-arwen.com",
   logoUrl: "https://www.ferme-equestre-an-arwen.com/images/logo-cheval-email.png",
   social: {
     facebook: "https://www.facebook.com/fermeequestrearwen/",
     instagram: "https://www.instagram.com/fermeequestreanarwen/",
+    facebookDisplay: "facebook.com/fermeequestrearwen",
+    instagramDisplay: "instagram.com/fermeequestreanarwen",
   },
 };
 
@@ -61,6 +64,10 @@ export function formatPrice(price: number): string {
 // ── Master layout ───────────────────────────────────────────────────
 /**
  * Wraps any body content in the branded email layout with logo, header, footer.
+ * 
+ * IMPORTANT : Les liens du footer utilisent du TEXTE BRUT (pas de <a href>)
+ * pour contourner la réécriture des liens par Brevo (proxy tracking SSL).
+ * 
  * @param subtitle  Small text under the logo (e.g. "Votre devis personnalisé")
  * @param body      HTML body content
  * @param options   Optional overrides
@@ -88,7 +95,9 @@ export function wrapInBrandedLayout(
     : "";
 
   const unsubscribe = options?.unsubscribeUrl
-    ? `<p style="margin:15px 0 0 0;"><a href="${options.unsubscribeUrl}" style="color:rgba(255,255,255,0.5);font-size:11px;text-decoration:underline;">Se désinscrire</a></p>`
+    ? `<p style="margin:15px 0 0 0;font-size:11px;color:rgba(255,255,255,0.45);">
+        Pour vous désinscrire, rendez-vous sur votre espace : ${options.unsubscribeUrl}
+      </p>`
     : "";
 
   return `<!DOCTYPE html>
@@ -108,10 +117,27 @@ export function wrapInBrandedLayout(
 
           <!-- ═══ HEADER with Logo ═══ -->
           <tr>
-            <td style="background:linear-gradient(135deg,#6B8E7F 0%,#5A7A6D 50%,#8B7D6B 100%);padding:35px 30px 25px 30px;text-align:center;">
-              <img src="${COMPANY.logoUrl}" alt="${COMPANY.name}" width="80" height="80" style="display:block;margin:0 auto 15px auto;border-radius:50%;border:3px solid rgba(255,255,255,0.3);" />
-              <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;font-family:Georgia,'Times New Roman',serif;letter-spacing:0.5px;">${COMPANY.name}</h1>
-              <p style="margin:8px 0 0 0;color:rgba(255,255,255,0.85);font-size:15px;font-style:italic;">${subtitle}</p>
+            <td style="background:linear-gradient(135deg,#6B8E7F 0%,#5A7A6D 50%,#8B7D6B 100%);padding:40px 30px 30px 30px;text-align:center;">
+              <table role="presentation" style="width:100%;">
+                <tr>
+                  <td align="center">
+                    <!-- Logo avec fond blanc pour meilleure visibilité -->
+                    <table role="presentation" style="margin:0 auto 18px auto;">
+                      <tr>
+                        <td style="background-color:rgba(255,255,255,0.95);border-radius:50%;padding:8px;box-shadow:0 2px 12px rgba(0,0,0,0.15);">
+                          <img src="${COMPANY.logoUrl}" alt="${COMPANY.name}" width="90" height="90" style="display:block;border-radius:50%;" />
+                        </td>
+                      </tr>
+                    </table>
+                    <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:600;font-family:Georgia,'Times New Roman',serif;letter-spacing:0.5px;text-shadow:0 1px 3px rgba(0,0,0,0.2);">${COMPANY.name}</h1>
+                    <p style="margin:10px 0 0 0;color:rgba(255,255,255,0.9);font-size:15px;font-style:italic;font-family:Georgia,'Times New Roman',serif;">${subtitle}</p>
+                    <!-- Ligne décorative dorée -->
+                    <table role="presentation" style="width:80px;margin:15px auto 0 auto;">
+                      <tr><td style="border-top:2px solid #C9B896;"></td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
@@ -133,19 +159,30 @@ export function wrapInBrandedLayout(
           ` : ""}
 
           <!-- ═══ FOOTER ═══ -->
+          <!-- IMPORTANT: Liens en texte brut pour contourner le proxy Brevo -->
           <tr>
             <td style="background-color:#2D2D2D;padding:30px;text-align:center;">
-              <p style="margin:0 0 8px 0;color:#ffffff;font-size:15px;font-weight:600;font-family:Georgia,serif;">${COMPANY.name}</p>
+              <!-- Mini logo dans le footer -->
+              <img src="${COMPANY.logoUrl}" alt="" width="40" height="40" style="display:block;margin:0 auto 12px auto;border-radius:50%;opacity:0.8;" />
+              <p style="margin:0 0 8px 0;color:#ffffff;font-size:16px;font-weight:600;font-family:Georgia,serif;">${COMPANY.name}</p>
               <p style="margin:0 0 4px 0;color:rgba(255,255,255,0.6);font-size:12px;">${COMPANY.address}</p>
               <p style="margin:0 0 4px 0;color:rgba(255,255,255,0.6);font-size:12px;">📞 ${COMPANY.phone}</p>
-              <p style="margin:0 0 12px 0;color:rgba(255,255,255,0.6);font-size:12px;">✉️ ${COMPANY.email}</p>
-              <!-- Social icons -->
-              <p style="margin:0;">
-                <a href="${COMPANY.social.facebook}" style="color:rgba(255,255,255,0.6);text-decoration:none;font-size:12px;margin:0 8px;">Facebook</a>
-                <span style="color:rgba(255,255,255,0.3);">•</span>
-                <a href="${COMPANY.social.instagram}" style="color:rgba(255,255,255,0.6);text-decoration:none;font-size:12px;margin:0 8px;">Instagram</a>
-                <span style="color:rgba(255,255,255,0.3);">•</span>
-                <a href="${appUrl}" style="color:rgba(255,255,255,0.6);text-decoration:none;font-size:12px;margin:0 8px;">Site web</a>
+              <p style="margin:0 0 15px 0;color:rgba(255,255,255,0.6);font-size:12px;">✉️ ${COMPANY.email}</p>
+              
+              <!-- Séparateur -->
+              <table role="presentation" style="width:120px;margin:0 auto 15px auto;">
+                <tr><td style="border-top:1px solid rgba(255,255,255,0.15);"></td></tr>
+              </table>
+              
+              <!-- Liens en texte brut pour éviter la réécriture Brevo -->
+              <p style="margin:0 0 4px 0;color:rgba(255,255,255,0.5);font-size:11px;">
+                🌐 ${COMPANY.websiteDisplay}
+              </p>
+              <p style="margin:0 0 4px 0;color:rgba(255,255,255,0.5);font-size:11px;">
+                📘 ${COMPANY.social.facebookDisplay}
+              </p>
+              <p style="margin:0 0 0 0;color:rgba(255,255,255,0.5);font-size:11px;">
+                📷 ${COMPANY.social.instagramDisplay}
               </p>
               ${unsubscribe}
             </td>
