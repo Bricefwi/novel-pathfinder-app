@@ -40,9 +40,12 @@ interface InboxItem {
   is_read?: boolean;
   is_archived?: boolean;
   is_important?: boolean;
+  participants?: number | null;
+  preferred_date?: string | null;
+  activity_id?: string | null;
 }
 
-export function UnifiedInbox({ onNavigateToQuotes }: { onNavigateToQuotes?: (prefill: { client_name: string; client_email: string; client_phone?: string; subject?: string; message?: string }) => void }) {
+export function UnifiedInbox({ onNavigateToQuotes }: { onNavigateToQuotes?: (prefill: { client_name: string; client_email: string; client_phone?: string; subject?: string; message?: string; participants?: number; preferred_date?: string; activity_id?: string }) => void }) {
   const queryClient = useQueryClient();
   const [selectedItem, setSelectedItem] = useState<InboxItem | null>(null);
   const [replyMessage, setReplyMessage] = useState("");
@@ -84,7 +87,10 @@ export function UnifiedInbox({ onNavigateToQuotes }: { onNavigateToQuotes?: (pre
         created_at: c.created_at,
         is_read: c.is_read,
         is_archived: c.is_archived,
-        is_important: false, // Will be stored in metadata or separate column later
+        is_important: false,
+        participants: c.participants,
+        preferred_date: c.preferred_date,
+        activity_id: c.activity_id,
       }));
 
       const archivedContacts: InboxItem[] = (archivedContactsRes.data || []).map((c) => ({
@@ -446,6 +452,9 @@ export function UnifiedInbox({ onNavigateToQuotes }: { onNavigateToQuotes?: (pre
                               client_phone: selectedItem.phone || undefined,
                               subject: selectedItem.subject || undefined,
                               message: selectedItem.message,
+                              participants: selectedItem.participants || undefined,
+                              preferred_date: selectedItem.preferred_date || undefined,
+                              activity_id: selectedItem.activity_id || undefined,
                             });
                           } else {
                             toast.error("Navigation vers les devis non disponible");

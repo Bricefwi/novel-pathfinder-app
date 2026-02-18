@@ -469,7 +469,22 @@ export const AdminQuotesInvoices = () => {
     }
   };
 
-  const [quotePrefillData, setQuotePrefillData] = useState<{ client_name?: string; client_email?: string; client_phone?: string; subject?: string; message?: string } | null>(null);
+  const [quotePrefillData, setQuotePrefillData] = useState<{ client_name?: string; client_email?: string; client_phone?: string; subject?: string; message?: string; participants?: number; preferred_date?: string; activity_id?: string } | null>(null);
+
+  // Fetch activity details for prefill if activity_id is provided
+  const { data: prefillActivity } = useQuery({
+    queryKey: ["prefill-activity", quotePrefillData?.activity_id],
+    queryFn: async () => {
+      if (!quotePrefillData?.activity_id) return null;
+      const { data } = await supabase
+        .from("activities")
+        .select("title, duration, price_from, price_to")
+        .eq("id", quotePrefillData.activity_id)
+        .single();
+      return data;
+    },
+    enabled: !!quotePrefillData?.activity_id,
+  });
 
   // Check for prefill data from Inbox on mount
   useEffect(() => {
@@ -490,12 +505,12 @@ export const AdminQuotesInvoices = () => {
       client_email: quotePrefillData?.client_email || "",
       client_phone: quotePrefillData?.client_phone || "",
       client_address: "",
-      activity_title: "",
-      activity_duration: "",
-      start_date: "",
+      activity_title: prefillActivity?.title || quotePrefillData?.subject || "",
+      activity_duration: prefillActivity?.duration || "",
+      start_date: quotePrefillData?.preferred_date || "",
       end_date: "",
-      unit_price: 0,
-      participants: 1,
+      unit_price: prefillActivity?.price_from || 0,
+      participants: quotePrefillData?.participants || 1,
       deposit_percentage: 30,
       payment_option: "deposit",
       valid_until: "",
