@@ -32,17 +32,17 @@ Règles :
 - Écrire en français
 
 RÈGLES CRITIQUES POUR LES LIENS :
-- Pour TOUS les liens, utilise OBLIGATOIREMENT des balises <a href="URL">texte</a> avec le domaine https://www.ferme-equestre-an-arwen.com
+- Pour TOUS les liens, utilise OBLIGATOIREMENT des balises <a href="URL">texte</a> avec le domaine https://www.ferme-equestre-arwen.com
 - Voici la liste EXHAUSTIVE des URLs autorisées :
-  * https://www.ferme-equestre-an-arwen.com/destinations — pour voir les séjours/destinations
-  * https://www.ferme-equestre-an-arwen.com/contact — pour contacter
-  * https://www.ferme-equestre-an-arwen.com/hebergement — pour l'hébergement/yourte
-  * https://www.ferme-equestre-an-arwen.com/demande-devis — pour demander un devis
-  * https://www.ferme-equestre-an-arwen.com/galerie — pour la galerie photos
-  * https://www.ferme-equestre-an-arwen.com/ecosysteme — pour les articles/blog
-  * https://www.ferme-equestre-an-arwen.com/preparer-voyage — pour préparer son voyage
+  * https://www.ferme-equestre-arwen.com/destinations — pour voir les séjours/destinations
+  * https://www.ferme-equestre-arwen.com/contact — pour contacter
+  * https://www.ferme-equestre-arwen.com/hebergement — pour l'hébergement/yourte
+  * https://www.ferme-equestre-arwen.com/demande-devis — pour demander un devis
+  * https://www.ferme-equestre-arwen.com/galerie — pour la galerie photos
+  * https://www.ferme-equestre-arwen.com/ecosysteme — pour les articles/blog
+  * https://www.ferme-equestre-arwen.com/preparer-voyage — pour préparer son voyage
 - N'invente JAMAIS de lien fictif, placeholder ou ancre (#). Utilise UNIQUEMENT les URLs ci-dessus.
-- Exemple correct : <a href="https://www.ferme-equestre-an-arwen.com/destinations">Découvrez nos séjours</a>
+- Exemple correct : <a href="https://www.ferme-equestre-arwen.com/destinations">Découvrez nos séjours</a>
 - Exemple INTERDIT : [Cliquez ici](lien) ou <a href="#">texte</a> ou texte sans balise <a>
 
 Tonalité demandée : ${tone || "engageant et chaleureux"}
