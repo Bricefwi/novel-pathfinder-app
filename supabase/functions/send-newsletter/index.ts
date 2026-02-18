@@ -210,6 +210,15 @@ async function sendBatches(
         sender: { name: sender.name, email: sender.email },
         to: batch.map(email => ({ email })),
         subject, htmlContent,
+        headers: {
+          "X-Mailin-Track": "0",
+          "X-Mailin-Track-Links": "0",
+          "X-Mailin-Track-Opens": "0",
+        },
+        params: {
+          trackClicks: false,
+          trackOpens: false,
+        },
       }),
     });
 
