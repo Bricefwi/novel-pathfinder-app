@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -469,22 +469,7 @@ export const AdminQuotesInvoices = () => {
     }
   };
 
-  const [quotePrefillData, setQuotePrefillData] = useState<{ client_name?: string; client_email?: string; client_phone?: string; subject?: string; message?: string; participants?: number; preferred_date?: string; activity_id?: string } | null>(null);
-
-  // Fetch activity details for prefill if activity_id is provided
-  const { data: prefillActivity } = useQuery({
-    queryKey: ["prefill-activity", quotePrefillData?.activity_id],
-    queryFn: async () => {
-      if (!quotePrefillData?.activity_id) return null;
-      const { data } = await supabase
-        .from("activities")
-        .select("title, duration, price_from, price_to")
-        .eq("id", quotePrefillData.activity_id)
-        .single();
-      return data;
-    },
-    enabled: !!quotePrefillData?.activity_id,
-  });
+  const quotePrefillRef = useRef<{ client_name?: string; client_email?: string; client_phone?: string; subject?: string; message?: string; participants?: number; preferred_date?: string; activity_id?: string } | null>(null);
 
   // Check for prefill data from Inbox on mount
   useEffect(() => {
@@ -492,36 +477,50 @@ export const AdminQuotesInvoices = () => {
     if (prefillRaw) {
       sessionStorage.removeItem("inbox-quote-prefill");
       try {
-        const parsed = JSON.parse(prefillRaw);
-        setQuotePrefillData(parsed);
+        quotePrefillRef.current = JSON.parse(prefillRaw);
       } catch {}
       setIsQuoteDialogOpen(true);
     }
   }, []);
 
   const QuoteForm = () => {
-    const [formData, setFormData] = useState({
-      client_name: quotePrefillData?.client_name || "",
-      client_email: quotePrefillData?.client_email || "",
-      client_phone: quotePrefillData?.client_phone || "",
+    const prefill = quotePrefillRef.current;
+
+    const [formData, setFormData] = useState(() => ({
+      client_name: prefill?.client_name || "",
+      client_email: prefill?.client_email || "",
+      client_phone: prefill?.client_phone || "",
       client_address: "",
-      activity_title: prefillActivity?.title || quotePrefillData?.subject || "",
-      activity_duration: prefillActivity?.duration || "",
-      start_date: quotePrefillData?.preferred_date || "",
+      activity_title: prefill?.subject || "",
+      activity_duration: "",
+      start_date: prefill?.preferred_date || "",
       end_date: "",
-      unit_price: prefillActivity?.price_from || 0,
-      participants: quotePrefillData?.participants || 1,
+      unit_price: 0,
+      participants: prefill?.participants || 1,
       deposit_percentage: 30,
       payment_option: "deposit",
       valid_until: "",
-      notes: quotePrefillData?.message ? `Demande initiale : ${quotePrefillData.subject || ""}\n${quotePrefillData.message}` : "",
-    });
+      notes: prefill?.message ? `Demande initiale : ${prefill.subject || ""}\n${prefill.message}` : "",
+    }));
 
-    // Clear prefill data after form is initialized
+    // Fetch activity details and update form if activity_id was provided
     useEffect(() => {
-      if (quotePrefillData) {
-        setQuotePrefillData(null);
-      }
+      if (!prefill?.activity_id) return;
+      supabase
+        .from("activities")
+        .select("title, duration, price_from")
+        .eq("id", prefill.activity_id)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setFormData(prev => ({
+              ...prev,
+              activity_title: data.title || prev.activity_title,
+              activity_duration: data.duration || prev.activity_duration,
+              unit_price: data.price_from || prev.unit_price,
+            }));
+          }
+        });
     }, []);
 
     const totalPrice = formData.unit_price * formData.participants;
