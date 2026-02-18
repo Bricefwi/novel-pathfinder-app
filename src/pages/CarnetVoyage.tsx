@@ -360,10 +360,10 @@ const CarnetVoyage = () => {
                       {article.excerpt}
                     </p>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center text-primary font-medium group-hover:gap-3 gap-2 transition-all cursor-pointer">
+                      <Link to={`/carnet-de-voyage/${article.slug}`} className="flex items-center text-primary font-medium group-hover:gap-3 gap-2 transition-all">
                         Lire la suite
                         <ArrowRight className="h-4 w-4" />
-                      </div>
+                      </Link>
                       {isAdmin && (
                         <div className="flex gap-2">
                           <Button
@@ -459,9 +459,9 @@ const CarnetVoyage = () => {
                       <Calendar className="h-3 w-3" />
                       {formatDate(article.published_at || article.created_at)}
                     </div>
-                    <h3 className="font-serif text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                     <Link to={`/carnet-de-voyage/${article.slug}`} className="font-serif text-lg font-bold text-foreground group-hover:text-primary transition-colors">
                       {article.title}
-                    </h3>
+                    </Link>
                     <p className="text-muted-foreground text-sm line-clamp-2">
                       {article.excerpt}
                     </p>
