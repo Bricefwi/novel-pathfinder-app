@@ -42,7 +42,7 @@ interface InboxItem {
   is_important?: boolean;
 }
 
-export function UnifiedInbox() {
+export function UnifiedInbox({ onNavigateToQuotes }: { onNavigateToQuotes?: (prefill: { client_name: string; client_email: string; client_phone?: string; subject?: string; message?: string }) => void }) {
   const queryClient = useQueryClient();
   const [selectedItem, setSelectedItem] = useState<InboxItem | null>(null);
   const [replyMessage, setReplyMessage] = useState("");
@@ -436,7 +436,22 @@ export function UnifiedInbox() {
                       rows={4}
                     />
                     <div className="flex justify-end gap-2">
-                      <Button variant="outline">
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          if (onNavigateToQuotes && selectedItem) {
+                            onNavigateToQuotes({
+                              client_name: selectedItem.name,
+                              client_email: selectedItem.email,
+                              client_phone: selectedItem.phone || undefined,
+                              subject: selectedItem.subject || undefined,
+                              message: selectedItem.message,
+                            });
+                          } else {
+                            toast.error("Navigation vers les devis non disponible");
+                          }
+                        }}
+                      >
                         <FileText className="h-4 w-4 mr-2" />
                         Générer Devis
                       </Button>
