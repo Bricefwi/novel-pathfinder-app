@@ -97,6 +97,10 @@ export async function sendEmailWithAudit(params: {
           "X-Mailin-Track-Links": "0",
           "X-Mailin-Track-Opens": "0",
         },
+        params: {
+          trackClicks: false,
+          trackOpens: false,
+        },
       }),
     });
 
