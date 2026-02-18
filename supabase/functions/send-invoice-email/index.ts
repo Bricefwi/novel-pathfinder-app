@@ -132,6 +132,22 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("[send-invoice-email] Email sent successfully to:", invoice.client_email);
 
+    // Send BCC copies to all admins
+    const adminEmails = (Deno.env.get("ADMIN_NOTIFICATION_EMAILS") || "").split(",").map(e => e.trim()).filter(Boolean);
+    for (const adminEmail of adminEmails) {
+      if (adminEmail.toLowerCase() === invoice.client_email.toLowerCase()) continue;
+      await sendEmailWithAudit({
+        supabase,
+        to: adminEmail,
+        from: `${sender.name} <${sender.email}>`,
+        subject: `[Copie] Facture ${invoice.invoice_number} – ${invoice.activity_title} → ${invoice.client_name}`,
+        html: emailHtml,
+        type: "invoice",
+        referenceId: invoice.id,
+      });
+    }
+    console.log(`[send-invoice-email] Admin copies sent to ${adminEmails.length} admins`);
+
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
