@@ -170,16 +170,16 @@ export function Header() {
           : "bg-transparent py-6"
       )}
     >
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-2 lg:px-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 group shrink-0">
             <img 
               src="/logo-an-arwen.png" 
               alt="Ferme Équestre An Arwen" 
-              className="h-14 w-auto"
+              className="h-20 w-auto"
             />
-            <div className="hidden xl:block">
+            <div className="hidden 2xl:block">
               <h1 className="font-serif text-sm font-bold text-foreground leading-tight whitespace-nowrap">
                 Ferme Équestre An Arwen
               </h1>
