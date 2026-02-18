@@ -1,11 +1,18 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { authenticateRequest, verifyAdminRole, createAuthErrorResponse } from "../_shared/rbac.ts";
+import {
+  EMAIL_SENDERS, wrapInBrandedLayout, getAppUrl,
+  paragraph, separator, greeting, infoCard,
+} from "../_shared/email-templates.ts";
+import { sendEmailWithAudit } from "../_shared/email-audit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const ADMIN_COPY_EMAIL = "patrice.simion@gmail.com";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -36,10 +43,11 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Create a dummy auth user so user_id is valid in auth.users
+    // Create auth user
     const tempPassword = crypto.randomUUID();
+    const clientEmail = email || `manual-${crypto.randomUUID()}@placeholder.local`;
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: email || `manual-${crypto.randomUUID()}@placeholder.local`,
+      email: clientEmail,
       password: tempPassword,
       email_confirm: true,
       user_metadata: { first_name, last_name, manual_client: true },
@@ -75,7 +83,95 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true, user_id: userId }), {
+    // ── Send welcome email immediately ──────────────────────────────
+    let emailSent = false;
+    const isRealEmail = email && !email.includes("@placeholder.local");
+
+    if (isRealEmail) {
+      const appUrl = getAppUrl();
+      const displayName = first_name || "cher cavalier";
+      const levelLabels: Record<string, string> = {
+        debutant: "Débutant",
+        intermediaire: "Intermédiaire",
+        confirme: "Confirmé",
+        expert: "Expert",
+      };
+
+      const bodyContent = [
+        greeting(displayName),
+        `<div style="text-align:center;padding:15px 0 25px 0;">
+          <p style="font-size:48px;margin:0;line-height:1;">🐴</p>
+          <h2 style="margin:12px 0 5px 0;color:#6B8E7F;font-family:Georgia,serif;font-size:24px;letter-spacing:0.5px;">
+            Bienvenue dans la famille An Arwen !
+          </h2>
+          <p style="margin:0;color:#8B7D6B;font-size:14px;font-style:italic;">Votre aventure équestre commence aujourd'hui</p>
+        </div>`,
+        paragraph("Nous sommes ravis de vous compter parmi nos cavaliers ! Notre équipe a personnellement créé votre espace pour vous offrir la meilleure expérience possible. 🌿"),
+        separator(),
+        infoCard(`
+          <h3 style="margin:0 0 12px 0;font-family:Georgia,serif;color:#333;font-size:16px;">📋 Votre fiche cavalier</h3>
+          <table role="presentation" style="width:100%;font-size:14px;color:#555;">
+            <tr><td style="padding:4px 0;font-weight:600;width:120px;">Nom</td><td>${first_name} ${last_name || ""}</td></tr>
+            ${phone ? `<tr><td style="padding:4px 0;font-weight:600;">Téléphone</td><td>${phone}</td></tr>` : ""}
+            <tr><td style="padding:4px 0;font-weight:600;">Niveau</td><td>${levelLabels[riding_level] || riding_level || "Débutant"}</td></tr>
+          </table>
+        `),
+        `<div style="background:#F5F3F0;padding:20px;border-radius:12px;margin:20px 0;">
+          <h3 style="margin:0 0 15px 0;font-family:Georgia,serif;color:#333;font-size:16px;">🗺️ Que faire maintenant ?</h3>
+          <p style="margin:6px 0;font-size:14px;color:#555;">🌍 <strong>Découvrez nos destinations</strong> – Bretagne, Maroc et bien d'autres…</p>
+          <p style="margin:6px 0;font-size:14px;color:#555;">📝 <strong>Demandez un devis personnalisé</strong> – Adapté à votre niveau et vos envies</p>
+          <p style="margin:6px 0;font-size:14px;color:#555;">🏡 <strong>Séjournez dans notre yourte</strong> – Une expérience unique au cœur de la Bretagne</p>
+          <p style="margin:6px 0;font-size:14px;color:#555;">📰 <strong>Inscrivez-vous à la newsletter</strong> – Bons plans et prochaines randonnées</p>
+        </div>`,
+        separator(),
+        paragraph("N'hésitez pas à nous contacter pour toute question, nous sommes là pour vous accompagner dans votre passion équestre ! 🐎"),
+        paragraph("À très bientôt en selle,<br><strong>Loïc & l'équipe An Arwen</strong> 🌿"),
+      ].join("");
+
+      const htmlContent = wrapInBrandedLayout("Bienvenue chez An Arwen ! 🐴", bodyContent, {
+        preheader: `Bienvenue ${displayName} ! Votre espace cavalier est prêt – découvrez nos randonnées`,
+        ctaUrl: `${appUrl}/destinations`,
+        ctaLabel: "Découvrir nos aventures 🌍",
+      });
+
+      const sender = EMAIL_SENDERS.contact;
+      const subject = `🐴 Bienvenue ${displayName} – Votre aventure An Arwen commence !`;
+
+      // Send to client
+      const result = await sendEmailWithAudit({
+        supabase: supabaseAdmin,
+        to: email,
+        from: `${sender.name} <${sender.email}>`,
+        subject,
+        html: htmlContent,
+        type: "notification",
+        userId,
+      });
+
+      emailSent = result.success;
+
+      if (!result.success) {
+        console.error("[create-manual-client] Welcome email failed:", result.error);
+      }
+
+      // Send copy to admin
+      if (ADMIN_COPY_EMAIL) {
+        await sendEmailWithAudit({
+          supabase: supabaseAdmin,
+          to: ADMIN_COPY_EMAIL,
+          from: `${EMAIL_SENDERS.notifications.name} <${EMAIL_SENDERS.notifications.email}>`,
+          subject: `[COPIE] ${subject}`,
+          html: htmlContent,
+          type: "alert",
+        });
+      }
+    }
+
+    return new Response(JSON.stringify({
+      success: true,
+      user_id: userId,
+      welcome_email_sent: emailSent,
+    }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
