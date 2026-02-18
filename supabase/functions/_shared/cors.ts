@@ -2,6 +2,8 @@
 export const ALLOWED_ORIGINS = [
   "https://www.ferme-equestre-an-arwen.com",
   "https://ferme-equestre-an-arwen.com",
+  "https://www.ferme-equestre-arwen.com",
+  "https://ferme-equestre-arwen.com",
   "https://novel-pathfinder-app.lovable.app",
   "https://id-preview--2d082c2e-ad18-4f64-b0a5-29ecd0fc2459.lovable.app",
   "http://localhost:3000",
