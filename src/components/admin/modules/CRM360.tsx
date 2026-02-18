@@ -248,31 +248,25 @@ export function CRM360() {
   // Create new client mutation
   const createClientMutation = useMutation({
     mutationFn: async (data: typeof newClientForm) => {
-      // First create auth user - we'll create a profile directly
-      // Since we can't create auth users from client side, create profile with random UUID
-      const newUserId = crypto.randomUUID();
-      
-      const { error } = await supabase
-        .from("profiles")
-        .insert({
-          user_id: newUserId,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          phone: data.phone,
-          riding_level: data.riding_level,
-          onboarding_completed: true,
-        });
-      if (error) throw error;
-      
-      // Also create a booking entry to store the email
-      if (data.email) {
-        await supabase.from("contact_requests").insert({
-          name: `${data.first_name} ${data.last_name}`.trim(),
-          email: data.email,
-          message: "Client ajouté manuellement depuis le CRM",
-          subject: "Ajout manuel CRM",
-        });
-      }
+      const { data: session } = await supabase.auth.getSession();
+      const token = session?.session?.access_token;
+      if (!token) throw new Error("Non authentifié");
+
+      const res = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-manual-client`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(data),
+        }
+      );
+
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Erreur serveur");
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["crm-clients"] });
