@@ -22,139 +22,150 @@ interface ArticleData {
 }
 
 /**
- * Pool d'images étiquetées par mots-clés bretons.
- * Chaque entrée a une URL Unsplash et des tags descriptifs
- * pour permettre un matching intelligent avec le sujet de l'article.
+ * Recherche dynamique d'images via Wikimedia Commons.
+ * Retourne des photos RÉELLES du lieu recherché.
  */
-interface TaggedImage {
-  url: string;
-  tags: string[];
-  categories: string[];
-}
-
-const BRETAGNE_IMAGE_POOL: TaggedImage[] = [
-  // --- Forêts & Brocéliande ---
-  { url: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200&h=800&fit=crop&q=80", tags: ["forêt", "arbres", "sentier", "brocéliande", "bois", "mousse", "mystique"], categories: ["Randonnées", "Nature"] },
-  { url: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=1200&h=800&fit=crop&q=80", tags: ["forêt", "canopée", "lumière", "arbres", "sous-bois", "nature"], categories: ["Randonnées", "Nature"] },
-  { url: "https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=800&h=600&fit=crop&q=80", tags: ["forêt", "pins", "conifères", "brume", "mystère"], categories: ["Randonnées", "Nature"] },
-  { url: "https://images.unsplash.com/photo-1425913397330-cf8af2ff40a1?w=800&h=600&fit=crop&q=80", tags: ["forêt", "mousse", "ruisseau", "rivière", "sous-bois"], categories: ["Randonnées", "Nature"] },
-  { url: "https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=800&h=600&fit=crop&q=80", tags: ["forêt", "automne", "feuilles", "chemin", "sentier"], categories: ["Randonnées", "Nature"] },
-  { url: "https://images.unsplash.com/photo-1473448912268-2022ce9509d8?w=800&h=600&fit=crop&q=80", tags: ["forêt", "brume", "matin", "nature", "arbres"], categories: ["Randonnées", "Nature"] },
-
-  // --- Lacs & étangs ---
-  { url: "https://images.unsplash.com/photo-1504567961542-e24d9439a724?w=1200&h=800&fit=crop&q=80", tags: ["lac", "étang", "eau", "reflet", "calme", "nature", "paimpont"], categories: ["Nature", "Randonnées"] },
-  { url: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800&h=600&fit=crop&q=80", tags: ["lac", "montagne", "panorama", "eau", "paysage"], categories: ["Nature"] },
-  { url: "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=1200&h=800&fit=crop&q=80", tags: ["lac", "eau", "nature", "verdure", "campagne"], categories: ["Nature"] },
-
-  // --- Côtes & mer ---
-  { url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&h=800&fit=crop&q=80", tags: ["côte", "mer", "falaise", "bretagne", "océan", "littoral", "sentier côtier"], categories: ["Randonnées", "Nature"] },
-  { url: "https://images.unsplash.com/photo-1476231682828-37e571bc172f?w=1200&h=800&fit=crop&q=80", tags: ["côte", "plage", "sable", "vagues", "mer", "bretagne"], categories: ["Randonnées", "Nature", "Loisirs"] },
-  { url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop&q=80", tags: ["côte", "falaise", "panorama", "mer", "rochers"], categories: ["Nature", "Randonnées"] },
-
-  // --- Campagne & prairies ---
-  { url: "https://images.unsplash.com/photo-1465056836041-7f43ac27dcb5?w=1200&h=800&fit=crop&q=80", tags: ["campagne", "prairie", "champs", "verdure", "bocage", "colline"], categories: ["Nature", "Randonnées"] },
-  { url: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&h=600&fit=crop&q=80", tags: ["campagne", "champs", "soleil", "couchant", "nature"], categories: ["Nature"] },
-  { url: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&h=600&fit=crop&q=80", tags: ["campagne", "brume", "matin", "prairie", "nature"], categories: ["Nature"] },
-  { url: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800&h=600&fit=crop&q=80", tags: ["campagne", "colline", "soleil", "rayon", "paysage"], categories: ["Nature"] },
-
-  // --- Fermes & animaux ---
-  { url: "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=1200&h=800&fit=crop&q=80", tags: ["cheval", "chevaux", "pré", "équestre", "ferme", "pâturage"], categories: ["Fermes Pédagogiques", "Loisirs"] },
-  { url: "https://images.unsplash.com/photo-1605152276897-4f618f831968?w=1200&h=800&fit=crop&q=80", tags: ["ferme", "grange", "rural", "campagne", "agriculture"], categories: ["Fermes Pédagogiques"] },
-  { url: "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1200&h=800&fit=crop&q=80", tags: ["cheval", "liberté", "galop", "prairie", "nature"], categories: ["Fermes Pédagogiques", "Loisirs"] },
-  { url: "https://images.unsplash.com/photo-1569880153113-76e33fc52d5f?w=1200&h=800&fit=crop&q=80", tags: ["vaches", "pré", "campagne", "pâturage", "rural"], categories: ["Fermes Pédagogiques"] },
-  { url: "https://images.unsplash.com/photo-1574938730946-16a9c9ca4c77?w=800&h=600&fit=crop&q=80", tags: ["poules", "ferme", "volaille", "basse-cour", "animal"], categories: ["Fermes Pédagogiques"] },
-  { url: "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=800&h=600&fit=crop&q=80", tags: ["mouton", "agneau", "pré", "laine", "pâturage"], categories: ["Fermes Pédagogiques"] },
-
-  // --- Patrimoine & architecture ---
-  { url: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=1200&h=800&fit=crop&q=80", tags: ["château", "patrimoine", "pierre", "médiéval", "architecture", "remparts"], categories: ["Patrimoine"] },
-  { url: "https://images.unsplash.com/photo-1595867818082-083862f3d630?w=1200&h=800&fit=crop&q=80", tags: ["église", "clocher", "village", "patrimoine", "religieux"], categories: ["Patrimoine"] },
-  { url: "https://images.unsplash.com/photo-1524397057410-a44a7c4e82c6?w=1200&h=800&fit=crop&q=80", tags: ["manoir", "patrimoine", "architecture", "pierre", "historique"], categories: ["Patrimoine"] },
-  { url: "https://images.unsplash.com/photo-1565876427310-0695a4ff03b7?w=1200&h=800&fit=crop&q=80", tags: ["abbaye", "ruines", "patrimoine", "médiéval", "monastère"], categories: ["Patrimoine"] },
-  { url: "https://images.unsplash.com/photo-1541417904950-b855846fe074?w=800&h=600&fit=crop&q=80", tags: ["château", "donjon", "tour", "fortification", "médiéval"], categories: ["Patrimoine"] },
-  { url: "https://images.unsplash.com/photo-1555921015-5532091f6026?w=800&h=600&fit=crop&q=80", tags: ["chapelle", "calvaire", "croix", "breton", "religieux"], categories: ["Patrimoine"] },
-
-  // --- Gastronomie ---
-  { url: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&h=800&fit=crop&q=80", tags: ["gastronomie", "restaurant", "table", "cuisine", "plat", "repas"], categories: ["Gastronomie"] },
-  { url: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&h=800&fit=crop&q=80", tags: ["gastronomie", "plat", "cuisine", "terroir", "assiette"], categories: ["Gastronomie"] },
-  { url: "https://images.unsplash.com/photo-1506368249639-73a05d6f6488?w=800&h=600&fit=crop&q=80", tags: ["crêpe", "galette", "bretonne", "cuisine", "sarrasin"], categories: ["Gastronomie"] },
-  { url: "https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=800&h=600&fit=crop&q=80", tags: ["marché", "légumes", "frais", "terroir", "bio", "local"], categories: ["Gastronomie"] },
-  { url: "https://images.unsplash.com/photo-1452195100486-9cc805987862?w=800&h=600&fit=crop&q=80", tags: ["cidre", "pomme", "verger", "boisson", "bretagne"], categories: ["Gastronomie"] },
-
-  // --- Artisanat ---
-  { url: "https://images.unsplash.com/photo-1452587925148-ce544e77e70d?w=1200&h=800&fit=crop&q=80", tags: ["artisanat", "atelier", "main", "création", "savoir-faire"], categories: ["Artisanat"] },
-  { url: "https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=1200&h=800&fit=crop&q=80", tags: ["poterie", "céramique", "atelier", "argile", "artisanat"], categories: ["Artisanat"] },
-  { url: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800&h=600&fit=crop&q=80", tags: ["peinture", "art", "artiste", "toile", "création"], categories: ["Artisanat"] },
-  { url: "https://images.unsplash.com/photo-1530981647184-6caa0aca7dad?w=800&h=600&fit=crop&q=80", tags: ["bois", "sculpture", "menuiserie", "artisanat", "travail"], categories: ["Artisanat"] },
-
-  // --- Loisirs ---
-  { url: "https://images.unsplash.com/photo-1530549387789-4c1017266635?w=1200&h=800&fit=crop&q=80", tags: ["kayak", "canoë", "rivière", "eau", "sport", "nautique"], categories: ["Loisirs"] },
-  { url: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=1200&h=800&fit=crop&q=80", tags: ["voile", "bateau", "mer", "navigation", "nautique"], categories: ["Loisirs"] },
-  { url: "https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=800&h=600&fit=crop&q=80", tags: ["randonnée", "marche", "sac à dos", "aventure", "nature"], categories: ["Loisirs", "Randonnées"] },
-  { url: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&h=600&fit=crop&q=80", tags: ["vélo", "cyclisme", "piste", "sport", "campagne"], categories: ["Loisirs"] },
-];
-
-/**
- * Sélectionne les images les plus pertinentes en calculant un score
- * basé sur le matching entre les tags de l'image et les mots-clés du sujet.
- */
-function selectBestImages(
-  category: string,
-  keywords: string[],
-  topic: string
-): { featured: string; gallery: string[] } {
-  // Normaliser tous les mots-clés + topic pour le matching
-  const normalize = (s: string) =>
-    s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-
-  const searchTerms = [
-    ...keywords.map(normalize),
-    ...topic.split(/[\s,]+/).map(normalize),
-  ].filter((t) => t.length > 2);
-
-  // Scorer chaque image
-  const scored = BRETAGNE_IMAGE_POOL.map((img) => {
-    let score = 0;
-
-    // Bonus si la catégorie correspond
-    if (img.categories.includes(category)) score += 3;
-
-    // Matching des tags avec les mots-clés
-    for (const tag of img.tags) {
-      const normalizedTag = normalize(tag);
-      for (const term of searchTerms) {
-        if (normalizedTag.includes(term) || term.includes(normalizedTag)) {
-          score += 2;
-        }
+async function searchWikimediaImages(query: string, limit: number = 6): Promise<string[]> {
+  try {
+    // Recherche sur Wikimedia Commons avec le nom exact du lieu
+    const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(query)}&gsrlimit=${limit}&prop=imageinfo&iiprop=url|mime&iiurlwidth=1200&format=json&origin=*`;
+    
+    console.log(`[Wikimedia Search] Query: "${query}"`);
+    
+    const response = await fetch(searchUrl, {
+      headers: { "User-Agent": "AnArwen-EcoSysteme/1.0 (contact@an-arwen.com)" }
+    });
+    
+    if (!response.ok) {
+      console.error(`[Wikimedia Search] HTTP error: ${response.status}`);
+      return [];
+    }
+    
+    const data = await response.json();
+    const pages = data.query?.pages;
+    
+    if (!pages) {
+      console.log("[Wikimedia Search] No results found");
+      return [];
+    }
+    
+    const imageUrls: string[] = [];
+    
+    for (const page of Object.values(pages) as any[]) {
+      const imageInfo = page.imageinfo?.[0];
+      if (!imageInfo) continue;
+      
+      // Filtrer : uniquement les images JPEG/PNG, pas les SVG/icônes
+      const mime = imageInfo.mime || "";
+      if (!mime.startsWith("image/jpeg") && !mime.startsWith("image/png") && !mime.startsWith("image/webp")) {
+        continue;
+      }
+      
+      // Utiliser la version redimensionnée (1200px) si disponible
+      const url = imageInfo.thumburl || imageInfo.url;
+      if (url) {
+        imageUrls.push(url);
       }
     }
-
-    // Petit aléa pour varier les résultats
-    score += Math.random() * 0.5;
-
-    return { ...img, score };
-  });
-
-  // Trier par score décroissant
-  scored.sort((a, b) => b.score - a.score);
-
-  // Prendre la meilleure comme featured, les 3 suivantes comme galerie
-  // En s'assurant qu'on ne répète pas d'URLs
-  const used = new Set<string>();
-  const featured = scored[0].url;
-  used.add(featured);
-
-  const gallery: string[] = [];
-  for (const img of scored.slice(1)) {
-    if (!used.has(img.url) && gallery.length < 3) {
-      gallery.push(img.url);
-      used.add(img.url);
-    }
+    
+    console.log(`[Wikimedia Search] Found ${imageUrls.length} images for "${query}"`);
+    return imageUrls;
+  } catch (error) {
+    console.error("[Wikimedia Search] Error:", error);
+    return [];
   }
+}
 
-  console.log(`[Image Selection] Category: ${category}, Keywords: ${searchTerms.join(", ")}`);
-  console.log(`[Image Selection] Top scores: ${scored.slice(0, 5).map((s) => `${s.tags[0]}(${s.score.toFixed(1)})`).join(", ")}`);
+/**
+ * Stratégie multi-recherche : essaie plusieurs variantes de requêtes
+ * pour maximiser les chances de trouver des images pertinentes.
+ */
+async function findBestImages(
+  topic: string,
+  locationName: string,
+  keywords: string[],
+  category: string
+): Promise<{ featured: string; gallery: string[] }> {
+  
+  // Stratégie 1 : Recherche avec le nom exact du lieu
+  let allImages = await searchWikimediaImages(topic);
+  
+  // Stratégie 2 : Si pas assez de résultats, essayer avec le nom du lieu seul
+  if (allImages.length < 4 && locationName && locationName !== topic) {
+    const more = await searchWikimediaImages(locationName);
+    allImages = [...allImages, ...more];
+  }
+  
+  // Stratégie 3 : Recherche avec le lieu + "Bretagne"
+  if (allImages.length < 4) {
+    const more = await searchWikimediaImages(`${topic} Bretagne`);
+    allImages = [...allImages, ...more];
+  }
+  
+  // Stratégie 4 : Recherche avec les mots-clés spécifiques
+  if (allImages.length < 4 && keywords.length > 0) {
+    const keywordQuery = keywords.slice(0, 3).join(" ");
+    const more = await searchWikimediaImages(keywordQuery);
+    allImages = [...allImages, ...more];
+  }
+  
+  // Dédupliquer
+  const uniqueImages = [...new Set(allImages)];
+  
+  console.log(`[Image Selection] Total unique images found: ${uniqueImages.length}`);
+  
+  // Si on a trouvé des images, les utiliser
+  if (uniqueImages.length > 0) {
+    const featured = uniqueImages[0];
+    const gallery = uniqueImages.slice(1, 4);
+    return { featured, gallery };
+  }
+  
+  // Fallback : images génériques bretonnes par catégorie
+  console.warn("[Image Selection] No Wikimedia images found, using fallback");
+  return getFallbackImages(category);
+}
 
-  return { featured, gallery };
+/**
+ * Images de secours par catégorie - uniquement si Wikimedia ne retourne rien.
+ */
+function getFallbackImages(category: string): { featured: string; gallery: string[] } {
+  const fallbacks: Record<string, { featured: string; gallery: string[] }> = {
+    "randonnee": {
+      featured: "https://images.unsplash.com/photo-1448375240586-882707db888b?w=1200&h=800&fit=crop&q=80",
+      gallery: [
+        "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1501555088652-021faa106b9b?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1508193638397-1c4234db14d8?w=800&h=600&fit=crop&q=80",
+      ]
+    },
+    "ferme-pedagogique": {
+      featured: "https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=1200&h=800&fit=crop&q=80",
+      gallery: [
+        "https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1569880153113-76e33fc52d5f?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=800&h=600&fit=crop&q=80",
+      ]
+    },
+    "patrimoine": {
+      featured: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=1200&h=800&fit=crop&q=80",
+      gallery: [
+        "https://images.unsplash.com/photo-1595867818082-083862f3d630?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1524397057410-a44a7c4e82c6?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1565876427310-0695a4ff03b7?w=800&h=600&fit=crop&q=80",
+      ]
+    },
+    "nature": {
+      featured: "https://images.unsplash.com/photo-1504567961542-e24d9439a724?w=1200&h=800&fit=crop&q=80",
+      gallery: [
+        "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800&h=600&fit=crop&q=80",
+        "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800&h=600&fit=crop&q=80",
+      ]
+    },
+  };
+  
+  return fallbacks[category] || fallbacks["nature"];
 }
 
 serve(async (req) => {
@@ -302,7 +313,7 @@ Fournis ta réponse au format JSON suivant :
   "distance_from_arwen": "Distance routière RÉELLE en km depuis La Chapelle du Lou du Lac",
   "category": "${category}",
   "tags": ["tag1", "tag2", "tag3", "tag4"],
-  "image_search_keywords": ["mots-clés SPÉCIFIQUES au lieu breton pour recherche d'images pertinentes"]
+  "image_search_keywords": ["mots-clés SPÉCIFIQUES au lieu breton pour recherche d'images pertinentes, par exemple le nom exact du lac, du château, de la forêt"]
 }`;
 
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
@@ -339,9 +350,7 @@ Fournis ta réponse au format JSON suivant :
 
     let articleData: any;
     try {
-      // Try to extract JSON from the response (may be wrapped in markdown code blocks)
       let jsonStr = articleContent.trim();
-      // Remove markdown code blocks if present
       if (jsonStr.startsWith("```")) {
         jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
       }
@@ -406,9 +415,16 @@ Fournis ta réponse au format JSON suivant :
     articleData.excerpt = cleanContent(articleData.excerpt);
     articleData.content = cleanContent(articleData.content);
 
-    // Sélection intelligente d'images basée sur les mots-clés du sujet
+    // RECHERCHE D'IMAGES DYNAMIQUE via Wikimedia Commons
+    // Utilise le nom du lieu + les mots-clés pour trouver de VRAIES photos
     const imageKeywords = articleData.image_search_keywords || [];
-    const images = selectBestImages(category, imageKeywords, topic);
+    const locationName = articleData.location_name || topic;
+    
+    console.log(`[Image Search] Searching real images for: "${topic}" / "${locationName}"`);
+    console.log(`[Image Search] Keywords: ${imageKeywords.join(", ")}`);
+    
+    const images = await findBestImages(topic, locationName, imageKeywords, category);
+    
     console.log("Selected featured image:", images.featured);
     console.log("Selected gallery images:", images.gallery);
 
