@@ -25,10 +25,11 @@ interface ArticleData {
  * Recherche dynamique d'images via Wikimedia Commons.
  * Retourne des photos RÉELLES du lieu recherché.
  */
-async function searchWikimediaImages(query: string, limit: number = 6): Promise<string[]> {
+async function searchWikimediaImages(query: string, limit: number = 10): Promise<string[]> {
   try {
-    // Recherche sur Wikimedia Commons avec le nom exact du lieu
-    const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(query)}&gsrlimit=${limit}&prop=imageinfo&iiprop=url|mime&iiurlwidth=1200&format=json&origin=*`;
+    // Recherche sur Wikimedia Commons — demander plus de résultats pour filtrer par qualité
+    // On demande les dimensions originales (iiurlwidth=1600) et les métadonnées de taille
+    const searchUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrnamespace=6&gsrsearch=${encodeURIComponent(query)}&gsrlimit=${limit}&prop=imageinfo&iiprop=url|mime|size&iiurlwidth=1600&format=json&origin=*`;
     
     console.log(`[Wikimedia Search] Query: "${query}"`);
     
@@ -49,26 +50,36 @@ async function searchWikimediaImages(query: string, limit: number = 6): Promise<
       return [];
     }
     
+    const MIN_WIDTH = 800;
+    const MIN_HEIGHT = 500;
     const imageUrls: string[] = [];
     
     for (const page of Object.values(pages) as any[]) {
       const imageInfo = page.imageinfo?.[0];
       if (!imageInfo) continue;
       
-      // Filtrer : uniquement les images JPEG/PNG, pas les SVG/icônes
+      // Filtrer : uniquement les images JPEG/PNG, pas les SVG/icônes/GIF
       const mime = imageInfo.mime || "";
       if (!mime.startsWith("image/jpeg") && !mime.startsWith("image/png") && !mime.startsWith("image/webp")) {
         continue;
       }
       
-      // Utiliser la version redimensionnée (1200px) si disponible
+      // FILTRE QUALITÉ : exiger une taille minimale pour éviter les images pixelisées
+      const origWidth = imageInfo.width || 0;
+      const origHeight = imageInfo.height || 0;
+      if (origWidth < MIN_WIDTH || origHeight < MIN_HEIGHT) {
+        console.log(`[Wikimedia Search] Skipped low-res image: ${origWidth}x${origHeight} — ${page.title}`);
+        continue;
+      }
+      
+      // Utiliser la version redimensionnée à 1600px si disponible (bonne qualité sans être trop lourde)
       const url = imageInfo.thumburl || imageInfo.url;
       if (url) {
         imageUrls.push(url);
       }
     }
     
-    console.log(`[Wikimedia Search] Found ${imageUrls.length} images for "${query}"`);
+    console.log(`[Wikimedia Search] Found ${imageUrls.length} HD images for "${query}" (filtered from ${Object.keys(pages).length} results)`);
     return imageUrls;
   } catch (error) {
     console.error("[Wikimedia Search] Error:", error);
