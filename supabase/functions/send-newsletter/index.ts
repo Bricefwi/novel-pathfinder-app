@@ -65,7 +65,7 @@ serve(async (req) => {
 
     const htmlContent = wrapInBrandedLayout("Newsletter", content, {
       preheader: subject,
-      ctaUrl: `${appUrl}/destinations`,
+      ctaUrl: "https://www.ferme-equestre-arwen.com/destinations",
       ctaLabel: "Consultez nos nouvelles destinations et réservez votre prochaine aventure !",
       unsubscribeUrl: `${appUrl}/mon-espace`,
     });

@@ -125,7 +125,7 @@ export function wrapInBrandedLayout(
                     <table role="presentation" style="margin:0 auto 18px auto;">
                       <tr>
                         <td style="background-color:rgba(255,255,255,0.95);border-radius:50%;padding:8px;box-shadow:0 2px 12px rgba(0,0,0,0.15);">
-                          <img src="${COMPANY.logoUrl}" alt="${COMPANY.name}" width="90" height="90" style="display:block;border-radius:50%;" />
+                          <img src="${COMPANY.logoUrl}" alt="${COMPANY.name}" width="90" style="display:block;border-radius:50%;width:90px;height:auto;" />
                         </td>
                       </tr>
                     </table>
