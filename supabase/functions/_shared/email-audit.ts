@@ -92,6 +92,11 @@ export async function sendEmailWithAudit(params: {
         to: [{ email: params.to }],
         subject: params.subject,
         htmlContent: params.html,
+        headers: {
+          "X-Mailin-Track": "0",
+          "X-Mailin-Track-Links": "0",
+          "X-Mailin-Track-Opens": "0",
+        },
       }),
     });
 
