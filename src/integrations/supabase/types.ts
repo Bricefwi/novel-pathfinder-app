@@ -850,6 +850,8 @@ export type Database = {
           quote_id: string | null
           start_date: string | null
           status: string | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
           subtotal: number
           tax_amount: number | null
           tax_rate: number | null
@@ -888,6 +890,8 @@ export type Database = {
           quote_id?: string | null
           start_date?: string | null
           status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
           subtotal?: number
           tax_amount?: number | null
           tax_rate?: number | null
@@ -926,6 +930,8 @@ export type Database = {
           quote_id?: string | null
           start_date?: string | null
           status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
           subtotal?: number
           tax_amount?: number | null
           tax_rate?: number | null
@@ -1092,6 +1098,75 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      payments: {
+        Row: {
+          amount: number
+          client_email: string | null
+          client_name: string | null
+          created_at: string
+          currency: string
+          id: string
+          invoice_id: string | null
+          metadata: Json | null
+          payment_type: string
+          quote_id: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount?: number
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          payment_type?: string
+          quote_id?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount?: number
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          payment_type?: string
+          quote_id?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -1281,6 +1356,8 @@ export type Database = {
           quote_number: string
           start_date: string | null
           status: string | null
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
           total_price: number
           unit_price: number
           updated_at: string
@@ -1313,6 +1390,8 @@ export type Database = {
           quote_number: string
           start_date?: string | null
           status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
           total_price?: number
           unit_price?: number
           updated_at?: string
@@ -1345,6 +1424,8 @@ export type Database = {
           quote_number?: string
           start_date?: string | null
           status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
           total_price?: number
           unit_price?: number
           updated_at?: string
