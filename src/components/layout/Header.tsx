@@ -180,7 +180,7 @@ export function Header() {
               className="h-20 w-auto"
             />
             <div className="hidden sm:block">
-              <h1 className="font-serif text-xl font-bold text-foreground">
+              <h1 className="font-serif text-base font-bold text-foreground leading-tight">
                 Ferme Équestre An Arwen
               </h1>
             </div>
