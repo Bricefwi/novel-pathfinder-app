@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -469,11 +469,31 @@ export const AdminQuotesInvoices = () => {
     }
   };
 
+  // Check for prefill data from Inbox on mount
+  useEffect(() => {
+    const prefillRaw = sessionStorage.getItem("inbox-quote-prefill");
+    if (prefillRaw) {
+      sessionStorage.removeItem("inbox-quote-prefill");
+      setIsQuoteDialogOpen(true);
+      // Store for QuoteForm initial state
+      sessionStorage.setItem("_quote-prefill-active", prefillRaw);
+    }
+  }, []);
+
   const QuoteForm = () => {
+    const prefillData = (() => {
+      const raw = sessionStorage.getItem("_quote-prefill-active");
+      if (raw) {
+        sessionStorage.removeItem("_quote-prefill-active");
+        try { return JSON.parse(raw); } catch { return null; }
+      }
+      return null;
+    })();
+
     const [formData, setFormData] = useState({
-      client_name: "",
-      client_email: "",
-      client_phone: "",
+      client_name: prefillData?.client_name || "",
+      client_email: prefillData?.client_email || "",
+      client_phone: prefillData?.client_phone || "",
       client_address: "",
       activity_title: "",
       activity_duration: "",
@@ -484,7 +504,7 @@ export const AdminQuotesInvoices = () => {
       deposit_percentage: 30,
       payment_option: "deposit",
       valid_until: "",
-      notes: "",
+      notes: prefillData?.message ? `Demande initiale : ${prefillData.subject || ""}\n${prefillData.message}` : "",
     });
 
     const totalPrice = formData.unit_price * formData.participants;

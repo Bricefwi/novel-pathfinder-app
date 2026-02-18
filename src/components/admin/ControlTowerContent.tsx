@@ -48,7 +48,11 @@ export function ControlTowerContent({ activeModule, onModuleChange }: ControlTow
       case "crm":
         return <CRM360 />;
       case "inbox":
-        return <UnifiedInbox />;
+        return <UnifiedInbox onNavigateToQuotes={(prefill) => {
+          // Store prefill data for quotes module
+          sessionStorage.setItem("inbox-quote-prefill", JSON.stringify(prefill));
+          onModuleChange("quotes");
+        }} />;
       case "marketing":
         return <MarketingAutomation />;
       case "automations":
