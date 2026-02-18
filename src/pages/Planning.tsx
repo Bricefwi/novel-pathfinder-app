@@ -122,18 +122,25 @@ const Planning = () => {
     const colors: Record<string, string> = {
       randonnee: "bg-emerald-500/20 text-emerald-700 border-emerald-500/30",
       sejour: "bg-blue-500/20 text-blue-700 border-blue-500/30",
-      stage: "bg-amber-500/20 text-amber-700 border-amber-500/30",
-      cours: "bg-purple-500/20 text-purple-700 border-purple-500/30",
+      evenement: "bg-amber-500/20 text-amber-700 border-amber-500/30",
     };
     return colors[type] || "bg-muted text-muted-foreground border-muted";
+  };
+
+  const getActivityTypeDotColor = (type: string) => {
+    const colors: Record<string, string> = {
+      randonnee: "hsl(160, 84%, 39%)",
+      sejour: "hsl(217, 91%, 60%)",
+      evenement: "hsl(38, 92%, 50%)",
+    };
+    return colors[type] || "hsl(var(--primary))";
   };
 
   const getActivityTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       randonnee: "Randonnée",
       sejour: "Séjour",
-      stage: "Stage",
-      cours: "Cours",
+      evenement: "Événement",
     };
     return labels[type] || type;
   };
@@ -162,6 +169,27 @@ const Planning = () => {
       }
     });
     return dates;
+  };
+
+  // Get dates grouped by activity type for colored calendar dots
+  const getDatesGroupedByType = () => {
+    const groups: Record<string, Date[]> = {
+      randonnee: [],
+      sejour: [],
+      evenement: [],
+    };
+    filteredActivitySlots.forEach((slot) => {
+      const type = slot.activity?.activity_type || "";
+      if (!groups[type]) groups[type] = [];
+      const start = parseISO(slot.start_date);
+      const end = parseISO(slot.end_date);
+      let current = new Date(start);
+      while (current <= end) {
+        groups[type].push(new Date(current));
+        current = addDays(current, 1);
+      }
+    });
+    return groups;
   };
 
   // Generate all dates in the visible range
@@ -344,36 +372,53 @@ const Planning = () => {
                 </CardHeader>
                 <CardContent>
                   {/* Calendar for Activities only - Hébergement tab removed */}
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    month={currentMonth}
-                    onMonthChange={setCurrentMonth}
-                    className="rounded-lg border-0 w-full"
-                    modifiers={{
-                      hasActivity: getDatesWithActivities(),
-                    }}
-                    modifiersStyles={{
-                      hasActivity: {
-                        backgroundColor: "hsl(var(--primary) / 0.2)",
-                        borderRadius: "50%",
-                        fontWeight: "bold",
-                      },
-                    }}
-                    classNames={{
-                      months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
-                      month: "space-y-4 w-full",
-                      table: "w-full border-collapse",
-                      head_row: "flex w-full justify-between",
-                      head_cell: "text-muted-foreground rounded-md w-full font-normal text-sm flex-1 text-center",
-                      row: "flex w-full mt-2 justify-between",
-                      cell: "h-12 w-full text-center text-sm p-0 relative flex-1 flex items-center justify-center",
-                      day: "h-10 w-10 p-0 font-normal rounded-full hover:bg-accent transition-colors",
-                      day_selected: "bg-primary text-primary-foreground hover:bg-primary",
-                      day_today: "bg-accent text-accent-foreground",
-                    }}
-                  />
+                  {(() => {
+                    const typedDates = getDatesGroupedByType();
+                    return (
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={setSelectedDate}
+                        month={currentMonth}
+                        onMonthChange={setCurrentMonth}
+                        className="rounded-lg border-0 w-full"
+                        modifiers={{
+                          hasRandonnee: typedDates.randonnee || [],
+                          hasSejour: typedDates.sejour || [],
+                          hasEvenement: typedDates.evenement || [],
+                        }}
+                        modifiersStyles={{
+                          hasRandonnee: {
+                            backgroundColor: "hsla(160, 84%, 39%, 0.2)",
+                            borderRadius: "50%",
+                            fontWeight: "bold",
+                          },
+                          hasSejour: {
+                            backgroundColor: "hsla(217, 91%, 60%, 0.2)",
+                            borderRadius: "50%",
+                            fontWeight: "bold",
+                          },
+                          hasEvenement: {
+                            backgroundColor: "hsla(38, 92%, 50%, 0.2)",
+                            borderRadius: "50%",
+                            fontWeight: "bold",
+                          },
+                        }}
+                        classNames={{
+                          months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 w-full",
+                          month: "space-y-4 w-full",
+                          table: "w-full border-collapse",
+                          head_row: "flex w-full justify-between",
+                          head_cell: "text-muted-foreground rounded-md w-full font-normal text-sm flex-1 text-center",
+                          row: "flex w-full mt-2 justify-between",
+                          cell: "h-12 w-full text-center text-sm p-0 relative flex-1 flex items-center justify-center",
+                          day: "h-10 w-10 p-0 font-normal rounded-full hover:bg-accent transition-colors",
+                          day_selected: "bg-primary text-primary-foreground hover:bg-primary",
+                          day_today: "bg-accent text-accent-foreground",
+                        }}
+                      />
+                    );
+                  })()}
                   
                   {/* Legend */}
                   <div className="flex flex-wrap gap-3 mt-4 justify-center">
@@ -384,10 +429,7 @@ const Planning = () => {
                       Séjour
                     </Badge>
                     <Badge variant="outline" className="bg-amber-500/20 text-amber-700 border-amber-500/30">
-                      Stage
-                    </Badge>
-                    <Badge variant="outline" className="bg-purple-500/20 text-purple-700 border-purple-500/30">
-                      Cours
+                      Événement
                     </Badge>
                   </div>
                 </CardContent>
@@ -598,9 +640,6 @@ const Planning = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge className={getActivityTypeColor("sejour")}>Séjour</Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge className={getActivityTypeColor("stage")}>Stage</Badge>
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge className={getActivityTypeColor("evenement")}>Événement</Badge>
