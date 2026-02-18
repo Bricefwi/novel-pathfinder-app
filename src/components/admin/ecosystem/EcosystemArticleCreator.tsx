@@ -75,19 +75,23 @@ export const EcosystemArticleCreator = () => {
 
       if (error) {
         console.error("AI generation error:", error);
-        // Vérifier si c'est une erreur de rate limit ou paiement
-        if (error.message?.includes("429")) {
+        // Try to extract the error body for rejection messages
+        let errorMsg = error.message || "Erreur inconnue";
+        try {
+          // The error context may contain the response body
+          if (error.context?.body) {
+            const body = typeof error.context.body === 'string' ? JSON.parse(error.context.body) : error.context.body;
+            if (body?.error) errorMsg = body.error;
+          }
+        } catch {}
+        
+        if (errorMsg.includes("429")) {
           toast.error("Limite de requêtes atteinte, réessayez plus tard");
-        } else if (error.message?.includes("402")) {
+        } else if (errorMsg.includes("402")) {
           toast.error("Crédits insuffisants pour l'IA");
         } else {
-          toast.error(`Erreur de génération: ${error.message || "Erreur inconnue"}`);
+          toast.error(errorMsg, { duration: 8000 });
         }
-        return;
-      }
-
-      if (data?.error) {
-        toast.error(`Erreur: ${data.error}`);
         return;
       }
 

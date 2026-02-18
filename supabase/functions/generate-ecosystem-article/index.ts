@@ -224,11 +224,11 @@ RÈGLES ANTI-HALLUCINATIONS — OBLIGATOIRES — PRIORITÉ ABSOLUE
 ═══════════════════════════════════════════════════
 
 1. VÉRIFICATION GÉOGRAPHIQUE STRICTE :
-   - Le lieu traité DOIT être situé EN BRETAGNE (départements 22, 29, 35, 56) ou dans les départements limitrophes (44, 53, 50).
-   - Si le sujet "${topic}" désigne un lieu situé HORS de la Bretagne ou hors de France (ex: Forêt-Noire en Allemagne, Mont Blanc en Savoie, etc.), tu DOIS REFUSER de rédiger l'article.
-   - Dans ce cas, retourne UNIQUEMENT ce JSON : {"error": "HORS_PERIMETRE", "reason": "Le lieu ${topic} n'est pas situé en Bretagne. Il se trouve en [localisation réelle]. L'Éco-Système ne couvre que la Bretagne et ses environs proches."}
+   - Le lieu traité DOIT être situé EN BRETAGNE (départements 22 Côtes-d'Armor, 29 Finistère, 35 Ille-et-Vilaine, 56 Morbihan) ou dans les départements limitrophes (44 Loire-Atlantique, 53 Mayenne, 50 Manche).
+   - IMPORTANT : Un lieu situé dans les départements 22, 29, 35, 56, 44, 53 ou 50 EST VALIDE. Ne le rejette PAS.
+   - Rejette UNIQUEMENT si le lieu est manifestement hors de France ou dans un département français non listé ci-dessus (ex: département 75 Paris, 13 Marseille, etc.).
+   - Dans ce cas, retourne UNIQUEMENT ce JSON : {"error": "HORS_PERIMETRE", "reason": "Le lieu ${topic} n'est pas situé en Bretagne ni dans les départements limitrophes autorisés."}
    - NE JAMAIS inventer une version bretonne d'un lieu qui existe ailleurs.
-   - NE JAMAIS confondre un lieu portant un nom similaire avec un lieu breton.
 
 2. DISTANCES ET TRAJETS — CALCUL RÉEL :
    - La Ferme An Arwen est à : 5 Le Bignon, 35360 La Chapelle du Lou du Lac (coordonnées GPS : 48.2167° N, 2.0333° O environ).
@@ -316,37 +316,11 @@ Fournis ta réponse au format JSON suivant :
         messages: [
           { 
             role: "system", 
-            content: "Tu es un rédacteur-reporter premium de magazine Géo spécialisé EXCLUSIVEMENT en éco-tourisme BRETON. RÈGLES ABSOLUES : 1) Tu ne rédiges JAMAIS d'articles sur des lieux hors de Bretagne ou de France. Si le sujet est hors périmètre, retourne {\"error\":\"HORS_PERIMETRE\",\"reason\":\"explication\"}. 2) Tu n'inventes JAMAIS de sites web, numéros de téléphone ou emails — mets 'Non disponible' si incertain. 3) Tu n'inventes JAMAIS de distances — mets 'Distance à vérifier' si incertain. 4) Tu ne génères JAMAIS de markdown. 5) Tu écris en texte fluide. 6) Tu insères [IMAGE_1], [IMAGE_2], [IMAGE_3]. Réponds uniquement en JSON valide." 
+            content: "Tu es un rédacteur-reporter premium de magazine Géo spécialisé EXCLUSIVEMENT en éco-tourisme BRETON. RAPPEL GÉOGRAPHIQUE CRUCIAL : Les départements 22 (Côtes-d'Armor), 29 (Finistère), 35 (Ille-et-Vilaine), 56 (Morbihan) SONT la Bretagne. Les départements limitrophes 44 (Loire-Atlantique), 53 (Mayenne), 50 (Manche) sont aussi acceptés. Un lieu situé dans l'un de ces départements est VALIDE et tu DOIS rédiger l'article. Ne rejette un sujet QUE si le lieu est manifestement hors de France ou dans un département non listé ci-dessus. RÈGLES : 1) Tu n'inventes JAMAIS de sites web, numéros de téléphone ou emails — mets 'Non disponible' si incertain. 2) Tu n'inventes JAMAIS de distances — mets 'Distance à vérifier' si incertain. 3) Tu ne génères JAMAIS de markdown. 4) Tu écris en texte fluide. 5) Tu insères [IMAGE_1], [IMAGE_2], [IMAGE_3]. Réponds uniquement en JSON valide." 
           },
           { role: "user", content: prompt }
         ],
-        temperature: 0.4,
-        response_format: {
-          type: "json_schema",
-          json_schema: {
-            name: "article",
-            schema: {
-              type: "object",
-              properties: {
-                error: { type: "string" },
-                reason: { type: "string" },
-                title: { type: "string" },
-                excerpt: { type: "string" },
-                content: { type: "string" },
-                location_name: { type: "string" },
-                location_address: { type: "string" },
-                location_phone: { type: "string" },
-                location_email: { type: "string" },
-                location_website: { type: "string" },
-                distance_from_arwen: { type: "string" },
-                category: { type: "string" },
-                tags: { type: "array", items: { type: "string" } },
-                image_search_keywords: { type: "array", items: { type: "string" } }
-              },
-              required: ["title", "content", "location_name", "category"]
-            }
-          }
-        }
+        temperature: 0.4
       }),
     });
 
@@ -365,7 +339,13 @@ Fournis ta réponse au format JSON suivant :
 
     let articleData: any;
     try {
-      articleData = JSON.parse(articleContent);
+      // Try to extract JSON from the response (may be wrapped in markdown code blocks)
+      let jsonStr = articleContent.trim();
+      // Remove markdown code blocks if present
+      if (jsonStr.startsWith("```")) {
+        jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+      }
+      articleData = JSON.parse(jsonStr);
     } catch (e) {
       console.error("Failed to parse article JSON:", articleContent);
       throw new Error("Invalid JSON response from Perplexity");
