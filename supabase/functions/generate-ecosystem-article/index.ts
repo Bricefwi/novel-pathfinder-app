@@ -173,25 +173,60 @@ serve(async (req) => {
       throw new Error("PERPLEXITY_API_KEY is not configured");
     }
 
-    // Prompt maître premium style magazine Géo
+    // Prompt maître premium style magazine Géo — Anti-hallucinations renforcé
     const prompt = `Tu es un rédacteur-reporter premium spécialisé en éco-tourisme, nature, patrimoine et tourisme responsable en Bretagne.
-Ta mission est de rédiger un article de type magazine Géo, en français, pour une rubrique appelée "Eco-Système", liée à la Ferme Équestre An Arwen (5 Le Bignon, 35360 La Chapelle du Lou du Lac, Bretagne).
+Ta mission est de rédiger un article de type magazine Géo, en français, pour une rubrique appelée "Eco-Système", liée à la Ferme Équestre An Arwen (5 Le Bignon, 35360 La Chapelle du Lou du Lac, Bretagne, FRANCE).
 
 SUJET DE L'ARTICLE : "${topic}" dans la catégorie "${category}"
 
-PÉRIMÈTRE GÉOGRAPHIQUE :
-- Centre : Ferme Équestre An Arwen, 5 Le Bignon, 35360 La Chapelle du Lou du Lac
-- Cercle 1 (0-15 km) : sites très proches
-- Cercle 2 (15-50 km) : Brocéliande, Ille-et-Vilaine
-- Cercle 3 : Bretagne entière (escapades d'une journée depuis An Arwen)
+═══════════════════════════════════════════════════
+RÈGLES ANTI-HALLUCINATIONS — OBLIGATOIRES — PRIORITÉ ABSOLUE
+═══════════════════════════════════════════════════
 
-CONSIGNES DE RÉDACTION IMPÉRATIVES :
+1. VÉRIFICATION GÉOGRAPHIQUE STRICTE :
+   - Le lieu traité DOIT être situé EN BRETAGNE (départements 22, 29, 35, 56) ou dans les départements limitrophes (44, 53, 50).
+   - Si le sujet "${topic}" désigne un lieu situé HORS de la Bretagne ou hors de France (ex: Forêt-Noire en Allemagne, Mont Blanc en Savoie, etc.), tu DOIS REFUSER de rédiger l'article.
+   - Dans ce cas, retourne UNIQUEMENT ce JSON : {"error": "HORS_PERIMETRE", "reason": "Le lieu ${topic} n'est pas situé en Bretagne. Il se trouve en [localisation réelle]. L'Éco-Système ne couvre que la Bretagne et ses environs proches."}
+   - NE JAMAIS inventer une version bretonne d'un lieu qui existe ailleurs.
+   - NE JAMAIS confondre un lieu portant un nom similaire avec un lieu breton.
+
+2. DISTANCES ET TRAJETS — CALCUL RÉEL :
+   - La Ferme An Arwen est à : 5 Le Bignon, 35360 La Chapelle du Lou du Lac (coordonnées GPS : 48.2167° N, 2.0333° O environ).
+   - Les distances DOIVENT correspondre à un trajet routier réel vérifié.
+   - Un lieu à 50 km prend environ 45 min à 1h en voiture en Bretagne (routes départementales).
+   - Un lieu en Allemagne (Forêt-Noire) est à ~1000 km, PAS 50 km. REFUSE ce type d'article.
+   - Si tu ne peux pas vérifier la distance exacte, indique "Distance à vérifier" plutôt que d'inventer.
+
+3. SITES WEB ET COORDONNÉES — ZÉRO INVENTION :
+   - NE JAMAIS inventer un site web, un numéro de téléphone ou un email.
+   - Si tu ne trouves pas le site officiel vérifié d'un lieu, mets "Non disponible" dans le champ.
+   - Un site web DOIT correspondre au lieu exact décrit. Ne mets PAS un site de tourisme régional comme site officiel d'un lieu spécifique.
+   - Vérifie que l'URL correspond bien au lieu mentionné (pas un site générique de tourisme breton).
+
+4. COHÉRENCE DU CONTENU :
+   - Chaque fait mentionné (histoire, légende, faune, flore) doit être vérifiable.
+   - Si tu n'es pas sûr d'une information, NE L'INCLUS PAS plutôt que de l'inventer.
+   - Les noms de propriétaires, guides, ou personnes citées doivent être réels ou omis.
+   - Les horaires et tarifs doivent être vérifiés ou omis avec la mention "se renseigner auprès du lieu".
+
+═══════════════════════════════════════════════════
+PÉRIMÈTRE GÉOGRAPHIQUE AUTORISÉ
+═══════════════════════════════════════════════════
+- Centre : Ferme Équestre An Arwen, 5 Le Bignon, 35360 La Chapelle du Lou du Lac
+- Cercle 1 (0-15 km) : communes autour de La Chapelle du Lou du Lac, Montfort-sur-Meu, Bédée
+- Cercle 2 (15-50 km) : Forêt de Brocéliande/Paimpont, Rennes, Dinan, Combourg
+- Cercle 3 (50-150 km max) : Bretagne entière (Saint-Malo, Mont-Saint-Michel, Quimper, Vannes, côtes bretonnes)
+- AU-DELÀ de 150 km : HORS PÉRIMÈTRE, REFUSE l'article.
+
+═══════════════════════════════════════════════════
+CONSIGNES DE RÉDACTION
+═══════════════════════════════════════════════════
 1. AUCUN caractère markdown : pas de **, ##, #, [1], *** ou autre formatage technique
 2. Rédige en texte fluide et naturel, comme un vrai journaliste de magazine
 3. Utilise des paragraphes aérés avec des retours à la ligne simples
 4. Le texte doit sembler écrit par un humain passionné, pas par une IA
 5. Style narratif, contemplatif, sensoriel, jamais publicitaire
-6. Intègre des touches de culture locale : légendes, histoire, patrimoine
+6. Intègre des touches de culture locale : légendes bretonnes, histoire locale, patrimoine régional
 
 STRUCTURE DE L'ARTICLE :
 
@@ -199,46 +234,35 @@ Le contenu doit inclure des marqueurs [IMAGE_1], [IMAGE_2], [IMAGE_3] à des end
 
 TITRE : Un titre évocateur et poétique (sans ponctuation spéciale, sans deux-points)
 
-CHAPÔ (3-4 phrases) : Introduction sensorielle et immersive avec lumière, odeurs, sons, saison. Situe le lieu par rapport à la Ferme An Arwen.
+CHAPÔ (3-4 phrases) : Introduction sensorielle et immersive. Situe le lieu par rapport à la Ferme An Arwen avec une distance RÉELLE.
 
 CORPS DE L'ARTICLE (1000-1500 mots) :
 Écris en paragraphes fluides séparés par des doubles retours à la ligne.
-- Descriptions détaillées des paysages, faune et flore
-- Mise en scène d'itinéraires ou activités concrètes
+- Descriptions des paysages BRETONS réels, faune et flore locales
+- Mise en scène d'itinéraires ou activités concrètes et vérifiables
 - Engagements éco-touristiques du lieu
 - Suggestions de combinaisons avec un séjour à An Arwen
 
-Insère [IMAGE_1] après les premiers paragraphes d'introduction.
-Insère [IMAGE_2] au milieu de l'article, dans une section descriptive.
-Insère [IMAGE_3] avant la conclusion ou les infos pratiques.
-
-À la fin du corps de l'article, inclure naturellement :
-
-INFOS PRATIQUES (intégrées dans un paragraphe fluide, pas de liste à puces) :
-Nom complet et type de structure, adresse postale complète, téléphone, email, site web officiels (VÉRIFIE que ces coordonnées sont réelles), horaires et saisonnalité, distance et temps de trajet depuis An Arwen, conseils pratiques (équipement, niveau de difficulté).
+INFOS PRATIQUES (intégrées naturellement, pas de liste à puces) :
+Nom complet, adresse postale RÉELLE, coordonnées VÉRIFIÉES uniquement. Si une info n'est pas vérifiable, l'omettre.
 
 ENCADRÉ "L'ESPRIT ECO-SYSTÈME" (dernier paragraphe, 5-8 lignes) :
-Explique pourquoi ce lieu est cohérent avec l'éco-tourisme et complémentaire à An Arwen. Commence ce paragraphe par "L'esprit Éco-Système".
-
-IMPORTANT :
-- Toutes les informations doivent être VÉRIFIABLES et RÉELLES
-- Les coordonnées (téléphone, email, site web) doivent être EXACTES et ACTUELLES
-- Les distances depuis An Arwen doivent être PRÉCISES
-- Le lieu doit RÉELLEMENT EXISTER en Bretagne
+Explique pourquoi ce lieu BRETON est cohérent avec l'éco-tourisme et complémentaire à An Arwen.
 
 Fournis ta réponse au format JSON suivant :
 {
-  "title": "Titre évocateur style magazine (sans caractères spéciaux, sans deux-points)",
-  "excerpt": "Chapô immersif de 3-4 phrases (texte pur, sans formatage)",
-  "content": "Article complet de 1000-1500 mots en texte fluide avec paragraphes séparés par des retours à la ligne doubles. AUCUN markdown, AUCUN caractère spécial. Inclure les marqueurs [IMAGE_1], [IMAGE_2], [IMAGE_3] aux emplacements stratégiques. Inclure naturellement les infos pratiques et l'encadré Esprit Eco-Système à la fin.",
-  "location_name": "Nom exact du lieu",
-  "location_address": "Adresse complète avec code postal",
-  "location_phone": "Numéro de téléphone réel vérifié",
-  "location_email": "Email de contact réel vérifié",
-  "location_website": "Site web officiel vérifié",
-  "distance_from_arwen": "Distance en km (ex: 12 km, environ 20 minutes)",
+  "title": "Titre évocateur style magazine",
+  "excerpt": "Chapô immersif de 3-4 phrases",
+  "content": "Article complet 1000-1500 mots. AUCUN markdown. Marqueurs [IMAGE_1], [IMAGE_2], [IMAGE_3]. Infos pratiques et Esprit Eco-Système à la fin.",
+  "location_name": "Nom exact du lieu RÉEL en Bretagne",
+  "location_address": "Adresse complète RÉELLE avec code postal breton (22xxx, 29xxx, 35xxx, 56xxx, ou limitrophe)",
+  "location_phone": "Numéro vérifié ou 'Non disponible'",
+  "location_email": "Email vérifié ou 'Non disponible'",
+  "location_website": "Site web OFFICIEL du lieu vérifié ou 'Non disponible'",
+  "distance_from_arwen": "Distance routière RÉELLE en km depuis La Chapelle du Lou du Lac",
   "category": "${category}",
-  "tags": ["tag1", "tag2", "tag3", "tag4"]
+  "tags": ["tag1", "tag2", "tag3", "tag4"],
+  "image_search_keywords": ["mots-clés SPÉCIFIQUES au lieu breton pour recherche d'images pertinentes"]
 }`;
 
     const response = await fetch("https://api.perplexity.ai/chat/completions", {
@@ -252,7 +276,7 @@ Fournis ta réponse au format JSON suivant :
         messages: [
           { 
             role: "system", 
-            content: "Tu es un rédacteur-reporter premium de magazine Géo spécialisé en éco-tourisme breton. Tu rédiges des articles immersifs, poétiques et informatifs. Tu ne génères JAMAIS de caractères markdown (**, ##, #, [1]). Tu écris en texte fluide et naturel. Tu insères des marqueurs [IMAGE_1], [IMAGE_2], [IMAGE_3] pour indiquer les emplacements des photos. Tu vérifies toujours l'exactitude des informations. Réponds uniquement en JSON valide." 
+            content: "Tu es un rédacteur-reporter premium de magazine Géo spécialisé EXCLUSIVEMENT en éco-tourisme BRETON. RÈGLES ABSOLUES : 1) Tu ne rédiges JAMAIS d'articles sur des lieux hors de Bretagne ou de France. Si le sujet est hors périmètre, retourne {\"error\":\"HORS_PERIMETRE\",\"reason\":\"explication\"}. 2) Tu n'inventes JAMAIS de sites web, numéros de téléphone ou emails — mets 'Non disponible' si incertain. 3) Tu n'inventes JAMAIS de distances — mets 'Distance à vérifier' si incertain. 4) Tu ne génères JAMAIS de markdown. 5) Tu écris en texte fluide. 6) Tu insères [IMAGE_1], [IMAGE_2], [IMAGE_3]. Réponds uniquement en JSON valide." 
           },
           { role: "user", content: prompt }
         ],
@@ -264,6 +288,8 @@ Fournis ta réponse au format JSON suivant :
             schema: {
               type: "object",
               properties: {
+                error: { type: "string" },
+                reason: { type: "string" },
                 title: { type: "string" },
                 excerpt: { type: "string" },
                 content: { type: "string" },
@@ -274,9 +300,10 @@ Fournis ta réponse au format JSON suivant :
                 location_website: { type: "string" },
                 distance_from_arwen: { type: "string" },
                 category: { type: "string" },
-                tags: { type: "array", items: { type: "string" } }
+                tags: { type: "array", items: { type: "string" } },
+                image_search_keywords: { type: "array", items: { type: "string" } }
               },
-              required: ["title", "excerpt", "content", "location_name", "category"]
+              required: ["title", "content", "location_name", "category"]
             }
           }
         }
@@ -296,13 +323,49 @@ Fournis ta réponse au format JSON suivant :
       throw new Error("No content received from Perplexity");
     }
 
-    let articleData: ArticleData;
+    let articleData: any;
     try {
       articleData = JSON.parse(articleContent);
     } catch (e) {
       console.error("Failed to parse article JSON:", articleContent);
       throw new Error("Invalid JSON response from Perplexity");
     }
+
+    // ANTI-HALLUCINATION: Check if AI refused the topic (out of scope)
+    if (articleData.error === "HORS_PERIMETRE" || articleData.error) {
+      console.warn("[generate-ecosystem-article] AI rejected topic as out of scope:", articleData.reason || articleData.error);
+      return new Response(
+        JSON.stringify({ 
+          error: `Le sujet "${topic}" a été rejeté par l'IA : ${articleData.reason || "Ce lieu ne se situe pas en Bretagne. L'Éco-Système ne couvre que la Bretagne et ses environs proches."}`,
+          rejection: true 
+        }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // ANTI-HALLUCINATION: Validate postal code is Breton region
+    const address = articleData.location_address || "";
+    const postalCodeMatch = address.match(/\b(\d{5})\b/);
+    if (postalCodeMatch) {
+      const dept = postalCodeMatch[1].substring(0, 2);
+      const allowedDepts = ["22", "29", "35", "56", "44", "53", "50"];
+      if (!allowedDepts.includes(dept)) {
+        console.warn(`[generate-ecosystem-article] Invalid postal code department: ${dept} for topic: ${topic}`);
+        return new Response(
+          JSON.stringify({ 
+            error: `L'article généré mentionne un code postal hors Bretagne (${postalCodeMatch[1]}). Le lieu "${topic}" ne semble pas être en Bretagne. Veuillez choisir un sujet breton.`,
+            rejection: true 
+          }),
+          { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
+
+    // Clean "Non disponible" placeholders
+    if (articleData.location_phone === "Non disponible") articleData.location_phone = null;
+    if (articleData.location_email === "Non disponible") articleData.location_email = null;
+    if (articleData.location_website === "Non disponible") articleData.location_website = null;
+    if (articleData.distance_from_arwen === "Distance à vérifier") articleData.distance_from_arwen = "À vérifier";
 
     // Nettoyer le contenu des éventuels caractères markdown résiduels
     const cleanContent = (text: string): string => {
