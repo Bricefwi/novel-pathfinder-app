@@ -56,7 +56,7 @@ serve(async (req) => {
       throw new Error("Le sujet et le contenu sont requis");
     }
 
-    const supabase = createClient(
+    const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
@@ -74,7 +74,7 @@ serve(async (req) => {
     if (testEmail) {
       console.log(`[send-newsletter] Mode test → envoi à : ${testEmail}`);
       const result = await sendEmailWithAudit({
-        supabase, to: testEmail,
+        supabase: supabaseAdmin, to: testEmail,
         from: `${sender.name} <${sender.email}>`,
         subject: `[TEST] ${subject}`, html: htmlContent, type: "newsletter",
       });
@@ -88,7 +88,7 @@ serve(async (req) => {
     if (filters?.specificEmails && filters.specificEmails.length > 0) {
       console.log(`[send-newsletter] Mode sélection CRM → ${filters.specificEmails.length} destinataires`);
       const recipientList = filters.specificEmails.map(e => e.toLowerCase());
-      const result = await sendBatches(recipientList, sender, subject, htmlContent, supabase, filters);
+      const result = await sendBatches(recipientList, sender, subject, htmlContent, supabaseAdmin, filters);
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
       });
@@ -101,8 +101,12 @@ serve(async (req) => {
       (filters.dreamDestinations && filters.dreamDestinations.length > 0)
     );
 
-    // Get all user emails
-    const { data: userEmails } = await supabase.rpc("get_user_emails_for_profiles");
+    // Get all user emails — use the authenticated client (has auth.uid() for RPC admin check)
+    const { data: userEmails, error: rpcError } = await auth.supabase.rpc("get_user_emails_for_profiles");
+    if (rpcError) {
+      console.error("[send-newsletter] RPC get_user_emails_for_profiles error:", rpcError);
+      throw new Error("Impossible de récupérer les emails utilisateurs");
+    }
     const emailMap = new Map<string, string>();
     (userEmails || []).forEach((u: { user_id: string; email: string }) => {
       emailMap.set(u.user_id, u.email.toLowerCase());
@@ -112,7 +116,7 @@ serve(async (req) => {
 
     if (hasFilters) {
       // Build segmented query
-      let query = supabase.from("profiles").select("user_id, riding_level, preferred_trip_types, dream_destinations")
+      let query = supabaseAdmin.from("profiles").select("user_id, riding_level, preferred_trip_types, dream_destinations")
         .eq("newsletter_subscribed", true);
 
       const { data: filteredProfiles } = await query;
@@ -141,7 +145,7 @@ serve(async (req) => {
       }
     } else {
       // No filters: all newsletter subscribers
-      const { data: profileSubscribers } = await supabase
+      const { data: profileSubscribers } = await supabaseAdmin
         .from("profiles").select("user_id").eq("newsletter_subscribed", true);
       
       if (profileSubscribers) {
@@ -153,7 +157,7 @@ serve(async (req) => {
     }
 
     // Also include newsletter_subscribers table
-    const { data: subscribers } = await supabase
+    const { data: subscribers } = await supabaseAdmin
       .from("newsletter_subscribers").select("email").eq("is_active", true);
 
     // Merge and deduplicate
@@ -171,7 +175,7 @@ serve(async (req) => {
     }
 
     console.log(`[send-newsletter] Envoi à ${recipientList.length} abonnés (filtres: ${hasFilters ? "oui" : "non"})`);
-    const result = await sendBatches(recipientList, sender, subject, htmlContent, supabase, filters);
+    const result = await sendBatches(recipientList, sender, subject, htmlContent, supabaseAdmin, filters);
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
     });
