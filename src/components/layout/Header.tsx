@@ -173,27 +173,27 @@ export function Header() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-3 group">
+          <Link to="/" className="flex items-center space-x-2 group shrink-0">
             <img 
               src="/logo-an-arwen.png" 
               alt="Ferme Équestre An Arwen" 
-              className="h-20 w-auto"
+              className="h-14 w-auto"
             />
-            <div className="hidden sm:block">
-              <h1 className="font-serif text-base font-bold text-foreground leading-tight">
+            <div className="hidden xl:block">
+              <h1 className="font-serif text-sm font-bold text-foreground leading-tight whitespace-nowrap">
                 Ferme Équestre An Arwen
               </h1>
             </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-1">
+          <nav className="hidden lg:flex items-center space-x-0.5 min-w-0">
             {navigation.map((item) => (
               <Link
                 key={item.name}
                 to={item.href}
                 className={cn(
-                  "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 flex items-center gap-1",
+                  "px-2.5 py-2 text-xs font-medium rounded-lg transition-all duration-300 flex items-center gap-1 whitespace-nowrap",
                   location.pathname === item.href
                     ? "text-primary bg-primary/10"
                     : "text-foreground/80 hover:text-primary hover:bg-primary/5"
@@ -207,7 +207,7 @@ export function Header() {
             {/* Legal Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="px-4 py-2 text-sm font-medium text-foreground/80 hover:text-primary hover:bg-primary/5">
+                <Button variant="ghost" className="px-2.5 py-2 text-xs font-medium text-foreground/80 hover:text-primary hover:bg-primary/5">
                   <Scale className="h-4 w-4 mr-1" />
                   Légal
                   <ChevronDown className="h-4 w-4 ml-1" />
