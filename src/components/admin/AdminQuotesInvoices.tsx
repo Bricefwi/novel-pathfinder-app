@@ -469,31 +469,26 @@ export const AdminQuotesInvoices = () => {
     }
   };
 
+  const [quotePrefillData, setQuotePrefillData] = useState<{ client_name?: string; client_email?: string; client_phone?: string; subject?: string; message?: string } | null>(null);
+
   // Check for prefill data from Inbox on mount
   useEffect(() => {
     const prefillRaw = sessionStorage.getItem("inbox-quote-prefill");
     if (prefillRaw) {
       sessionStorage.removeItem("inbox-quote-prefill");
+      try {
+        const parsed = JSON.parse(prefillRaw);
+        setQuotePrefillData(parsed);
+      } catch {}
       setIsQuoteDialogOpen(true);
-      // Store for QuoteForm initial state
-      sessionStorage.setItem("_quote-prefill-active", prefillRaw);
     }
   }, []);
 
   const QuoteForm = () => {
-    const prefillData = (() => {
-      const raw = sessionStorage.getItem("_quote-prefill-active");
-      if (raw) {
-        sessionStorage.removeItem("_quote-prefill-active");
-        try { return JSON.parse(raw); } catch { return null; }
-      }
-      return null;
-    })();
-
     const [formData, setFormData] = useState({
-      client_name: prefillData?.client_name || "",
-      client_email: prefillData?.client_email || "",
-      client_phone: prefillData?.client_phone || "",
+      client_name: quotePrefillData?.client_name || "",
+      client_email: quotePrefillData?.client_email || "",
+      client_phone: quotePrefillData?.client_phone || "",
       client_address: "",
       activity_title: "",
       activity_duration: "",
@@ -504,8 +499,15 @@ export const AdminQuotesInvoices = () => {
       deposit_percentage: 30,
       payment_option: "deposit",
       valid_until: "",
-      notes: prefillData?.message ? `Demande initiale : ${prefillData.subject || ""}\n${prefillData.message}` : "",
+      notes: quotePrefillData?.message ? `Demande initiale : ${quotePrefillData.subject || ""}\n${quotePrefillData.message}` : "",
     });
+
+    // Clear prefill data after form is initialized
+    useEffect(() => {
+      if (quotePrefillData) {
+        setQuotePrefillData(null);
+      }
+    }, []);
 
     const totalPrice = formData.unit_price * formData.participants;
     const depositAmount = Math.ceil(totalPrice * (formData.deposit_percentage / 100));
