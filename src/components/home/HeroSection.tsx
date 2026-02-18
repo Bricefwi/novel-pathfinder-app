@@ -38,7 +38,8 @@ export function HeroSection() {
     "✨ Randonnées équestres en Bretagne & Maroc",
     "Quand la sérénité du voyage",
     "rencontre l'aventure",
-    "Vivez des moments uniques au rythme du cheval, entre les légendes bretonnes et les dunes marocaines. Une expérience inoubliable vous attend.",
+    "Vivez des moments uniques au rythme du cheval en direct avec des guides équestres professionnels entre légendes bretonnes, paysages marocains et d'autres merveilles et cultures du monde.",
+    "Une expérience inoubliable vous attend !",
     "Découvrir nos randonnées",
     "Demander un devis",
   ], []);
@@ -133,7 +134,10 @@ export function HeroSection() {
 
           {/* Subtitle with shadow */}
           <p className="text-lg md:text-xl text-primary-foreground/95 max-w-2xl mx-auto leading-relaxed drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
-            {t("Vivez des moments uniques au rythme du cheval, entre les légendes bretonnes et les dunes marocaines. Une expérience inoubliable vous attend.")}
+            {t("Vivez des moments uniques au rythme du cheval en direct avec des guides équestres professionnels entre légendes bretonnes, paysages marocains et d'autres merveilles et cultures du monde.")}
+          </p>
+          <p className="text-lg md:text-xl text-primary-foreground font-semibold drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)]">
+            {t("Une expérience inoubliable vous attend !")}
           </p>
 
           {/* CTA Buttons */}
