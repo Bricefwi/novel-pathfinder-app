@@ -46,7 +46,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.send-reply]
-verify_jwt = true
+verify_jwt = false
 
 [functions.custom-email-sender]
 verify_jwt = false
