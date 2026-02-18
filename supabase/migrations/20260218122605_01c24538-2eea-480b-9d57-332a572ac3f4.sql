@@ -1,0 +1,2 @@
+ALTER TABLE public.ecosystem_suggestions DROP CONSTRAINT ecosystem_suggestions_generated_article_id_fkey;
+ALTER TABLE public.ecosystem_suggestions ADD CONSTRAINT ecosystem_suggestions_generated_article_id_fkey FOREIGN KEY (generated_article_id) REFERENCES public.ecosystem_articles(id) ON DELETE SET NULL;
