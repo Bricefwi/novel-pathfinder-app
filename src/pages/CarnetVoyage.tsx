@@ -329,9 +329,10 @@ const CarnetVoyage = () => {
           ) : featuredArticles.length > 0 ? (
             <div className="grid md:grid-cols-2 gap-8">
               {featuredArticles.map((article, index) => (
-                <article 
+                <Link 
                   key={article.id}
-                  className="group relative h-[500px] rounded-3xl overflow-hidden"
+                  to={`/carnet-de-voyage/${article.slug}`}
+                  className="group relative h-[500px] rounded-3xl overflow-hidden block"
                 >
                   <img 
                     src={getArticleImage(article, index)} 
@@ -360,29 +361,23 @@ const CarnetVoyage = () => {
                       {article.excerpt}
                     </p>
                     <div className="flex items-center justify-between">
-                      <Link to={`/carnet-de-voyage/${article.slug}`} className="flex items-center text-primary font-medium group-hover:gap-3 gap-2 transition-all">
+                      <span className="flex items-center text-primary font-medium group-hover:gap-3 gap-2 transition-all">
                         Lire la suite
                         <ArrowRight className="h-4 w-4" />
-                      </Link>
+                      </span>
                       {isAdmin && (
                         <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="secondary"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(article);
-                            }}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEdit(article); }}
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(article.id);
-                            }}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(article.id); }}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -390,7 +385,7 @@ const CarnetVoyage = () => {
                       )}
                     </div>
                   </div>
-                </article>
+                </Link>
               ))}
             </div>
           ) : (
@@ -422,9 +417,10 @@ const CarnetVoyage = () => {
 
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {otherArticles.map((article, index) => (
-                <article 
+                <Link 
                   key={article.id}
-                  className="group bg-card rounded-2xl overflow-hidden border border-border hover:shadow-lg transition-all"
+                  to={`/carnet-de-voyage/${article.slug}`}
+                  className="group bg-card rounded-2xl overflow-hidden border border-border hover:shadow-lg transition-all block"
                 >
                   <div className="aspect-[4/3] overflow-hidden relative">
                     <img 
@@ -439,7 +435,7 @@ const CarnetVoyage = () => {
                           size="icon"
                           variant="secondary"
                           className="h-8 w-8"
-                          onClick={() => handleEdit(article)}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleEdit(article); }}
                         >
                           <Edit className="h-3 w-3" />
                         </Button>
@@ -447,7 +443,7 @@ const CarnetVoyage = () => {
                           size="icon"
                           variant="destructive"
                           className="h-8 w-8"
-                          onClick={() => handleDelete(article.id)}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(article.id); }}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -459,14 +455,14 @@ const CarnetVoyage = () => {
                       <Calendar className="h-3 w-3" />
                       {formatDate(article.published_at || article.created_at)}
                     </div>
-                     <Link to={`/carnet-de-voyage/${article.slug}`} className="font-serif text-lg font-bold text-foreground group-hover:text-primary transition-colors">
+                    <h3 className="font-serif text-lg font-bold text-foreground group-hover:text-primary transition-colors">
                       {article.title}
-                    </Link>
+                    </h3>
                     <p className="text-muted-foreground text-sm line-clamp-2">
                       {article.excerpt}
                     </p>
                   </div>
-                </article>
+                </Link>
               ))}
             </div>
           </div>
