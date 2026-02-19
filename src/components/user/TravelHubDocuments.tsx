@@ -225,7 +225,7 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
     }
   };
 
-
+  const handleDownloadQuote = (quote: any) => {
     const quoteData: QuoteData = {
       quote_number: quote.quote_number,
       client_name: quote.client_name,
