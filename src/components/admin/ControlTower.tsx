@@ -31,7 +31,8 @@ export type AdminModule =
   | "insights"
   | "quotes"
   | "ecosystem"
-  | "legal";
+  | "legal"
+  | "payment-reminders";
 
 export function ControlTower() {
   const navigate = useNavigate();
