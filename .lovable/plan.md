@@ -1,232 +1,64 @@
 
-# Plan : Système d'Audit Complet avec Gemini 3 Pro
+# Ajout de la visibilite onboarding dans le CRM 360
 
-## Objectif
-Creer un outil d'audit automatise qui analyse l'ensemble du site An Arwen (code, securite, UX, SEO, accessibilite, performance) en utilisant **Gemini 3 Pro** via Lovable AI Gateway.
+## Constat sur Sandra LEBRETON
 
----
+Son profil est complete a **50%** (5 champs sur 10 renseignes) :
 
-## Architecture Proposee
+| Etape | Champ | Statut |
+|-------|-------|--------|
+| Identite | Prenom | Renseigne |
+| Identite | Nom | Renseigne |
+| Identite | Telephone | Renseigne |
+| Profil Cavalier | Niveau equestre | Renseigne |
+| Profil Cavalier | Annees d'experience | Renseigne (0) |
+| Preferences | Destinations revees | Vide |
+| Preferences | Types de sejours | Vide |
+| Preferences | Centres d'interet | Vide |
+| Profil Cavalier | Style d'equitation | Vide |
+| Preferences | Compagnons de voyage | Vide |
 
-```text
-+-------------------+       +------------------------+       +------------------+
-|   Admin Panel     |  -->  |  Edge Function         |  -->  | Gemini 3 Pro     |
-|   (Control Tower) |       |  audit-site            |       | (Lovable AI)     |
-+-------------------+       +------------------------+       +------------------+
-         |                           |
-         v                           v
-  +-------------+            +------------------+
-  | Rapport PDF |            | Stockage DB      |
-  | (telecharg) |            | (audit_reports)  |
-  +-------------+            +------------------+
-```
+## Ce qui existe deja
 
----
+- La logique de calcul de completion dans `src/lib/profile-utils.ts` (10 champs, 100%)
+- L'Edge Function `send-incomplete-profile-reminders` qui envoie des emails de relance aux profils incomplets
+- Le CRM 360 affiche le Lead Score mais **pas le taux de completion du profil**
 
-## Fonctionnalites de l'Audit
+## Modifications prevues
 
-### 1. Categories d'Analyse
-L'audit couvrira 6 domaines :
+### 1. Ajouter le taux de completion du profil dans la fiche client CRM 360
 
-| Domaine | Points Analyses |
-|---------|-----------------|
-| **Securite** | RLS policies, validation inputs, CORS, injection XSS/SQL |
-| **Performance** | Lazy loading, bundle size, images optimisees, cache |
-| **SEO** | Meta tags, sitemap, robots.txt, llms.txt, schema.org |
-| **Accessibilite** | Contrastes, labels aria, navigation clavier, alt images |
-| **UX/Design** | Coherence visuelle, responsive, parcours utilisateur |
-| **Code** | Bonnes pratiques React, TypeScript, composants reutilisables |
+Dans `src/components/admin/modules/CRM360.tsx` :
 
-### 2. Score Global
-Chaque domaine recoit une note de 0 a 100, avec un score global pondere.
+- Importer `calculateProfileCompletion` depuis `@/lib/profile-utils`
+- Ajouter dans la vue detail client (a cote du Lead Score) un indicateur **"Profil Cavalier"** avec le pourcentage de completion et une barre de progression
+- Ajouter une section **"Etapes Onboarding"** sous les coordonnees qui affiche visuellement les 10 champs avec un indicateur vert/rouge pour chacun :
+  - Prenom, Nom, Telephone
+  - Niveau equestre, Experience, Style d'equitation
+  - Destinations revees, Types de sejours, Centres d'interet, Compagnons de voyage
+- Ajouter un badge "Profil incomplet" ou "Cavalier Verifie" visible directement dans la fiche
 
-### 3. Recommandations Actionnables
-Chaque probleme identifie sera accompagne :
-- D'une description claire du probleme
-- D'un niveau de priorite (Critique, Haute, Moyenne, Faible)
-- D'une solution concrete avec exemple de code si applicable
+### 2. Ajouter le taux de completion dans la liste des clients
 
----
+- Afficher le pourcentage de completion du profil dans chaque carte client de la liste (sous le Lead Score existant), avec une micro barre de progression
 
-## Implementation Technique
+### 3. Ajouter un bouton "Relancer pour completer le profil"
 
-### Phase 1 : Creation de la Table de Stockage
-```sql
-CREATE TABLE audit_reports (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  created_at TIMESTAMPTZ DEFAULT now(),
-  created_by UUID REFERENCES auth.users(id),
-  audit_type TEXT NOT NULL, -- 'full', 'security', 'seo', etc.
-  status TEXT DEFAULT 'pending', -- 'pending', 'running', 'completed', 'failed'
-  scores JSONB, -- { security: 85, performance: 72, ... }
-  global_score INTEGER,
-  findings JSONB, -- Array of issues found
-  recommendations JSONB, -- Array of suggestions
-  raw_response TEXT, -- Full AI response for debugging
-  model_used TEXT DEFAULT 'google/gemini-3-pro-preview'
-);
-```
+- Dans la fiche client, si le profil est incomplet, afficher un bouton **"Envoyer un rappel"** qui appelle l'Edge Function `send-incomplete-profile-reminders` pour envoyer un email cible a ce client specifique
+- Pour cela, creer une nouvelle Edge Function `send-single-profile-reminder` qui envoie la relance a un seul utilisateur (par `user_id`), reutilisant le meme template d'email
 
-### Phase 2 : Edge Function `audit-site`
+### 4. Enrichir les donnees du ClientProfile
 
-**Fichier** : `supabase/functions/audit-site/index.ts`
+- Ajouter les champs necessaires au type `ClientProfile` dans le CRM : `riding_experience_years`, `preferred_trip_types`, `interests`, `riding_style`, `travel_companions`, `onboarding_completed`
+- Ces champs sont deja recuperes par la requete `profiles` mais pas mappes dans le type
 
-L'edge function :
-1. Recupere les donnees du projet (structure pages, composants, config)
-2. Analyse la base de donnees (tables, RLS policies via linter)
-3. Construit un prompt detaille pour Gemini 3 Pro
-4. Execute l'appel API avec le modele `google/gemini-3-pro-preview`
-5. Parse et stocke le rapport dans `audit_reports`
+## Details techniques
 
-```typescript
-// Extrait du prompt systeme
-const AUDIT_SYSTEM_PROMPT = `Tu es un expert en developpement web, securite et UX.
-Tu realises un audit complet d'une application React/Vite/Supabase.
+### Fichiers modifies
+- `src/components/admin/modules/CRM360.tsx` : ajout completion profil + section etapes onboarding + bouton relance
 
-STRUCTURE DU RAPPORT ATTENDU (JSON) :
-{
-  "scores": {
-    "security": 0-100,
-    "performance": 0-100,
-    "seo": 0-100,
-    "accessibility": 0-100,
-    "ux": 0-100,
-    "code_quality": 0-100
-  },
-  "global_score": 0-100,
-  "findings": [
-    {
-      "category": "security|performance|seo|accessibility|ux|code",
-      "severity": "critical|high|medium|low",
-      "title": "Titre du probleme",
-      "description": "Description detaillee",
-      "location": "Fichier ou composant concerne",
-      "recommendation": "Solution concrete",
-      "code_example": "Code correctif si applicable"
-    }
-  ],
-  "summary": "Resume en 3 phrases"
-}`;
-```
+### Fichier cree
+- `supabase/functions/send-single-profile-reminder/index.ts` : Edge Function pour relancer un client individuel (reprend le template de `send-incomplete-profile-reminders` mais pour un seul `user_id`)
 
-### Phase 3 : Interface Admin
-
-**Nouveau module** : `src/components/admin/modules/SiteAudit.tsx`
-
-Fonctionnalites :
-- Bouton "Lancer un audit complet"
-- Historique des audits precedents
-- Affichage des scores avec jauges visuelles
-- Liste des problemes tries par priorite
-- Export PDF du rapport
-- Comparaison entre audits (evolution dans le temps)
-
-### Phase 4 : Collecte des Donnees pour l'Audit
-
-L'edge function collectera :
-
-```typescript
-// Donnees injectees dans le prompt
-const auditContext = {
-  // Structure de l'application
-  pages: ["Index", "Destinations", "Auth", "Admin", ...],
-  components_count: 45,
-  edge_functions: ["ask-loic", "analyze-prospect", ...],
-  
-  // Configuration
-  seo_files: ["robots.txt", "sitemap.xml", "llms.txt"],
-  rls_policies: [...], // Depuis le linter
-  
-  // Echantillons de code
-  auth_implementation: "...",
-  sample_components: ["Header.tsx", "Layout.tsx"],
-  
-  // Configuration Supabase
-  tables: ["profiles", "activities", "bookings", ...],
-  storage_buckets: ["avatars", "gallery"],
-};
-```
-
----
-
-## Details des Livrables
-
-### Fichiers a Creer
-
-| Fichier | Description |
-|---------|-------------|
-| `supabase/functions/audit-site/index.ts` | Edge function principale |
-| `src/components/admin/modules/SiteAudit.tsx` | Interface d'audit dans Control Tower |
-| `src/hooks/use-site-audit.ts` | Hook pour gerer l'etat de l'audit |
-| Migration SQL | Table `audit_reports` + RLS admin-only |
-
-### Fichiers a Modifier
-
-| Fichier | Modification |
-|---------|--------------|
-| `src/pages/Admin.tsx` | Ajouter onglet "Audit Site" |
-| `src/components/admin/ControlTowerContent.tsx` | Integrer le module SiteAudit |
-| `supabase/config.toml` | Declarer la nouvelle function |
-
----
-
-## Interface Utilisateur
-
-```text
-+------------------------------------------------------------------+
-|  AUDIT DU SITE                                    [Lancer Audit] |
-+------------------------------------------------------------------+
-|                                                                  |
-|  Score Global : 78/100  ████████████████████░░░░░                |
-|                                                                  |
-|  +------------+  +------------+  +------------+                  |
-|  | Securite   |  | Perf.      |  | SEO        |                  |
-|  |   85/100   |  |   72/100   |  |   91/100   |                  |
-|  +------------+  +------------+  +------------+                  |
-|  +------------+  +------------+  +------------+                  |
-|  | A11y       |  | UX         |  | Code       |                  |
-|  |   68/100   |  |   80/100   |  |   75/100   |                  |
-|  +------------+  +------------+  +------------+                  |
-|                                                                  |
-|  PROBLEMES IDENTIFIES (12)                                       |
-|  +--------------------------------------------------------------+|
-|  | ! CRITIQUE : Validation input manquante sur AgentFAQ        ||
-|  | ! HAUTE    : Images sans attribut alt dans Galerie          ||
-|  | . MOYENNE  : Bundle JS non optimise (1.2MB)                 ||
-|  +--------------------------------------------------------------+|
-|                                                                  |
-|  [Telecharger PDF]  [Voir historique]  [Comparer]                |
-+------------------------------------------------------------------+
-```
-
----
-
-## Modele IA Utilise
-
-- **Modele** : `google/gemini-3-pro-preview`
-- **Raison** : Modele next-gen avec capacites de raisonnement avancees, ideal pour l'analyse de code complexe et la generation de recommandations detaillees
-- **Configuration** :
-  - `temperature: 0.2` (reponses factuelles et precises)
-  - `max_tokens: 8192` (rapport detaille)
-
----
-
-## Securite
-
-- Table `audit_reports` avec RLS : lecture/ecriture admin uniquement
-- Edge function avec validation du role admin avant execution
-- Pas d'exposition de donnees sensibles dans les rapports
-
----
-
-## Estimation du Travail
-
-| Etape | Temps estime |
-|-------|--------------|
-| Table + RLS | 5 min |
-| Edge function audit-site | 15 min |
-| Interface SiteAudit.tsx | 15 min |
-| Integration Control Tower | 5 min |
-| Tests et ajustements | 10 min |
-
-**Total : ~50 minutes**
+### Pas de migration base de donnees necessaire
+Toutes les donnees existent deja dans la table `profiles`.
