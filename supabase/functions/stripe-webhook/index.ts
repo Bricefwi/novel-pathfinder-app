@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { EMAIL_SENDERS, wrapInBrandedLayout, greeting, paragraph, activityCard, pricingTable, priceRow, formatPrice, formatDate, badge, separator, getAppUrl } from "../_shared/email-templates.ts";
+import { EMAIL_SENDERS, wrapInBrandedLayout, greeting, paragraph, activityCard, pricingTable, priceRow, formatPrice, formatDate, badge, separator, infoCard, getAppUrl } from "../_shared/email-templates.ts";
 import { sendEmailWithAudit } from "../_shared/email-audit.ts";
 
 /**
@@ -107,12 +107,70 @@ serve(async (req: Request) => {
       }).eq("id", invoiceId);
     }
 
-    // 3. Update quote status
+    // 3. Update quote status + auto-generate invoice
+    let generatedInvoiceId: string | null = null;
     if (quoteId) {
       await supabase.from("quotes").update({
         status: "accepted",
         stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null,
       }).eq("id", quoteId);
+
+      // Auto-generate invoice from quote if no invoice exists yet
+      if (!invoiceId) {
+        const { data: quote } = await supabase.from("quotes").select("*").eq("id", quoteId).single();
+        if (quote) {
+          // Generate invoice number
+          const { data: invoiceNumber } = await supabase.rpc("generate_invoice_number");
+          const now = new Date().toISOString();
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + 30);
+
+          const newInvoice = {
+            invoice_number: invoiceNumber || `FAC-${Date.now()}`,
+            quote_id: quoteId,
+            user_id: quote.user_id,
+            client_name: quote.client_name,
+            client_email: quote.client_email,
+            client_phone: quote.client_phone,
+            client_address: quote.client_address,
+            activity_title: quote.activity_title,
+            activity_duration: quote.activity_duration,
+            start_date: quote.start_date,
+            end_date: quote.end_date,
+            unit_price: quote.unit_price,
+            participants: quote.participants,
+            subtotal: quote.total_price,
+            tax_rate: 0,
+            tax_amount: 0,
+            total_amount: quote.total_price,
+            amount_paid: chargeAmount,
+            payment_status: paymentType === "deposit" ? "partial" : "paid",
+            payment_method: "stripe",
+            payment_date: now,
+            due_date: dueDate.toISOString().split("T")[0],
+            status: paymentType === "deposit" ? "sent" : "paid",
+            stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null,
+            stripe_session_id: session.id,
+            cgu_accepted: quote.cgu_accepted || false,
+            cgu_accepted_at: quote.cgu_accepted_at,
+            cgv_accepted: quote.cgv_accepted || false,
+            cgv_accepted_at: quote.cgv_accepted_at,
+            notes: `Facture générée automatiquement suite au paiement Stripe du devis ${quote.quote_number}.`,
+          };
+
+          const { data: createdInvoice, error: invErr } = await supabase.from("invoices").insert(newInvoice).select("id").single();
+          if (invErr) {
+            console.error("[stripe-webhook] Failed to create invoice:", invErr.message);
+          } else {
+            generatedInvoiceId = createdInvoice.id;
+            console.log(`[stripe-webhook] Invoice ${invoiceNumber} created from quote ${quote.quote_number}`);
+
+            // Update payment record with invoice reference
+            await supabase.from("payments").update({ invoice_id: generatedInvoiceId })
+              .eq("stripe_session_id", session.id);
+          }
+        }
+      }
     }
 
     // 4. Send payment receipt to client
@@ -167,7 +225,7 @@ serve(async (req: Request) => {
       subject: `✅ Paiement confirmé – ${formatPrice(chargeAmount)} – ${activityTitle}`,
       html: receiptHtml,
       type: "notification",
-      referenceId: invoiceId || quoteId || undefined,
+      referenceId: invoiceId || generatedInvoiceId || quoteId || undefined,
     });
 
     // 5. Notify admins
@@ -205,6 +263,98 @@ serve(async (req: Request) => {
         type: "notification",
         referenceId: invoiceId || quoteId || undefined,
       });
+    }
+
+    // 6. Auto-send invoice email if invoice was created or already existed
+    const finalInvoiceId = invoiceId || generatedInvoiceId;
+    if (finalInvoiceId) {
+      const { data: invoiceForEmail } = await supabase.from("invoices").select("*").eq("id", finalInvoiceId).single();
+      if (invoiceForEmail) {
+        const COMPANY_LEGAL = "Ferme Équestre An Arwen – SIRET 80266354200016 – Non assujetti à la TVA, art. 293 B du CGI";
+        const isPaid = invoiceForEmail.payment_status === "paid";
+        const hasPartialPayment = invoiceForEmail.amount_paid && invoiceForEmail.amount_paid > 0 && invoiceForEmail.amount_paid < invoiceForEmail.total_amount;
+
+        const paymentStatusHtml = isPaid
+          ? infoCard(`<p style="margin:0;color:#2E7D32;font-size:15px;font-weight:600;">✅ Facture acquittée</p>`, "#4CAF50")
+          : infoCard(`
+              <p style="margin:0 0 5px 0;color:#8B7D6B;font-size:14px;font-weight:600;">⏳ En attente de solde</p>
+              ${hasPartialPayment ? `
+                <p style="margin:5px 0 0 0;color:#8B7D6B;font-size:14px;">Acompte versé : ${formatPrice(invoiceForEmail.amount_paid)}</p>
+                <p style="margin:5px 0 0 0;color:#8B7D6B;font-size:16px;font-weight:600;">Reste à payer : ${formatPrice(invoiceForEmail.total_amount - invoiceForEmail.amount_paid)}</p>
+              ` : ""}
+            `);
+
+        const taxRows = invoiceForEmail.tax_amount > 0
+          ? priceRow(`TVA (${invoiceForEmail.tax_rate || 20}%)`, formatPrice(invoiceForEmail.tax_amount))
+          : "";
+
+        const invoiceBody = [
+          greeting(invoiceForEmail.client_name),
+          paragraph("Suite à votre paiement, veuillez trouver ci-dessous votre facture officielle. Ce document fait foi pour votre comptabilité."),
+          `<div style="text-align:center;margin:15px 0;">${badge(`Facture N° ${invoiceForEmail.invoice_number}`)}</div>`,
+          activityCard({
+            title: invoiceForEmail.activity_title,
+            duration: invoiceForEmail.activity_duration,
+            startDate: invoiceForEmail.start_date,
+            endDate: invoiceForEmail.end_date,
+            participants: invoiceForEmail.participants,
+          }),
+          pricingTable(
+            priceRow("Prix unitaire", formatPrice(invoiceForEmail.unit_price)) +
+            priceRow(`${invoiceForEmail.participants} participant(s)`, `× ${invoiceForEmail.participants}`) +
+            priceRow("Sous-total HT", formatPrice(invoiceForEmail.subtotal)) +
+            taxRows +
+            priceRow("Total TTC", formatPrice(invoiceForEmail.total_amount), true)
+          ),
+          paymentStatusHtml,
+          separator(),
+          paragraph(`<strong>Rappel CGU/CGV :</strong> En procédant au paiement, vous confirmez avoir lu et accepté nos <a href="${appUrl}/cgu" style="color:#6B8E7F;">Conditions Générales d'Utilisation</a> et nos <a href="${appUrl}/cgv" style="color:#6B8E7F;">Conditions Générales de Vente</a>.`),
+          invoiceForEmail.cgu_accepted ? paragraph(`✅ CGU acceptées le ${formatDate(invoiceForEmail.cgu_accepted_at)}`) : "",
+          invoiceForEmail.cgv_accepted ? paragraph(`✅ CGV acceptées le ${formatDate(invoiceForEmail.cgv_accepted_at)}`) : "",
+        ].join("");
+
+        const invoiceHtml = wrapInBrandedLayout("Votre facture", invoiceBody, {
+          preheader: `Facture ${invoiceForEmail.invoice_number} – ${invoiceForEmail.activity_title}`,
+          ctaUrl: `${appUrl}/mon-espace`,
+          ctaLabel: "Consulter mes documents",
+          footerExtra: `
+            <p style="margin:0 0 8px 0;color:#666;font-size:12px;line-height:1.5;">
+              <strong>Mentions légales :</strong> ${COMPANY_LEGAL}
+            </p>
+            <p style="margin:0;color:#888;font-size:11px;line-height:1.5;">
+              <strong>Conditions de paiement :</strong> Paiement à réception. En cas de retard, pénalité de 3× le taux d'intérêt légal + indemnité forfaitaire de 40 € pour frais de recouvrement (art. L.441-10 et D.441-5 du Code de commerce).
+            </p>
+          `,
+        });
+
+        const invSender = EMAIL_SENDERS.factures;
+        await sendEmailWithAudit({
+          supabase,
+          to: invoiceForEmail.client_email,
+          from: `${invSender.name} <${invSender.email}>`,
+          subject: `📄 Facture ${invoiceForEmail.invoice_number} – ${invoiceForEmail.activity_title}`,
+          html: invoiceHtml,
+          type: "invoice",
+          userId: invoiceForEmail.user_id,
+          referenceId: finalInvoiceId,
+        });
+
+        // Send admin copies
+        for (const adminEmail of adminEmails) {
+          if (adminEmail.toLowerCase() === invoiceForEmail.client_email.toLowerCase()) continue;
+          await sendEmailWithAudit({
+            supabase,
+            to: adminEmail,
+            from: `${invSender.name} <${invSender.email}>`,
+            subject: `[Copie] Facture ${invoiceForEmail.invoice_number} – ${invoiceForEmail.client_name}`,
+            html: invoiceHtml,
+            type: "invoice",
+            referenceId: finalInvoiceId,
+          });
+        }
+
+        console.log(`[stripe-webhook] Invoice email sent to ${invoiceForEmail.client_email}`);
+      }
     }
 
     console.log(`[stripe-webhook] Payment processed successfully. Receipt sent to ${clientEmail}, ${adminEmails.length} admins notified.`);
