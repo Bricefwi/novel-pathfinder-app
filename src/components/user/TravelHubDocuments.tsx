@@ -33,6 +33,8 @@ import {
   FolderLock,
   Eye,
   CreditCard,
+  Mail,
+  Loader2,
   BookOpen,
   MapPin,
   Utensils,
@@ -75,6 +77,7 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
   const [cguAccepted, setCguAccepted] = useState(false);
   const [cgvAccepted, setCgvAccepted] = useState(false);
   const [signatureConfirmed, setSignatureConfirmed] = useState(false);
+  const [paymentLinkLoading, setPaymentLinkLoading] = useState(false);
   // État local pour la checklist (non persisté)
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
 
@@ -201,7 +204,28 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
     }
   };
 
-  const handleDownloadQuote = (quote: any) => {
+  const handleRequestPaymentLink = async (quote: any) => {
+    setPaymentLinkLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("request-payment-link", {
+        body: { quote_id: quote.id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("📧 Lien de paiement envoyé par email !", {
+        description: `Vérifiez votre boîte mail (${quote.client_email})`,
+      });
+      queryClient.invalidateQueries({ queryKey: ["user-quotes"] });
+      setSelectedQuote(null);
+    } catch (err: any) {
+      console.error("Payment link error:", err);
+      toast.error("Erreur lors de l'envoi du lien de paiement");
+    } finally {
+      setPaymentLinkLoading(false);
+    }
+  };
+
+
     const quoteData: QuoteData = {
       quote_number: quote.quote_number,
       client_name: quote.client_name,
@@ -602,9 +626,18 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
                     Télécharger PDF
                   </Button>
                   {(selectedQuote.status === 'pending' || selectedQuote.status === 'sent' || selectedQuote.status === 'draft') && (
-                    <Button variant="default" className="flex-1">
-                      <CreditCard className="h-4 w-4 mr-2" />
-                      Accepter & Payer
+                    <Button 
+                      variant="default" 
+                      className="flex-1"
+                      disabled={paymentLinkLoading}
+                      onClick={() => handleRequestPaymentLink(selectedQuote)}
+                    >
+                      {paymentLinkLoading ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Mail className="h-4 w-4 mr-2" />
+                      )}
+                      {paymentLinkLoading ? "Envoi en cours..." : "Recevoir le lien de paiement"}
                     </Button>
                   )}
                 </div>
