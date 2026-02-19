@@ -2,13 +2,15 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { EMAIL_SENDERS, wrapInBrandedLayout, greeting, paragraph, activityCard, pricingTable, priceRow, formatPrice, formatDate, separator, getAppUrl } from "../_shared/email-templates.ts";
+import { sendEmailWithAudit } from "../_shared/email-audit.ts";
 
 /**
  * create-checkout-session
  * 
  * Called by admin to generate a Stripe Checkout payment link for a quote or invoice.
  * Supports: full payment or deposit (acompte).
- * The link is then sent to the client by email.
+ * Creates the Stripe session AND sends the payment link email to the client.
  */
 
 serve(async (req: Request) => {
@@ -102,7 +104,7 @@ serve(async (req: Request) => {
     }
 
     // Build app URL for redirects
-    const appUrl = Deno.env.get("APP_URL") || "https://www.ferme-equestre-arwen.com";
+    const appUrl = getAppUrl();
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
@@ -151,13 +153,109 @@ serve(async (req: Request) => {
       await supabase.from("quotes").update({ stripe_session_id: session.id }).eq("id", quote_id);
     }
 
-    console.log(`[create-checkout-session] Session created: ${session.id} for ${client_email}, amount: ${chargeAmount}€ (${payment_type})`);
+    // ===== SEND PAYMENT LINK EMAIL TO CLIENT =====
+    const sender = EMAIL_SENDERS.factures;
+    const paymentLabel = payment_type === "deposit"
+      ? `Acompte de ${deposit_percentage}% (${formatPrice(chargeAmount)})`
+      : `Paiement intégral (${formatPrice(chargeAmount)})`;
+
+    const emailBody = `
+      ${greeting(client_name || "Client")}
+      ${paragraph(`Voici votre lien de paiement sécurisé pour votre réservation :`)}
+      
+      ${activityCard({ title: activity_title })}
+
+      ${pricingTable(
+        priceRow("Prestation", activity_title) +
+        priceRow("Montant total", formatPrice(amount)) +
+        priceRow("Montant à régler", paymentLabel, true)
+      )}
+
+      ${separator()}
+
+      <table role="presentation" style="width:100%;margin:24px 0;">
+        <tr><td style="text-align:center;">
+          <a href="${session.url}" style="display:inline-block;padding:16px 40px;background-color:#E8652B;color:#ffffff;text-decoration:none;border-radius:8px;font-size:16px;font-weight:700;font-family:Georgia,serif;">
+            💳 Payer maintenant – ${formatPrice(chargeAmount)}
+          </a>
+        </td></tr>
+      </table>
+
+      ${paragraph(`Ce lien de paiement est sécurisé par Stripe. Vous serez redirigé vers une page de paiement sécurisée.`)}
+      ${paragraph(`Après votre paiement, vous recevrez automatiquement votre confirmation et votre facture par email.`)}
+      
+      <p style="margin:30px 0 0 0;color:#555;font-size:14px;">Équestrement vôtre,<br><strong style="color:#6B8E7F;">L'équipe An Arwen 🐴</strong></p>
+    `;
+
+    const emailHtml = wrapInBrandedLayout(
+      "Votre lien de paiement",
+      emailBody,
+      {
+        preheader: `Payez ${formatPrice(chargeAmount)} pour ${activity_title}`,
+        ctaUrl: session.url!,
+        ctaLabel: "Payer maintenant",
+      }
+    );
+
+    // Send to client
+    const emailResult = await sendEmailWithAudit({
+      supabase,
+      to: client_email,
+      from: `${sender.name} <${sender.email}>`,
+      subject: `💳 Votre lien de paiement – ${activity_title} – ${formatPrice(chargeAmount)}`,
+      html: emailHtml,
+      type: "invoice",
+      userId: user.id,
+      referenceId: quote_id || invoice_id || undefined,
+    });
+
+    // Notify admins
+    const adminEmails = (Deno.env.get("ADMIN_NOTIFICATION_EMAILS") || "").split(",").map(e => e.trim()).filter(Boolean);
+    const adminSender = EMAIL_SENDERS.notifications;
+    const docType = quote_id ? "Devis" : "Facture";
+    const docId = quote_id || invoice_id || "N/A";
+
+    const adminBody = `
+      ${greeting("Admin")}
+      ${paragraph(`Un lien de paiement Stripe a été envoyé à un client :`)}
+      
+      <table role="presentation" style="width:100%;background-color:#F5F3F0;border-radius:12px;margin:20px 0;">
+        <tr><td style="padding:20px;">
+          <p style="margin:0 0 8px 0;"><strong>Client :</strong> ${client_name || "N/A"} (${client_email})</p>
+          <p style="margin:0 0 8px 0;"><strong>${docType} :</strong> ${docId}</p>
+          <p style="margin:0 0 8px 0;"><strong>Prestation :</strong> ${activity_title}</p>
+          <p style="margin:0 0 8px 0;"><strong>Montant à régler :</strong> ${formatPrice(chargeAmount)} (${payment_type === "deposit" ? `acompte ${deposit_percentage}%` : "intégral"})</p>
+          <p style="margin:0;"><strong>Montant total :</strong> ${formatPrice(amount)}</p>
+        </td></tr>
+      </table>
+    `;
+
+    const adminHtml = wrapInBrandedLayout("💳 Lien de paiement envoyé", adminBody, {
+      preheader: `Lien de paiement envoyé à ${client_name} pour ${activity_title}`,
+      ctaUrl: `${appUrl}/admin`,
+      ctaLabel: "Voir dans l'admin",
+    });
+
+    for (const adminEmail of adminEmails) {
+      await sendEmailWithAudit({
+        supabase,
+        to: adminEmail,
+        from: `${adminSender.name} <${adminSender.email}>`,
+        subject: `💳 Lien de paiement envoyé – ${client_name} – ${activity_title}`,
+        html: adminHtml,
+        type: "notification",
+        referenceId: quote_id || invoice_id || undefined,
+      });
+    }
+
+    console.log(`[create-checkout-session] Session created & email sent: ${session.id} for ${client_email}, amount: ${chargeAmount}€ (${payment_type}), email: ${emailResult.success ? "OK" : "FAILED"}`);
 
     return new Response(JSON.stringify({
       url: session.url,
       session_id: session.id,
       amount: chargeAmount,
       payment_type,
+      email_sent: emailResult.success,
     }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },

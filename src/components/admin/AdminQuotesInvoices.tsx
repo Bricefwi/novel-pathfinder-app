@@ -500,9 +500,10 @@ export const AdminQuotesInvoices = () => {
 
       if (data?.url) {
         await navigator.clipboard.writeText(data.url);
+        const emailStatus = data.email_sent ? "Email envoyé ✅" : "Email non envoyé ⚠️";
         toast.success(
-          `Lien de paiement copié ! (${data.payment_type === "deposit" ? "Acompte" : "Total"} : ${Number(data.amount).toFixed(2)} €)`,
-          { description: `Collez-le dans un email pour ${params.client_name}` }
+          `Lien de paiement créé ! (${data.payment_type === "deposit" ? "Acompte" : "Total"} : ${Number(data.amount).toFixed(2)} €)`,
+          { description: `${emailStatus} – Lien copié dans le presse-papier pour ${params.client_name}` }
         );
       }
     } catch (err: unknown) {
