@@ -18,6 +18,7 @@ import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 import { downloadProspectAnalysisPDF, ProspectAnalysisData } from "@/components/pdf/ProspectAnalysisPDFGenerator";
 import { UserRoleManager } from "@/components/admin/UserRoleManager";
+import { calculateProfileCompletion, type ProfileForCompletion } from "@/lib/profile-utils";
 import {
   Users,
   Search,
@@ -44,6 +45,10 @@ import {
   Save,
   X,
   UserPlus,
+  CheckCircle2,
+  XCircle,
+  Send,
+  BadgeCheck,
 } from "lucide-react";
 
 interface ProspectAnalysis {
@@ -74,7 +79,13 @@ interface ClientProfile {
   email?: string;
   phone: string | null;
   riding_level: string | null;
+  riding_experience_years: number | null;
   dream_destinations: string[] | null;
+  preferred_trip_types: string[] | null;
+  interests: string[] | null;
+  riding_style: string[] | null;
+  travel_companions: string | null;
+  onboarding_completed: boolean | null;
   created_at: string;
   // Computed fields
   totalBookings: number;
@@ -83,12 +94,43 @@ interface ClientProfile {
   totalRevenue: number;
   lastActivity: string | null;
   leadScore: number;
+  profileCompletion: number;
   segment: "vip" | "hot" | "dormant" | "new";
   userRole?: "admin" | "user";
 }
 
 type SortField = "name" | "leadScore" | "created_at" | "totalRevenue";
 type SortOrder = "asc" | "desc";
+
+// Onboarding steps definition
+const ONBOARDING_STEPS = [
+  { key: "first_name", label: "Prénom", category: "Identité" },
+  { key: "last_name", label: "Nom", category: "Identité" },
+  { key: "phone", label: "Téléphone", category: "Identité" },
+  { key: "riding_level", label: "Niveau équestre", category: "Profil Cavalier" },
+  { key: "riding_experience_years", label: "Années d'expérience", category: "Profil Cavalier" },
+  { key: "riding_style", label: "Style d'équitation", category: "Profil Cavalier" },
+  { key: "dream_destinations", label: "Destinations rêvées", category: "Préférences" },
+  { key: "preferred_trip_types", label: "Types de séjours", category: "Préférences" },
+  { key: "interests", label: "Centres d'intérêt", category: "Préférences" },
+  { key: "travel_companions", label: "Compagnons de voyage", category: "Préférences" },
+] as const;
+
+const isFieldFilled = (client: ClientProfile, key: string): boolean => {
+  switch (key) {
+    case "first_name": return !!client.first_name;
+    case "last_name": return !!client.last_name;
+    case "phone": return !!client.phone;
+    case "riding_level": return !!client.riding_level;
+    case "riding_experience_years": return client.riding_experience_years !== null && client.riding_experience_years !== undefined;
+    case "riding_style": return (client.riding_style?.length ?? 0) > 0;
+    case "dream_destinations": return (client.dream_destinations?.length ?? 0) > 0;
+    case "preferred_trip_types": return (client.preferred_trip_types?.length ?? 0) > 0;
+    case "interests": return (client.interests?.length ?? 0) > 0;
+    case "travel_companions": return !!client.travel_companions;
+    default: return false;
+  }
+};
 
 export function CRM360() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -101,6 +143,7 @@ export function CRM360() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ first_name: "", last_name: "", phone: "" });
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+  const [isSendingReminder, setIsSendingReminder] = useState(false);
   const [newClientForm, setNewClientForm] = useState({
     first_name: "",
     last_name: "",
@@ -162,7 +205,6 @@ export function CRM360() {
       // Enrich profiles with CRM data
       const enrichedProfiles: ClientProfile[] = profiles.map((profile) => {
         const userBookings = bookings.filter((b) => b.user_id === profile.user_id);
-        // Fix: Filter quotes by user_id (linked to profile id) OR by client_email matching
         const userQuotes = quotes.filter((q) => q.user_id === profile.id || q.user_id === profile.user_id);
         const userMessages = messages.filter((m) => m.user_id === profile.user_id);
         const userRole = roles.find((r) => r.user_id === profile.user_id);
@@ -173,7 +215,6 @@ export function CRM360() {
         const pendingQuotes = userQuotes.filter((q) => q.status === "sent" || q.status === "draft").length;
         const totalRevenue = confirmedBookings.reduce((acc, b) => acc + (Number(b.total_price) || 0), 0);
         
-        // Get last activity date
         const allDates = [
           ...userBookings.map((b) => new Date(b.created_at)),
           ...userQuotes.map((q) => new Date(q.created_at)),
@@ -181,7 +222,6 @@ export function CRM360() {
         ].sort((a, b) => b.getTime() - a.getTime());
         const lastActivity = allDates[0]?.toISOString() || null;
 
-        // Calculate lead score (0-100)
         let leadScore = 0;
         if (profile.first_name && profile.last_name) leadScore += 15;
         if (profile.phone) leadScore += 10;
@@ -192,17 +232,30 @@ export function CRM360() {
         if (totalBookings > 0) leadScore += 15;
         leadScore = Math.min(leadScore, 100);
 
-        // Determine segment
         let segment: "vip" | "hot" | "dormant" | "new" = "new";
         if (totalBookings >= 2) segment = "vip";
         else if (pendingQuotes > 0 && lastActivity && differenceInDays(new Date(), new Date(lastActivity)) <= 7) segment = "hot";
         else if (lastActivity && differenceInDays(new Date(), new Date(lastActivity)) > 60) segment = "dormant";
 
-        // Récupérer l'email depuis auth.users (priorité) puis les devis ou réservations
         const emailFromAuth = emailMap.get(profile.user_id);
         const emailFromQuote = userQuotes.find((q) => (q as { client_email?: string }).client_email)?.client_email;
         const emailFromBooking = userBookings.find((b) => (b as { contact_email?: string }).contact_email)?.contact_email;
         const email = emailFromAuth || emailFromQuote || emailFromBooking || null;
+
+        // Calculate profile completion
+        const profileForCompletion: ProfileForCompletion = {
+          first_name: profile.first_name,
+          last_name: profile.last_name,
+          phone: profile.phone,
+          riding_level: profile.riding_level,
+          riding_experience_years: profile.riding_experience_years,
+          dream_destinations: profile.dream_destinations,
+          preferred_trip_types: profile.preferred_trip_types,
+          interests: profile.interests,
+          riding_style: profile.riding_style,
+          travel_companions: profile.travel_companions,
+        };
+        const profileCompletion = calculateProfileCompletion(profileForCompletion);
 
         return {
           ...profile,
@@ -213,6 +266,7 @@ export function CRM360() {
           totalRevenue,
           lastActivity,
           leadScore,
+          profileCompletion,
           segment,
           userRole: (userRole?.role as "admin" | "user") || "user",
         };
@@ -285,6 +339,23 @@ export function CRM360() {
     },
   });
 
+  // Send single profile reminder
+  const sendProfileReminder = async (userId: string) => {
+    setIsSendingReminder(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-single-profile-reminder", {
+        body: { user_id: userId },
+      });
+      if (error) throw error;
+      toast.success("Email de relance envoyé avec succès !");
+    } catch (err) {
+      console.error("Erreur envoi relance:", err);
+      toast.error("Erreur lors de l'envoi de la relance");
+    } finally {
+      setIsSendingReminder(false);
+    }
+  };
+
   // Filter and sort clients
   const filteredClients = (clients || [])
     .filter((client) => {
@@ -348,7 +419,7 @@ export function CRM360() {
       return;
     }
 
-    const headers = ["Nom", "Prénom", "Email", "Téléphone", "Segment", "Lead Score", "Voyages", "Devis", "CA Total", "Dernière activité"];
+    const headers = ["Nom", "Prénom", "Email", "Téléphone", "Segment", "Lead Score", "Profil %", "Voyages", "Devis", "CA Total", "Dernière activité"];
     const rows = dataToExport.map((c) => [
       c.last_name || "",
       c.first_name || "",
@@ -356,6 +427,7 @@ export function CRM360() {
       c.phone || "",
       c.segment,
       c.leadScore,
+      c.profileCompletion,
       c.totalBookings,
       c.totalQuotes,
       c.totalRevenue.toFixed(2),
@@ -392,7 +464,6 @@ export function CRM360() {
       if (data.status === "insufficient_data") {
         toast.info("Pas assez de données pour analyser ce prospect.");
       } else if (data.status === "success" && data.analysis) {
-        // Save analysis to history
         const { error: saveError } = await supabase.from("prospect_analyses").insert({
           user_id: userId,
           budget_probable: data.analysis.budget_probable,
@@ -714,6 +785,26 @@ export function CRM360() {
                           </div>
                           <Progress value={client.leadScore} className="h-1.5" />
                         </div>
+                        {/* Profile completion micro bar */}
+                        <div className="mt-1.5">
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="text-muted-foreground flex items-center gap-1">
+                              {client.profileCompletion === 100 ? (
+                                <BadgeCheck className="h-3 w-3 text-chart-2" />
+                              ) : (
+                                <UserCheck className="h-3 w-3" />
+                              )}
+                              Profil
+                            </span>
+                            <span className={`font-medium ${client.profileCompletion === 100 ? "text-chart-2" : client.profileCompletion >= 50 ? "text-primary" : "text-destructive"}`}>
+                              {client.profileCompletion}%
+                            </span>
+                          </div>
+                          <Progress 
+                            value={client.profileCompletion} 
+                            className={`h-1 ${client.profileCompletion === 100 ? "[&>div]:bg-chart-2" : client.profileCompletion >= 50 ? "" : "[&>div]:bg-destructive"}`}
+                          />
+                        </div>
                       </div>
                     </div>
                   </button>
@@ -767,8 +858,19 @@ export function CRM360() {
                         </div>
                       ) : (
                         <>
-                          <CardTitle className="text-xl">
+                          <CardTitle className="text-xl flex items-center gap-2">
                             {selectedClient.first_name || "Sans"} {selectedClient.last_name || "nom"}
+                            {selectedClient.profileCompletion === 100 ? (
+                              <Badge className="bg-chart-2/20 text-chart-2 border-chart-2/30 gap-1">
+                                <BadgeCheck className="h-3 w-3" />
+                                Cavalier Vérifié
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 gap-1">
+                                <XCircle className="h-3 w-3" />
+                                Profil incomplet
+                              </Badge>
+                            )}
                           </CardTitle>
                           <CardDescription className="flex items-center gap-2 mt-1">
                             {getSegmentBadge(selectedClient.segment)}
@@ -803,11 +905,23 @@ export function CRM360() {
                     )}
                   </div>
                 </div>
-                <div className="text-right flex flex-col items-end gap-2 mt-4">
-                  <div>
-                    <div className="text-sm text-muted-foreground mb-1">Lead Score</div>
-                    <div className="text-3xl font-bold text-primary">{selectedClient.leadScore}%</div>
+                <div className="text-right flex flex-col items-end gap-3 mt-4">
+                  <div className="flex items-end gap-6">
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Lead Score</div>
+                      <div className="text-3xl font-bold text-primary">{selectedClient.leadScore}%</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-muted-foreground mb-1">Profil Cavalier</div>
+                      <div className={`text-3xl font-bold ${selectedClient.profileCompletion === 100 ? "text-chart-2" : selectedClient.profileCompletion >= 50 ? "text-primary" : "text-destructive"}`}>
+                        {selectedClient.profileCompletion}%
+                      </div>
+                    </div>
                   </div>
+                  <Progress 
+                    value={selectedClient.profileCompletion} 
+                    className={`h-2 w-48 ${selectedClient.profileCompletion === 100 ? "[&>div]:bg-chart-2" : selectedClient.profileCompletion >= 50 ? "" : "[&>div]:bg-destructive"}`}
+                  />
                   <UserRoleManager
                     userId={selectedClient.user_id}
                     userName={`${selectedClient.first_name || "Sans"} ${selectedClient.last_name || "nom"}`}
@@ -863,6 +977,59 @@ export function CRM360() {
                         {selectedClient.riding_level || <span className="text-muted-foreground italic">Non défini</span>}
                       </p>
                     </div>
+                  </div>
+                </div>
+
+                {/* Onboarding Steps Section */}
+                <div className="p-4 bg-muted/20 rounded-lg border space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-medium flex items-center gap-2">
+                      <UserCheck className="h-4 w-4 text-primary" />
+                      Étapes Onboarding
+                      <span className="text-muted-foreground font-normal">
+                        ({ONBOARDING_STEPS.filter(s => isFieldFilled(selectedClient, s.key)).length}/{ONBOARDING_STEPS.length})
+                      </span>
+                    </h4>
+                    {selectedClient.profileCompletion < 100 && selectedClient.email && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => sendProfileReminder(selectedClient.user_id)}
+                        disabled={isSendingReminder}
+                        className="gap-2"
+                      >
+                        {isSendingReminder ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Send className="h-3 w-3" />
+                        )}
+                        Relancer par email
+                      </Button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {(["Identité", "Profil Cavalier", "Préférences"] as const).map(category => (
+                      <div key={category}>
+                        <p className="text-xs text-muted-foreground font-medium mb-1.5 uppercase tracking-wide">{category}</p>
+                        <div className="space-y-1">
+                          {ONBOARDING_STEPS.filter(s => s.category === category).map(step => {
+                            const filled = isFieldFilled(selectedClient, step.key);
+                            return (
+                              <div key={step.key} className="flex items-center gap-2 text-sm">
+                                {filled ? (
+                                  <CheckCircle2 className="h-4 w-4 text-chart-2 shrink-0" />
+                                ) : (
+                                  <XCircle className="h-4 w-4 text-destructive/60 shrink-0" />
+                                )}
+                                <span className={filled ? "text-foreground" : "text-muted-foreground"}>
+                                  {step.label}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
@@ -1007,7 +1174,6 @@ export function CRM360() {
                     ) : analysisResult.analysis && (
                       <>
                         <div className="grid grid-cols-3 gap-3">
-                          {/* Budget */}
                           <div className="text-center p-3 rounded-lg bg-background">
                             <ShoppingBag className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
                             <p className="text-xs text-muted-foreground mb-1">Budget</p>
@@ -1015,13 +1181,11 @@ export function CRM360() {
                               {analysisResult.analysis.budget_probable}
                             </Badge>
                           </div>
-                          {/* Intention */}
                           <div className="text-center p-3 rounded-lg bg-background">
                             <Target className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
                             <p className="text-xs text-muted-foreground mb-1">Intention</p>
                             <Badge variant="outline">{analysisResult.analysis.intention_principale}</Badge>
                           </div>
-                          {/* Confiance */}
                           <div className="text-center p-3 rounded-lg bg-background">
                             <Star className="h-4 w-4 mx-auto text-muted-foreground mb-1" />
                             <p className="text-xs text-muted-foreground mb-1">Confiance</p>
@@ -1029,7 +1193,6 @@ export function CRM360() {
                           </div>
                         </div>
 
-                        {/* Produits suggérés */}
                         <div>
                           <p className="text-xs font-medium mb-2">Produits suggérés</p>
                           <div className="space-y-2">
@@ -1042,7 +1205,6 @@ export function CRM360() {
                           </div>
                         </div>
 
-                        {/* Résumé */}
                         <p className="text-sm text-muted-foreground italic">
                           "{analysisResult.analysis.analyse_resume}"
                         </p>
