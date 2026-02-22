@@ -1,64 +1,116 @@
 
-# Ajout de la visibilite onboarding dans le CRM 360
+# Plan : Module Comptabilite, Corrections et Google Analytics
 
-## Constat sur Sandra LEBRETON
+## 3 axes d'intervention
 
-Son profil est complete a **50%** (5 champs sur 10 renseignes) :
+---
 
-| Etape | Champ | Statut |
-|-------|-------|--------|
-| Identite | Prenom | Renseigne |
-| Identite | Nom | Renseigne |
-| Identite | Telephone | Renseigne |
-| Profil Cavalier | Niveau equestre | Renseigne |
-| Profil Cavalier | Annees d'experience | Renseigne (0) |
-| Preferences | Destinations revees | Vide |
-| Preferences | Types de sejours | Vide |
-| Preferences | Centres d'interet | Vide |
-| Profil Cavalier | Style d'equitation | Vide |
-| Preferences | Compagnons de voyage | Vide |
+## 1. Correction de l'erreur de relance profil (CRM 360)
 
-## Ce qui existe deja
+**Probleme identifie** : La fonction `send-single-profile-reminder` utilise `authenticateRequest()` (qui lit le header `Authorization`), mais `supabase.functions.invoke()` passe le token automatiquement. Le probleme vient probablement du fait que la session utilisateur est expiree ou que le token n'est pas transmis correctement.
 
-- La logique de calcul de completion dans `src/lib/profile-utils.ts` (10 champs, 100%)
-- L'Edge Function `send-incomplete-profile-reminders` qui envoie des emails de relance aux profils incomplets
-- Le CRM 360 affiche le Lead Score mais **pas le taux de completion du profil**
+**Correction dans `CRM360.tsx`** (ligne ~343-356) :
+- Ajouter un log de l'erreur detaillee retournee par la fonction pour identifier la cause exacte
+- Verifier que la reponse `data` contient bien un champ `error` et l'afficher dans le toast
+- Le `supabase.functions.invoke` retourne `{ data, error }` -- l'erreur peut etre dans `data.error` plutot que dans `error`
 
-## Modifications prevues
+**Correction du code** :
+```typescript
+const sendProfileReminder = async (userId: string) => {
+  setIsSendingReminder(true);
+  try {
+    const { data, error } = await supabase.functions.invoke("send-single-profile-reminder", {
+      body: { user_id: userId },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    toast.success(`Relance envoyee a ${data?.email_sent_to || "l'utilisateur"}`);
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Erreur inconnue";
+    console.error("Erreur envoi relance:", msg);
+    toast.error(`Erreur : ${msg}`);
+  } finally {
+    setIsSendingReminder(false);
+  }
+};
+```
 
-### 1. Ajouter le taux de completion du profil dans la fiche client CRM 360
+---
 
-Dans `src/components/admin/modules/CRM360.tsx` :
+## 2. Nouveau module Comptabilite
 
-- Importer `calculateProfileCompletion` depuis `@/lib/profile-utils`
-- Ajouter dans la vue detail client (a cote du Lead Score) un indicateur **"Profil Cavalier"** avec le pourcentage de completion et une barre de progression
-- Ajouter une section **"Etapes Onboarding"** sous les coordonnees qui affiche visuellement les 10 champs avec un indicateur vert/rouge pour chacun :
-  - Prenom, Nom, Telephone
-  - Niveau equestre, Experience, Style d'equitation
-  - Destinations revees, Types de sejours, Centres d'interet, Compagnons de voyage
-- Ajouter un badge "Profil incomplet" ou "Cavalier Verifie" visible directement dans la fiche
+### Emplacement
+- Nouveau fichier : `src/components/admin/modules/AccountingDashboard.tsx`
+- Ajout dans la sidebar sous la section **Croissance** avec l'icone `Landmark` (Lucide)
+- Nouveau type de module : `"accounting"` dans `ControlTower.tsx`
 
-### 2. Ajouter le taux de completion dans la liste des clients
+### Fonctionnalites du module
 
-- Afficher le pourcentage de completion du profil dans chaque carte client de la liste (sous le Lead Score existant), avec une micro barre de progression
+#### Onglet 1 : Vue d'ensemble financiere
+- **KPIs principaux** :
+  - CA total (factures payees)
+  - CA du mois en cours
+  - Montant total en attente (factures pending/partial)
+  - Taux de recouvrement (paye / total facture)
+- **Graphique** : Evolution du CA par mois (LineChart Recharts)
 
-### 3. Ajouter un bouton "Relancer pour completer le profil"
+#### Onglet 2 : Reglements par produit
+- Tableau agrege par `activity_title` :
+  - Nombre de factures
+  - Montant total facture
+  - Montant paye
+  - Restant du
+- Graphique camembert de la repartition par produit
 
-- Dans la fiche client, si le profil est incomplet, afficher un bouton **"Envoyer un rappel"** qui appelle l'Edge Function `send-incomplete-profile-reminders` pour envoyer un email cible a ce client specifique
-- Pour cela, creer une nouvelle Edge Function `send-single-profile-reminder` qui envoie la relance a un seul utilisateur (par `user_id`), reutilisant le meme template d'email
+#### Onglet 3 : Reglements par client
+- Tableau agrege par `client_name` :
+  - Nombre de factures
+  - Montant total
+  - Montant paye
+  - Restant du
+  - Dernier paiement (date)
+- Filtre de recherche par nom/email
 
-### 4. Enrichir les donnees du ClientProfile
+#### Onglet 4 : Liste detaillee des paiements
+- Tableau complet de toutes les factures avec :
+  - Numero de facture, client, activite, montant total, montant paye, restant, statut, date de paiement, methode de paiement
+- Filtres : par statut (paid/pending/partial), par periode
+- Export CSV
 
-- Ajouter les champs necessaires au type `ClientProfile` dans le CRM : `riding_experience_years`, `preferred_trip_types`, `interests`, `riding_style`, `travel_companions`, `onboarding_completed`
-- Ces champs sont deja recuperes par la requete `profiles` mais pas mappes dans le type
+### Source de donnees
+Tout repose sur la table `invoices` existante (colonnes : `total_amount`, `amount_paid`, `payment_status`, `payment_date`, `payment_method`, `activity_title`, `client_name`, `client_email`). Aucune migration necessaire.
 
-## Details techniques
+---
 
-### Fichiers modifies
-- `src/components/admin/modules/CRM360.tsx` : ajout completion profil + section etapes onboarding + bouton relance
+## 3. Balise Google Analytics non detectee
 
-### Fichier cree
-- `supabase/functions/send-single-profile-reminder/index.ts` : Edge Function pour relancer un client individuel (reprend le template de `send-incomplete-profile-reminders` mais pour un seul `user_id`)
+**Constat** : Le GTM (GTM-WCLDQ7GV) est bien installe dans `index.html`. Le probleme visible sur la capture d'ecran est que **Google ne detecte pas la balise sur le domaine `www.ferme-equestre-arwen.com`**.
 
-### Pas de migration base de donnees necessaire
-Toutes les donnees existent deja dans la table `profiles`.
+**Causes possibles** :
+- Le site en production (domaine personnalise) n'est pas le meme que le preview Lovable
+- Le conteneur GTM doit etre publie (dans l'interface Google Tag Manager)
+- La balise de verification Google (`google-site-verification`) est presente dans le `<head>` -- c'est bon
+- Il faut verifier que le fichier `public/googlea54930b027dc8e71.html` est bien servi sur le domaine de production
+
+**Ce que je peux faire dans le code** : Rien a modifier cote code, le GTM est correctement installe. C'est un probleme de configuration cote Google Tag Manager (publication du conteneur) ou de propagation DNS/deploiement sur le domaine de production.
+
+**Recommandation** : 
+1. Allez sur [tagmanager.google.com](https://tagmanager.google.com), verifiez que le conteneur GTM-WCLDQ7GV est bien **publie** (pas en brouillon)
+2. Dans Google Analytics, verifiez que l'ID de mesure GA4 est bien configure comme balise dans GTM
+3. Testez avec l'extension "Google Tag Assistant" sur votre domaine de production
+
+---
+
+## Fichiers concernes
+
+### Modifies
+- `src/components/admin/modules/CRM360.tsx` : correction du handler de relance (meilleur affichage d'erreur)
+- `src/components/admin/ControlTower.tsx` : ajout du type `"accounting"` dans `AdminModule`
+- `src/components/admin/ControlTowerContent.tsx` : ajout du rendu du module comptabilite
+- `src/components/admin/ControlTowerSidebar.tsx` : ajout de l'entree "Comptabilite" dans la section Croissance
+
+### Crees
+- `src/components/admin/modules/AccountingDashboard.tsx` : nouveau module comptabilite complet
+
+### Aucune migration base de donnees necessaire
+Toutes les donnees existent deja dans la table `invoices`.
