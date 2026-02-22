@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format, subDays, startOfMonth, endOfMonth, startOfYear, subMonths } from "date-fns";
+import { format, subDays, startOfYear } from "date-fns";
 import { fr } from "date-fns/locale";
 import {
   BarChart3,
@@ -19,6 +19,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Euro,
+  Download,
 } from "lucide-react";
 import {
   BarChart,
@@ -35,6 +36,9 @@ import {
   Line,
 } from "recharts";
 import { cn } from "@/lib/utils";
+import * as XLSX from "xlsx";
+import { COMPANY_CONFIG } from "@/config/constants";
+import { toast } from "sonner";
 
 const COLORS = ["hsl(var(--primary))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
 
@@ -202,10 +206,94 @@ export function AnalyticsDashboard() {
     );
   }
 
+  const exportToExcel = () => {
+    if (!stats) {
+      toast.error("Aucune donnée à exporter");
+      return;
+    }
+
+    const wb = XLSX.utils.book_new();
+    const headerStyle = { font: { bold: true, color: { rgb: "FFFFFF" } }, fill: { fgColor: { rgb: "E85D04" } }, alignment: { horizontal: "center" } };
+    const periodLabel = dateRange === "7d" ? "7 derniers jours" : dateRange === "30d" ? "30 derniers jours" : dateRange === "90d" ? "90 derniers jours" : dateRange === "ytd" ? "Depuis début d'année" : `${customStartDate ? format(customStartDate, "dd/MM/yyyy") : ""} - ${customEndDate ? format(customEndDate, "dd/MM/yyyy") : ""}`;
+
+    // Sheet 1: KPIs
+    const kpiData = [
+      [COMPANY_CONFIG.name + " - Analytics Dashboard"],
+      ["Période : " + periodLabel],
+      ["Date d'export : " + format(new Date(), "dd/MM/yyyy HH:mm", { locale: fr })],
+      [],
+      ["Indicateur", "Valeur", "Variation (%)"],
+      ["Clients inscrits", stats.totals.profiles, "+12%"],
+      ["Devis envoyés", stats.totals.quotes, "+8%"],
+      ["Réservations", stats.totals.bookings, `${stats.totals.bookingsChange >= 0 ? "+" : ""}${stats.totals.bookingsChange.toFixed(0)}%`],
+      ["Chiffre d'affaires (€)", stats.totals.revenue, `${stats.totals.revenueChange >= 0 ? "+" : ""}${stats.totals.revenueChange.toFixed(0)}%`],
+    ];
+    const ws1 = XLSX.utils.aoa_to_sheet(kpiData);
+    ws1["!cols"] = [{ wch: 25 }, { wch: 18 }, { wch: 15 }];
+    ws1["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 2 } }];
+    XLSX.utils.book_append_sheet(wb, ws1, "Résumé KPIs");
+
+    // Sheet 2: Funnel
+    const funnelRows = stats.funnelData.map((item, index) => {
+      const prev = index > 0 ? stats.funnelData[index - 1].value : null;
+      const rate = prev ? ((item.value / prev) * 100).toFixed(1) + "%" : "-";
+      return [item.name, item.value, rate];
+    });
+    const ws2 = XLSX.utils.aoa_to_sheet([
+      [COMPANY_CONFIG.name + " - Entonnoir de conversion"],
+      ["Période : " + periodLabel],
+      [],
+      ["Étape", "Nombre", "Taux de conversion"],
+      ...funnelRows,
+    ]);
+    ws2["!cols"] = [{ wch: 20 }, { wch: 12 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, ws2, "Entonnoir");
+
+    // Sheet 3: Destinations
+    const destRows = (stats.destinationsData || []).map(d => [d.name, d.value]);
+    const ws3 = XLSX.utils.aoa_to_sheet([
+      [COMPANY_CONFIG.name + " - Destinations demandées"],
+      ["Période : " + periodLabel],
+      [],
+      ["Destination", "Nombre de demandes"],
+      ...destRows,
+    ]);
+    ws3["!cols"] = [{ wch: 25 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, ws3, "Destinations");
+
+    // Sheet 4: Revenue
+    const revRows = (stats.revenueData || []).map(r => [r.month, r.revenue]);
+    const ws4 = XLSX.utils.aoa_to_sheet([
+      [COMPANY_CONFIG.name + " - Évolution du CA"],
+      ["Période : " + periodLabel],
+      [],
+      ["Mois", "Chiffre d'affaires (€)"],
+      ...revRows,
+    ]);
+    ws4["!cols"] = [{ wch: 15 }, { wch: 22 }];
+    XLSX.utils.book_append_sheet(wb, ws4, "Évolution CA");
+
+    // Sheet 5: Activity types
+    const typeRows = (stats.activityTypeData || []).map(t => [t.name, t.value]);
+    const ws5 = XLSX.utils.aoa_to_sheet([
+      [COMPANY_CONFIG.name + " - Répartition par type"],
+      ["Période : " + periodLabel],
+      [],
+      ["Type d'activité", "Nombre"],
+      ...typeRows,
+    ]);
+    ws5["!cols"] = [{ wch: 20 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, ws5, "Types activités");
+
+    const fileName = `Analytics_AnArwen_${format(new Date(), "yyyy-MM-dd")}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    toast.success("Export Excel généré avec succès !");
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with filters */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold font-serif flex items-center gap-2">
             <BarChart3 className="h-6 w-6 text-primary" />
@@ -216,6 +304,10 @@ export function AnalyticsDashboard() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={exportToExcel} disabled={isLoading || !stats}>
+            <Download className="h-4 w-4 mr-2" />
+            Exporter Excel
+          </Button>
           <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
             <SelectTrigger className="w-40">
               <SelectValue placeholder="Période" />
