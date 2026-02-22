@@ -347,10 +347,12 @@ export function CRM360() {
         body: { user_id: userId },
       });
       if (error) throw error;
-      toast.success("Email de relance envoyé avec succès !");
-    } catch (err) {
-      console.error("Erreur envoi relance:", err);
-      toast.error("Erreur lors de l'envoi de la relance");
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Relance envoyée à ${data?.email_sent_to || "l'utilisateur"}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erreur inconnue";
+      console.error("Erreur envoi relance:", msg);
+      toast.error(`Erreur : ${msg}`);
     } finally {
       setIsSendingReminder(false);
     }

@@ -26,6 +26,7 @@ import {
   Globe,
   Zap,
   BellRing,
+  Landmark,
   MapPin,
   FileText,
   Image,
@@ -69,6 +70,7 @@ const GROWTH_MODULES = [
   { id: "payment-reminders" as const, label: "Relances Paiement", icon: BellRing, badge: "NEW" },
   { id: "analytics" as const, label: "Analytics Business", icon: BarChart3, badge: "NEW" },
   { id: "traffic" as const, label: "Trafic Web", icon: Globe, badge: "NEW" },
+  { id: "accounting" as const, label: "Comptabilité", icon: Landmark, badge: "NEW" },
 ];
 
 const TOOLS_MODULES = [
