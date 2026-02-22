@@ -51,6 +51,14 @@ const handler = async (req: Request): Promise<Response> => {
     const { type, data }: NotifyAdminRequest = await req.json();
     console.log(`[notify-admin] Received request type: ${type}`, data);
 
+    // Input validation
+    if (!type || !["devis", "disponibilite", "contact", "reservation", "alert", "report", "reminder"].includes(type)) {
+      return new Response(
+        JSON.stringify({ error: "Type de notification invalide" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     let userId: string | undefined;
     const auth = await authenticateRequest(req);
     if (auth) {
@@ -65,6 +73,21 @@ const handler = async (req: Request): Promise<Response> => {
     if (!data?.name || !data?.email) {
       return new Response(
         JSON.stringify({ error: "Le nom et l'email sont requis" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Validate input lengths
+    if (data.name.length > 200 || data.email.length > 255) {
+      return new Response(
+        JSON.stringify({ error: "Données trop longues" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    if (data.message && data.message.length > 5000) {
+      return new Response(
+        JSON.stringify({ error: "Message trop long (max 5000 caractères)" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }

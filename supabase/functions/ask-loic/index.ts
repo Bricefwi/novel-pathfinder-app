@@ -1,10 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const MAX_QUESTION_LENGTH = 2000;
+const MAX_USERNAME_LENGTH = 100;
+const MAX_HISTORY_MESSAGES = 10;
+const VALID_ROLES = ["visitor", "admin", "client"];
 
 // Static knowledge about the app structure
 const APP_KNOWLEDGE = `
@@ -206,17 +207,36 @@ Rappel : Ces offres sont mises à jour en temps réel. Utilise UNIQUEMENT ces do
 };
 
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreflightRequest(origin);
   }
 
   try {
-    const { question, userRole = "visitor", userName, conversationHistory = [] } = await req.json();
+    const body = await req.json();
+    const question = body?.question;
+    const userRole = VALID_ROLES.includes(body?.userRole) ? body.userRole : "visitor";
+    const userName = typeof body?.userName === "string" ? body.userName.slice(0, MAX_USERNAME_LENGTH) : undefined;
+    const conversationHistory = Array.isArray(body?.conversationHistory) 
+      ? body.conversationHistory
+          .filter((m: unknown) => m && typeof m === "object" && typeof (m as Record<string, unknown>).role === "string" && typeof (m as Record<string, unknown>).content === "string")
+          .slice(-MAX_HISTORY_MESSAGES)
+          .map((m: Record<string, string>) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content.slice(0, MAX_QUESTION_LENGTH) }))
+      : [];
 
     if (!question || typeof question !== "string") {
       return new Response(
         JSON.stringify({ error: "La question est requise" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (question.length > MAX_QUESTION_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: `Question trop longue (max ${MAX_QUESTION_LENGTH} caractères)` }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
