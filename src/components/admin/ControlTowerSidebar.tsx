@@ -75,6 +75,7 @@ const GROWTH_MODULES = [
 
 const TOOLS_MODULES = [
   { id: "audit" as const, label: "Audit du Site", icon: Search, badge: "AI" },
+  { id: "account-health" as const, label: "Santé Comptes", icon: Settings, badge: "NEW" },
 ];
 
 const LEGACY_MODULES = [

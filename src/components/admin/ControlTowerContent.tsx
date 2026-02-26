@@ -25,6 +25,7 @@ import { TrafficAnalytics } from "./modules/TrafficAnalytics";
 import { SiteAudit } from "./modules/SiteAudit";
 import { PaymentReminders } from "./modules/PaymentReminders";
 import { AccountingDashboard } from "./modules/AccountingDashboard";
+import { AccountHealthDashboard } from "./modules/AccountHealthDashboard";
 
 interface ControlTowerContentProps {
   activeModule: AdminModule;
@@ -69,6 +70,8 @@ export function ControlTowerContent({ activeModule, onModuleChange }: ControlTow
         return <TrafficAnalytics />;
       case "accounting":
         return <AccountingDashboard />;
+      case "account-health":
+        return <AccountHealthDashboard />;
       
       // Legacy modules
       case "dashboard":

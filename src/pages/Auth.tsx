@@ -127,8 +127,8 @@ const Auth = () => {
     const params = new URLSearchParams(window.location.search);
     const hashParams = new URLSearchParams(window.location.hash.slice(1));
     
-    // Supabase sends access_token in hash for password reset
-    if (params.get("reset") === "true" || hashParams.get("type") === "recovery") {
+    // Supabase sends access_token in hash for password reset and invitations
+    if (params.get("reset") === "true" || hashParams.get("type") === "recovery" || hashParams.get("type") === "invite") {
       setIsResetPassword(true);
       setIsLogin(true);
       setIsForgotPassword(false);
@@ -137,8 +137,8 @@ const Auth = () => {
 
     const { data: { session } } = await supabase.auth.getSession();
     if (session) {
-      // If we have a recovery session, stay on reset page
-      if (hashParams.get("type") === "recovery") {
+      // If we have a recovery or invite session, stay on reset page
+      if (hashParams.get("type") === "recovery" || hashParams.get("type") === "invite") {
         setIsResetPassword(true);
         return;
       }

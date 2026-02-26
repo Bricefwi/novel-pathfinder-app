@@ -33,7 +33,8 @@ export type AdminModule =
   | "ecosystem"
   | "legal"
   | "payment-reminders"
-  | "accounting";
+  | "accounting"
+  | "account-health";
 
 export function ControlTower() {
   const navigate = useNavigate();

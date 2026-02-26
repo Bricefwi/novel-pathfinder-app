@@ -43,25 +43,67 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Create auth user
-    const tempPassword = crypto.randomUUID();
+    const siteUrl = Deno.env.get("SITE_URL") || "https://ferme-equestre-arwen.com";
     const clientEmail = email || `manual-${crypto.randomUUID()}@placeholder.local`;
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: clientEmail,
-      password: tempPassword,
-      email_confirm: true,
-      user_metadata: { first_name, last_name, manual_client: true },
-    });
+    const isRealEmail = email && !email.includes("@placeholder.local");
 
-    if (authError) {
-      console.error("[create-manual-client] Auth error:", authError);
-      return new Response(JSON.stringify({ error: authError.message }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    let userId: string;
+    let method: string;
+
+    if (isRealEmail) {
+      // Use inviteUserByEmail for real emails — sends an invitation link
+      const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+        clientEmail,
+        {
+          data: { first_name, last_name, manual_client: true },
+          redirectTo: `${siteUrl}/auth?reset=true`,
+        }
+      );
+
+      if (inviteError) {
+        // If user already exists, just get their ID and update profile
+        if (inviteError.message.includes("already been registered") || inviteError.message.includes("already exists")) {
+          const { data: { users } } = await supabaseAdmin.auth.admin.listUsers();
+          const existingUser = users?.find((u) => u.email === clientEmail);
+          if (!existingUser) {
+            return new Response(JSON.stringify({ error: "Utilisateur existant non trouvé" }), {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+          userId = existingUser.id;
+          method = "existing_user_updated";
+        } else {
+          console.error("[create-manual-client] Invite error:", inviteError);
+          return new Response(JSON.stringify({ error: inviteError.message }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      } else {
+        userId = inviteData.user.id;
+        method = "invited";
+      }
+    } else {
+      // For placeholder emails, use createUser (no real invitation needed)
+      const tempPassword = crypto.randomUUID();
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+        email: clientEmail,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: { first_name, last_name, manual_client: true },
       });
-    }
 
-    const userId = authData.user.id;
+      if (authError) {
+        console.error("[create-manual-client] Auth error:", authError);
+        return new Response(JSON.stringify({ error: authError.message }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      userId = authData.user.id;
+      method = "created_placeholder";
+    }
 
     // Upsert the profile
     const { error: profileError } = await supabaseAdmin
@@ -83,11 +125,12 @@ serve(async (req) => {
       });
     }
 
-    // ── Send welcome email immediately ──────────────────────────────
+    // ── Send welcome email (only for real emails that were NOT invited) ──
+    // For invited users, Supabase already sends the invitation email
     let emailSent = false;
-    const isRealEmail = email && !email.includes("@placeholder.local");
+    const isRealEmailForWelcome = isRealEmail && method !== "invited";
 
-    if (isRealEmail) {
+    if (isRealEmailForWelcome) {
       const appUrl = getAppUrl();
       const displayName = first_name || "cher cavalier";
       const levelLabels: Record<string, string> = {
@@ -170,7 +213,9 @@ serve(async (req) => {
     return new Response(JSON.stringify({
       success: true,
       user_id: userId,
+      method,
       welcome_email_sent: emailSent,
+      invitation_sent: method === "invited",
     }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
