@@ -104,3 +104,9 @@ verify_jwt = false
 
 [functions.request-payment-link]
 verify_jwt = false
+
+[functions.admin-identify-blocked-users]
+verify_jwt = false
+
+[functions.admin-resend-invitations]
+verify_jwt = false
