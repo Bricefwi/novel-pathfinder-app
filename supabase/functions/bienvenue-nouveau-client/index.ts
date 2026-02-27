@@ -24,17 +24,33 @@ serve(async (req) => {
 
     const appUrl = getAppUrl();
 
-    // Find profiles created in the last 24h that haven't received a welcome email
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    // Support forced re-send for a specific user
+    let body: Record<string, unknown> = {};
+    try { body = await req.json(); } catch { /* no body */ }
+    const forceUserId = body.force_user_id as string | undefined;
 
-    const { data: newProfiles, error } = await supabase
-      .from("profiles")
-      .select("user_id, first_name, last_name, created_at")
-      .gte("created_at", oneDayAgo);
+    let newProfiles: Array<{ user_id: string; first_name: string | null; last_name: string | null; created_at: string }> | null = null;
 
-    if (error) {
-      console.error("[bienvenue] Error:", error);
-      throw new Error("Erreur récupération nouveaux profils");
+    if (forceUserId) {
+      // Force mode: bypass 24h filter and anti-doublon
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name, created_at")
+        .eq("user_id", forceUserId);
+      if (error) throw new Error("Erreur récupération profil forcé");
+      newProfiles = data;
+    } else {
+      // Normal mode: find profiles created in the last 24h
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name, created_at")
+        .gte("created_at", oneDayAgo);
+      if (error) {
+        console.error("[bienvenue] Error:", error);
+        throw new Error("Erreur récupération nouveaux profils");
+      }
+      newProfiles = data;
     }
 
     if (!newProfiles || newProfiles.length === 0) {
@@ -45,16 +61,18 @@ serve(async (req) => {
       );
     }
 
-    // Anti-doublon
+    // Anti-doublon (skip in force mode)
     const userIds = newProfiles.map(p => p.user_id);
-    const { data: alreadyWelcomed } = await supabase
-      .from("email_audit_log")
-      .select("user_id")
-      .eq("type", "notification")
-      .like("subject", "%bienvenue%")
-      .in("user_id", userIds);
-
-    const alreadySent = new Set(alreadyWelcomed?.map(r => r.user_id) || []);
+    let alreadySent = new Set<string>();
+    if (!forceUserId) {
+      const { data: alreadyWelcomed } = await supabase
+        .from("email_audit_log")
+        .select("user_id")
+        .eq("type", "notification")
+        .like("subject", "%bienvenue%")
+        .in("user_id", userIds);
+      alreadySent = new Set(alreadyWelcomed?.map(r => r.user_id) || []);
+    }
 
     // Notify admin
     const adminEmails = Deno.env.get("ADMIN_NOTIFICATION_EMAILS");
