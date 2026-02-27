@@ -73,7 +73,12 @@ serve(async (req) => {
     const { data: { users: allAuthUsers } } = await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
     const usersMap = new Map((allAuthUsers || []).map(u => [u.email, u]));
 
-    const results = { success: [] as string[], failed: [] as { email: string; error: string }[], total_processed: 0 };
+    const results = {
+      success: [] as string[],
+      rate_limited: [] as { email: string; message: string }[],
+      failed: [] as { email: string; error: string }[],
+      total_processed: 0,
+    };
 
     for (const email of targetEmails) {
       try {
@@ -101,7 +106,24 @@ serve(async (req) => {
           },
         });
 
-        if (linkError) throw linkError;
+        if (linkError) {
+          const message = (linkError.message || "").toLowerCase();
+          const isRateLimited =
+            message.includes("for security purposes") ||
+            message.includes("request this after") ||
+            message.includes("too many requests");
+
+          if (isRateLimited) {
+            results.rate_limited.push({
+              email,
+              message: "Lien déjà demandé récemment (attendre ~60s)",
+            });
+            results.total_processed++;
+            continue;
+          }
+
+          throw linkError;
+        }
 
         const actionLink = linkData?.properties?.action_link;
         if (!actionLink) throw new Error("Impossible de générer le lien de récupération");
