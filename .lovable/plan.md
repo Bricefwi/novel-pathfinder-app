@@ -1,59 +1,67 @@
 
-# Plan : Export Excel Analytics + Corrections restantes
 
-## Etat des lieux
+## Diagnostic complet du probleme
 
-Apres analyse du code actuel :
-- **Module Comptabilite** : deja cree et fonctionnel (`AccountingDashboard.tsx`) avec 4 onglets (vue d'ensemble, par produit, par client, liste detaillee) et export CSV
-- **Relance profil CRM360** : deja corrigee avec gestion d'erreur amelioree (lignes 342-359)
-- **Google Analytics** : GTM-WCLDQ7GV correctement installe dans `index.html` (lignes 6-10 + noscript lignes 300-301). Le probleme de detection est cote Google Tag Manager (conteneur non publie) ou domaine de production, pas cote code
+### Cause racine identifiee
 
-## Seule modification necessaire : Export Excel professionnel pour Analytics Dashboard
+Le probleme est une **condition de course (race condition)** dans `Auth.tsx` entre deux mecanismes concurrents :
 
-### Approche technique
-- Installer la dependance `xlsx` (SheetJS) pour generer des fichiers Excel `.xlsx` cote navigateur
-- Ajouter un bouton "Exporter Excel" dans le header du dashboard Analytics
-- Generer un classeur Excel multi-onglets avec mise en page soignee
+1. **`onAuthStateChange`** (ligne 108) : Ce listener detecte l'evenement `SIGNED_IN` quand le token de recovery est echange par Supabase. Il appelle immediatement `handlePostLoginRedirect()` qui redirige vers `/mon-espace` ou `/onboarding`.
 
-### Structure du fichier Excel exporte
+2. **`checkSessionAndRedirect`** (ligne 125) : Cette fonction verifie les parametres d'URL (`?reset=true`, `#type=recovery`) pour afficher le formulaire de reinitialisation. Mais elle s'execute **apres** que le listener ait deja redirige l'utilisateur.
 
-**Onglet 1 : Resume KPIs**
-- Titre "Ferme Equestre An Arwen - Analytics" avec periode selectionnee
-- Tableau des KPIs : Clients inscrits, Devis envoyes, Reservations, CA
-- Variations par rapport a la periode precedente
+**Resultat** : Le client clique sur le lien d'activation → Supabase echange le token → `SIGNED_IN` se declenche → redirection immediate vers une autre page → le formulaire de mot de passe n'est jamais affiche.
 
-**Onglet 2 : Entonnoir de conversion**
-- Tableau : Etape, Nombre, Taux de conversion
-- Visiteurs -> Inscrits -> Devis -> Ventes
+**Probleme secondaire** : L'evenement `PASSWORD_RECOVERY` emis par Supabase n'est pas gere du tout dans le listener.
 
-**Onglet 3 : Destinations demandees**
-- Tableau : Destination, Nombre de demandes
-- Tri par popularite
+### Flux actuel (defectueux)
 
-**Onglet 4 : Evolution du CA**
-- Tableau : Mois, Chiffre d'affaires
-- Donnees mensuelles
+```text
+Client clique lien
+  → Supabase echange token recovery
+  → /auth?reset=true#access_token=...&type=recovery
+  → onAuthStateChange: SIGNED_IN → handlePostLoginRedirect()
+  → Redirection vers /mon-espace (profil onboarding_completed=true)
+  → Le formulaire de mot de passe n'apparait JAMAIS
+```
 
-**Onglet 5 : Repartition par type**
-- Tableau : Type d'activite, Nombre
+### Plan de correction
 
-### Mise en page professionnelle
-- En-tetes de colonnes en gras avec fond colore (orange primaire)
-- Largeurs de colonnes ajustees automatiquement
-- Formats numeriques (euros, pourcentages)
-- Date d'export dans le pied de page
-- Logo/nom de l'entreprise dans l'en-tete
+#### 1. Corriger le listener `onAuthStateChange` dans `Auth.tsx`
 
-### Fichiers concernes
+- Ajouter la gestion de l'evenement `PASSWORD_RECOVERY` : quand cet evenement est recu, forcer `setIsResetPassword(true)` et ne pas rediriger
+- Pour l'evenement `SIGNED_IN` : verifier si l'URL contient `reset=true` ou si le hash contient `type=recovery` ou `type=invite`. Si oui, ne pas rediriger et laisser `checkSessionAndRedirect` gerer l'affichage du formulaire
 
-**Dependance a ajouter** : `xlsx` (SheetJS Community Edition)
+```text
+Flux corrige :
 
-**Modifie** : `src/components/admin/modules/AnalyticsDashboard.tsx`
-- Import de xlsx
-- Ajout d'une fonction `exportToExcel()` qui cree le classeur multi-onglets
-- Ajout du bouton "Exporter Excel" a cote du selecteur de periode dans le header
+Client clique lien
+  → Supabase echange token
+  → /auth?reset=true#access_token=...&type=recovery
+  → onAuthStateChange: PASSWORD_RECOVERY → setIsResetPassword(true) ✓
+  → OU SIGNED_IN + URL a reset=true → skip redirect ✓
+  → Formulaire "Definir mon mot de passe" s'affiche ✓
+  → Client saisit mot de passe → updateUser({ password }) ✓
+```
 
-### Points deja resolus (aucune action necessaire)
-- Module Comptabilite : operationnel
-- Relance profil CRM360 : corrigee
-- Google Analytics : correctement installe dans le code. Verifiez dans Google Tag Manager que le conteneur GTM-WCLDQ7GV est bien **publie** et que votre balise GA4 est active
+#### 2. Securiser `checkSessionAndRedirect`
+
+- S'assurer que cette fonction s'execute en premier via un flag `isProcessingAuth` qui bloque le listener pendant l'analyse des parametres URL
+- Deplacer la detection des parametres URL avant le setup du listener `onAuthStateChange`
+
+#### 3. Corriger le message post-reset
+
+- Apres la mise a jour du mot de passe, rediriger vers `/mon-espace` au lieu de simplement revenir au formulaire de connexion (l'utilisateur a deja une session active)
+
+#### 4. Verifier les emails de bienvenue
+
+- Le CTA de l'email de bienvenue (`bienvenue-nouveau-client`) pointe vers `/onboarding` et non vers la page de definition de mot de passe. C'est coherent car cet email n'est PAS un email d'activation. Mais il faut s'assurer que les deux flux sont bien distincts pour le client.
+
+### Fichiers a modifier
+
+- **`src/pages/Auth.tsx`** : Corriger le listener `onAuthStateChange`, ajouter la gestion de `PASSWORD_RECOVERY`, proteger contre la redirection prematuree en cas de recovery/invite
+
+### Aucune modification backend necessaire
+
+La fonction `admin-resend-invitations` genere correctement le lien avec `redirectTo: .../auth?reset=true`. Le probleme est entierement cote frontend dans la gestion de l'evenement d'authentification.
+
