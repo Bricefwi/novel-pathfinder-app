@@ -105,8 +105,32 @@ const Auth = () => {
 
   // Listener global pour capturer les événements d'authentification (notamment OAuth callback)
   useEffect(() => {
+    // Détecter les paramètres de recovery/invite AVANT le listener
+    const urlParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const isRecoveryOrInvite =
+      urlParams.get("reset") === "true" ||
+      hashParams.get("type") === "recovery" ||
+      hashParams.get("type") === "invite";
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Gérer explicitement l'événement PASSWORD_RECOVERY
+      if (event === "PASSWORD_RECOVERY") {
+        setIsResetPassword(true);
+        setIsLogin(true);
+        setIsForgotPassword(false);
+        return; // Ne PAS rediriger
+      }
+
       if (event === "SIGNED_IN" && session?.user) {
+        // Si c'est un flux recovery/invite, bloquer la redirection
+        if (isRecoveryOrInvite) {
+          setIsResetPassword(true);
+          setIsLogin(true);
+          setIsForgotPassword(false);
+          return; // Laisser le formulaire de mot de passe s'afficher
+        }
+
         // Éviter les doubles redirections si déjà en cours de traitement
         if (loading || googleLoading) return;
         
@@ -164,12 +188,19 @@ const Auth = () => {
     if (error) {
       toast.error("Erreur : " + error.message);
     } else {
-      toast.success("Mot de passe modifié avec succès ! Vous pouvez vous connecter.");
+      toast.success("Mot de passe défini avec succès ! Bienvenue chez An Arwen 🐴");
       setIsResetPassword(false);
       setPassword("");
       setConfirmPassword("");
       // Clear URL params
       window.history.replaceState({}, document.title, window.location.pathname);
+      // L'utilisateur a déjà une session active, rediriger vers son espace
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await handlePostLoginRedirect(session.user.id);
+      } else {
+        navigate("/auth");
+      }
     }
     setLoading(false);
   };
