@@ -125,6 +125,8 @@ export function AccountHealthDashboard() {
     onSuccess: (data) => {
       if (data.success?.length > 0) {
         toast.success(`Réinvitation envoyée à ${data.success[0]}`);
+      } else if (data.rate_limited?.length > 0) {
+        toast.info(`Un lien a déjà été envoyé récemment à ${data.rate_limited[0].email}. Réessayez dans ~60 secondes.`);
       } else if (data.failed?.length > 0) {
         toast.error(`Échec : ${data.failed[0].error}`);
       }
@@ -161,7 +163,18 @@ export function AccountHealthDashboard() {
       return result;
     },
     onSuccess: (data) => {
-      toast.success(`${data.success?.length || 0} réinvitation(s) envoyée(s), ${data.failed?.length || 0} échec(s)`);
+      const sent = data.success?.length || 0;
+      const limited = data.rate_limited?.length || 0;
+      const failed = data.failed?.length || 0;
+
+      if (sent > 0) {
+        toast.success(`${sent} réinvitation(s) envoyée(s), ${failed} échec(s)`);
+      } else if (limited > 0 && failed === 0) {
+        toast.info(`${limited} compte(s) déjà sollicités récemment. Réessayez dans ~60 secondes.`);
+      } else {
+        toast.error(`${failed} échec(s) de réinvitation.`);
+      }
+
       queryClient.invalidateQueries({ queryKey: ["account-health"] });
     },
     onError: (error: Error) => {
