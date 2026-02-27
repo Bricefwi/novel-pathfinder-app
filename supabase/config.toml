@@ -28,7 +28,7 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.audit-site]
-verify_jwt = true
+verify_jwt = false
 
 [functions.analyze-prospect]
 verify_jwt = false
