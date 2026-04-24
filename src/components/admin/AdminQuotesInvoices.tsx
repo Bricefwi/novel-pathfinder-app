@@ -14,9 +14,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { FileText, Plus, Download, Eye, Receipt, CheckCircle, Mail, Loader2, Copy, CreditCard } from "lucide-react";
+import { FileText, Plus, Download, Eye, Receipt, CheckCircle, Mail, Loader2, Copy, CreditCard, CalendarClock } from "lucide-react";
 import { downloadQuotePDF, type QuoteData } from "@/components/pdf/QuotePDFGenerator";
 import { downloadInvoicePDF, type InvoiceData } from "@/components/pdf/InvoicePDFGenerator";
+import { InstallmentPaymentManager } from "@/components/admin/InstallmentPaymentManager";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -52,6 +53,7 @@ export const AdminQuotesInvoices = () => {
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
   const [duplicatingQuote, setDuplicatingQuote] = useState<string | null>(null);
   const [sendingPaymentLink, setSendingPaymentLink] = useState<string | null>(null);
+  const [installmentManagerQuote, setInstallmentManagerQuote] = useState<{ id: string; quote_number: string; client_name: string; client_email: string; activity_title: string; total_price: number; start_date: string | null } | null>(null);
   const [editingQuote, setEditingQuote] = useState<typeof quotes extends (infer T)[] ? T : never | null>(null);
 
   // Send test email function
@@ -899,28 +901,47 @@ export const AdminQuotesInvoices = () => {
                             >
                               <Receipt className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              size="sm" 
-                              variant="default"
-                              onClick={() => handleSendPaymentLink({
-                                id: quote.id,
-                                type: "quote",
-                                client_name: quote.client_name,
-                                client_email: quote.client_email,
-                                activity_title: quote.activity_title,
-                                amount: Number(quote.total_price),
-                                payment_type: quote.payment_option === "full" ? "full" : "deposit",
-                                deposit_percentage: Number(quote.deposit_percentage) || 30,
-                              })}
-                              disabled={sendingPaymentLink === quote.id}
-                              title="Générer un lien de paiement Stripe"
-                            >
-                              {sendingPaymentLink === quote.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <CreditCard className="h-4 w-4" />
-                              )}
-                            </Button>
+                            {quote.payment_option === "installments" ? (
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                onClick={() => setInstallmentManagerQuote({
+                                  id: quote.id,
+                                  quote_number: quote.quote_number,
+                                  client_name: quote.client_name,
+                                  client_email: quote.client_email,
+                                  activity_title: quote.activity_title,
+                                  total_price: Number(quote.total_price),
+                                  start_date: quote.start_date,
+                                })}
+                                title="Gérer l'échéancier en 3 fois"
+                              >
+                                <CalendarClock className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                onClick={() => handleSendPaymentLink({
+                                  id: quote.id,
+                                  type: "quote",
+                                  client_name: quote.client_name,
+                                  client_email: quote.client_email,
+                                  activity_title: quote.activity_title,
+                                  amount: Number(quote.total_price),
+                                  payment_type: quote.payment_option === "full" ? "full" : "deposit",
+                                  deposit_percentage: Number(quote.deposit_percentage) || 30,
+                                })}
+                                disabled={sendingPaymentLink === quote.id}
+                                title="Générer un lien de paiement Stripe"
+                              >
+                                {sendingPaymentLink === quote.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <CreditCard className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -1051,6 +1072,14 @@ export const AdminQuotesInvoices = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {installmentManagerQuote && (
+        <InstallmentPaymentManager
+          open={!!installmentManagerQuote}
+          onOpenChange={(open) => !open && setInstallmentManagerQuote(null)}
+          quote={installmentManagerQuote}
+        />
+      )}
     </div>
   );
 };

@@ -94,6 +94,28 @@ serve(async (req: Request) => {
       metadata: { activity_title: activityTitle, original_amount: originalAmount },
     });
 
+    // 1.b. If installment payment, mark the corresponding payment_schedule as paid
+    if (paymentType === "installment" && quoteId) {
+      const installmentNumber = Number(piMetadata.installment_number || metadata.installment_number || 0);
+      if (installmentNumber > 0) {
+        const { error: schedErr } = await supabase
+          .from("payment_schedules")
+          .update({
+            status: "paid",
+            paid_at: new Date().toISOString(),
+            stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null,
+          })
+          .eq("quote_id", quoteId)
+          .eq("installment_number", installmentNumber)
+          .neq("status", "cancelled");
+        if (schedErr) {
+          console.error(`[stripe-webhook] Failed to update payment_schedule ${installmentNumber}:`, schedErr.message);
+        } else {
+          console.log(`[stripe-webhook] Payment schedule installment ${installmentNumber} marked as paid for quote ${quoteId}`);
+        }
+      }
+    }
+
     // 2. Update invoice status
     if (invoiceId) {
       const newPaymentStatus = paymentType === "deposit" ? "partial" : "paid";
