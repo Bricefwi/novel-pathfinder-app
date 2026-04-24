@@ -53,6 +53,7 @@ export const AdminQuotesInvoices = () => {
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
   const [duplicatingQuote, setDuplicatingQuote] = useState<string | null>(null);
   const [sendingPaymentLink, setSendingPaymentLink] = useState<string | null>(null);
+  const [installmentManagerQuote, setInstallmentManagerQuote] = useState<{ id: string; quote_number: string; client_name: string; client_email: string; activity_title: string; total_price: number; start_date: string | null } | null>(null);
   const [editingQuote, setEditingQuote] = useState<typeof quotes extends (infer T)[] ? T : never | null>(null);
 
   // Send test email function
