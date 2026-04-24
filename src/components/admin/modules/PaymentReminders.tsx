@@ -368,6 +368,9 @@ export function PaymentReminders() {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="audit" className="mt-4">
+          <PaymentAuditLog limit={200} />
+        </TabsContent>
       </Tabs>
     </div>
   );
