@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { EMAIL_SENDERS, wrapInBrandedLayout, greeting, paragraph, activityCard, pricingTable, priceRow, formatPrice, formatDate, badge, separator, getAppUrl } from "../_shared/email-templates.ts";
 import { sendEmailWithAudit } from "../_shared/email-audit.ts";
+import { logPaymentAudit, extractRequestContext } from "../_shared/payment-audit.ts";
 
 /**
  * request-payment-link
