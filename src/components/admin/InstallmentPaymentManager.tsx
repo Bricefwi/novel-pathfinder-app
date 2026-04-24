@@ -133,8 +133,8 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
 
   const renderStatus = (s: PaymentSchedule | undefined) => {
     if (!s) return <Badge variant="outline" className="bg-muted">Non envoyé</Badge>;
-    if (s.status === "paid") return <Badge className="bg-green-600 hover:bg-green-700"><CheckCircle2 className="h-3 w-3 mr-1" />Payé</Badge>;
-    if (s.status === "link_sent") return <Badge className="bg-blue-500"><Mail className="h-3 w-3 mr-1" />Lien envoyé</Badge>;
+    if (s.status === "paid") return <Badge className="bg-primary"><CheckCircle2 className="h-3 w-3 mr-1" />Payé</Badge>;
+    if (s.status === "link_sent") return <Badge variant="secondary"><Mail className="h-3 w-3 mr-1" />Lien envoyé</Badge>;
     if (s.status === "failed") return <Badge variant="destructive"><AlertTriangle className="h-3 w-3 mr-1" />Échec</Badge>;
     return <Badge variant="outline"><Clock className="h-3 w-3 mr-1" />En attente</Badge>;
   };
@@ -156,16 +156,16 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
 
         {/* Récapitulatif */}
         <div className="grid grid-cols-3 gap-3 my-4">
-          <Card className="bg-green-50 dark:bg-green-950/20 border-green-200">
+          <Card className="bg-primary/5 border-primary/20">
             <CardContent className="p-4 text-center">
               <p className="text-xs text-muted-foreground">Déjà payé</p>
-              <p className="text-2xl font-bold text-green-700">{totalPaid.toFixed(2)}€</p>
+              <p className="text-2xl font-bold text-primary">{totalPaid.toFixed(2)}€</p>
             </CardContent>
           </Card>
-          <Card className="bg-blue-50 dark:bg-blue-950/20 border-blue-200">
+          <Card className="bg-secondary/30 border-secondary">
             <CardContent className="p-4 text-center">
               <p className="text-xs text-muted-foreground">En attente</p>
-              <p className="text-2xl font-bold text-blue-700">{totalPending.toFixed(2)}€</p>
+              <p className="text-2xl font-bold text-secondary-foreground">{totalPending.toFixed(2)}€</p>
             </CardContent>
           </Card>
           <Card className="bg-muted">
@@ -200,7 +200,7 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
               const isLinkSent = schedule?.status === "link_sent";
               
               return (
-                <Card key={n} className={isPaid ? "border-green-300 bg-green-50/50 dark:bg-green-950/10" : ""}>
+                <Card key={n} className={isPaid ? "border-primary/40 bg-primary/5" : ""}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
@@ -218,12 +218,12 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
                     </div>
 
                     {schedule?.paid_at && (
-                      <p className="text-xs text-green-700 mb-2">
+                      <p className="text-xs text-primary mb-2">
                         ✓ Payé le {format(new Date(schedule.paid_at), "dd MMMM yyyy à HH:mm", { locale: fr })}
                       </p>
                     )}
                     {schedule?.link_sent_at && !isPaid && (
-                      <p className="text-xs text-blue-700 mb-2">
+                      <p className="text-xs text-muted-foreground mb-2">
                         ✉️ Lien envoyé le {format(new Date(schedule.link_sent_at), "dd MMMM yyyy à HH:mm", { locale: fr })}
                       </p>
                     )}
