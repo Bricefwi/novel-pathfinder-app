@@ -21,7 +21,6 @@ interface RequestBody {
   installment_number: number; // 1, 2, or 3
   total_installments?: number; // default 3
   due_date?: string; // ISO date string
-  custom_amount?: number; // override (admin only, with warning)
 }
 
 serve(async (req: Request) => {
@@ -69,7 +68,7 @@ serve(async (req: Request) => {
     }
 
     const body: RequestBody = await req.json();
-    const { quote_id, installment_number, total_installments = 3, due_date, custom_amount } = body;
+    const { quote_id, installment_number, total_installments = 3, due_date } = body;
 
     // === VALIDATION INPUTS ===
     if (!quote_id || !installment_number) {
@@ -78,8 +77,23 @@ serve(async (req: Request) => {
       });
     }
 
-    if (installment_number < 1 || installment_number > total_installments) {
-      return new Response(JSON.stringify({ error: `Le numéro de versement doit être entre 1 et ${total_installments}` }), {
+    if (!Number.isInteger(installment_number) || installment_number < 1 || installment_number > total_installments) {
+      return new Response(JSON.stringify({ error: `Le numéro de versement doit être un entier entre 1 et ${total_installments}` }), {
+        status: 400, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    if (!Number.isInteger(total_installments) || total_installments < 2 || total_installments > 12) {
+      return new Response(JSON.stringify({ error: "total_installments doit être un entier entre 2 et 12" }), {
+        status: 400, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // SECURITY: reject any attempt to inject a custom amount in the body
+    if ("custom_amount" in (body as Record<string, unknown>)) {
+      return new Response(JSON.stringify({ 
+        error: "Le montant des versements est calculé automatiquement (33,33%) et ne peut pas être modifié manuellement." 
+      }), {
         status: 400, headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
@@ -98,20 +112,19 @@ serve(async (req: Request) => {
     }
 
     const totalPrice = Number(quote.total_price);
-    
-    // === COMPUTE INSTALLMENT AMOUNT (33,33%) ===
-    let installmentAmount: number;
-    if (custom_amount && custom_amount > 0) {
-      installmentAmount = custom_amount;
-    } else {
-      // Last installment gets the remainder to avoid rounding loss
-      if (installment_number === total_installments) {
-        const baseInstallment = Math.floor((totalPrice / total_installments) * 100) / 100;
-        installmentAmount = Math.round((totalPrice - baseInstallment * (total_installments - 1)) * 100) / 100;
-      } else {
-        installmentAmount = Math.floor((totalPrice / total_installments) * 100) / 100;
-      }
+
+    if (!Number.isFinite(totalPrice) || totalPrice <= 0) {
+      return new Response(JSON.stringify({ error: "Le devis n'a pas de montant total valide" }), {
+        status: 400, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
+
+    // === COMPUTE EXPECTED INSTALLMENT AMOUNT (33,33% / 33,33% / 33,34%) ===
+    // SECURITY: this amount is the ONLY source of truth — no client override allowed
+    const baseInstallment = Math.floor((totalPrice / total_installments) * 100) / 100;
+    const installmentAmount = installment_number === total_installments
+      ? Math.round((totalPrice - baseInstallment * (total_installments - 1)) * 100) / 100
+      : baseInstallment;
 
     // === SAFEGUARD 1: Check existing schedules for this quote ===
     const { data: existingSchedules } = await supabase
