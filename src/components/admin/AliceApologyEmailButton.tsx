@@ -76,10 +76,10 @@ export function AliceApologyEmailButton() {
   };
 
   return (
-    <Card className="border-amber-500/40 bg-amber-500/5">
+    <Card className="border-accent bg-accent/30">
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
-          <MailWarning className="h-5 w-5 text-amber-600" />
+          <MailWarning className="h-5 w-5 text-accent-foreground" />
           Email d'excuse — Cas Alice Damervalle
         </CardTitle>
       </CardHeader>
