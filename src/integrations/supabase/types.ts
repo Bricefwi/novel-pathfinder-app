@@ -1099,6 +1099,87 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_schedules: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          expected_amount: number
+          id: string
+          installment_number: number
+          invoice_id: string | null
+          link_sent_at: string | null
+          notes: string | null
+          paid_at: string | null
+          payment_link_url: string | null
+          percentage: number | null
+          quote_id: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          total_installments: number
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          expected_amount: number
+          id?: string
+          installment_number: number
+          invoice_id?: string | null
+          link_sent_at?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_link_url?: string | null
+          percentage?: number | null
+          quote_id?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          total_installments?: number
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          expected_amount?: number
+          id?: string
+          installment_number?: number
+          invoice_id?: string | null
+          link_sent_at?: string | null
+          notes?: string | null
+          paid_at?: string | null
+          payment_link_url?: string | null
+          percentage?: number | null
+          quote_id?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          total_installments?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_schedules_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_schedules_quote_id_fkey"
+            columns: ["quote_id"]
+            isOneToOne: false
+            referencedRelation: "quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
