@@ -352,24 +352,40 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
                             value={dueDates[n]}
                             onChange={(e) => setDueDates((prev) => ({ ...prev, [n]: e.target.value }))}
                             className="h-9"
+                            disabled={isLinkSent}
                           />
                         </div>
                         <Button
                           onClick={() => sendInstallmentLink(n)}
-                          disabled={sending !== null}
+                          disabled={sending !== null || isLinkSent}
                           size="sm"
                           variant={isLinkSent ? "outline" : "default"}
+                          title={
+                            isLinkSent
+                              ? "Renvoi bloqué : un lien a déjà été envoyé pour ce versement (anti-doublon automatique)."
+                              : undefined
+                          }
                         >
                           {sending === n ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : isLinkSent ? (
+                            <>
+                              <Lock className="h-4 w-4 mr-1.5" />
+                              Lien déjà envoyé
+                            </>
                           ) : (
                             <>
                               <Mail className="h-4 w-4 mr-1.5" />
-                              {isLinkSent ? "Renvoyer le lien" : "Envoyer le lien"}
+                              Envoyer le lien
                             </>
                           )}
                         </Button>
                       </div>
+                    )}
+                    {isLinkSent && (
+                      <p className="text-xs text-muted-foreground mt-2 italic">
+                        🛡️ Renvoi bloqué automatiquement. Pour renvoyer ce versement, contactez un super-admin ou annulez l'échéance existante.
+                      </p>
                     )}
                   </CardContent>
                 </Card>
