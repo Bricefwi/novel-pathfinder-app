@@ -10,6 +10,7 @@ import { Loader2, AlertTriangle, Clock, Bell, BellRing, Send, RefreshCw, CheckCi
 import { toast } from "sonner";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
+import { PaymentAuditLog } from "@/components/admin/PaymentAuditLog";
 
 interface Invoice {
   id: string;
