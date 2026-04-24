@@ -273,6 +273,24 @@ serve(async (req: Request) => {
       });
     }
 
+    await logPaymentAudit(supabase, {
+      performed_by: user.id,
+      performed_by_email: user.email ?? null,
+      quote_id: quote.id,
+      client_email: quote.client_email,
+      client_name: quote.client_name,
+      payment_option: paymentType === "deposit" ? "deposit" : "full",
+      requested_amount: chargeAmount,
+      expected_amount: chargeAmount,
+      action: "link_created",
+      status: "success",
+      payment_link_url: session.url,
+      stripe_session_id: session.id,
+      source: "admin_ui",
+      metadata: { deposit_percentage: depositPercentage, total_price: totalPrice },
+      ...reqCtx,
+    });
+
     console.log(`[request-payment-link] Payment link sent to ${quote.client_email} for quote ${quote.quote_number}, amount: ${chargeAmount}€`);
 
     return new Response(JSON.stringify({
