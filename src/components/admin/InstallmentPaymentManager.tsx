@@ -354,6 +354,11 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
           </div>
         )}
 
+        {/* Journal d'audit contextualisé */}
+        <div className="mt-6">
+          <PaymentAuditLog quoteId={quote.id} />
+        </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Fermer
