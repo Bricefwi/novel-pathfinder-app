@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { PaymentAuditLog } from "@/components/admin/PaymentAuditLog";
+import { AliceApologyEmailButton } from "@/components/admin/AliceApologyEmailButton";
 
 interface Invoice {
   id: string;
@@ -151,6 +152,8 @@ export function PaymentReminders() {
           Exécuter les rappels
         </Button>
       </div>
+
+      <AliceApologyEmailButton />
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
