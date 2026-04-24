@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2, Mail, CheckCircle2, Clock, AlertTriangle, Calendar } from "lucide-react";
+import { PaymentAuditLog } from "./PaymentAuditLog";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -352,6 +353,11 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
             })}
           </div>
         )}
+
+        {/* Journal d'audit contextualisé */}
+        <div className="mt-6">
+          <PaymentAuditLog quoteId={quote.id} />
+        </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

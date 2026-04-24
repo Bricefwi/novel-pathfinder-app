@@ -10,6 +10,7 @@ import { Loader2, AlertTriangle, Clock, Bell, BellRing, Send, RefreshCw, CheckCi
 import { toast } from "sonner";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
+import { PaymentAuditLog } from "@/components/admin/PaymentAuditLog";
 
 interface Invoice {
   id: string;
@@ -224,6 +225,7 @@ export function PaymentReminders() {
         <TabsList>
           <TabsTrigger value="invoices">Factures en attente ({pendingInvoices.length})</TabsTrigger>
           <TabsTrigger value="history">Historique des rappels ({reminderEmails?.length || 0})</TabsTrigger>
+          <TabsTrigger value="audit">🛡️ Audit liens paiement</TabsTrigger>
         </TabsList>
 
         <TabsContent value="invoices" className="mt-4">
@@ -365,6 +367,9 @@ export function PaymentReminders() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+        <TabsContent value="audit" className="mt-4">
+          <PaymentAuditLog limit={200} />
         </TabsContent>
       </Tabs>
     </div>

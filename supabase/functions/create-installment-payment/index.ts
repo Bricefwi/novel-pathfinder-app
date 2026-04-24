@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { EMAIL_SENDERS, wrapInBrandedLayout, greeting, paragraph, activityCard, pricingTable, priceRow, formatPrice, formatDate, separator, getAppUrl } from "../_shared/email-templates.ts";
 import { sendEmailWithAudit } from "../_shared/email-audit.ts";
+import { logPaymentAudit, extractRequestContext } from "../_shared/payment-audit.ts";
 
 /**
  * create-installment-payment
@@ -137,8 +138,30 @@ serve(async (req: Request) => {
       (s) => s.installment_number === installment_number
     );
 
+    const reqCtx = extractRequestContext(req);
+    const auditBase = {
+      performed_by: user.id,
+      performed_by_email: user.email ?? null,
+      quote_id: quote.id,
+      client_email: quote.client_email,
+      client_name: quote.client_name,
+      payment_option: "installments" as const,
+      installment_number,
+      total_installments,
+      expected_amount: installmentAmount,
+      requested_amount: installmentAmount,
+      ...reqCtx,
+    };
+
     // Block if already PAID
     if (existingForThisInstallment?.status === "paid") {
+      await logPaymentAudit(supabase, {
+        ...auditBase,
+        action: "blocked_already_paid",
+        status: "blocked",
+        error_message: `Versement ${installment_number}/${total_installments} déjà payé`,
+        metadata: { existing_paid_at: existingForThisInstallment.paid_at },
+      });
       return new Response(JSON.stringify({ 
         error: `Le versement ${installment_number}/${total_installments} a déjà été payé le ${new Date(existingForThisInstallment.paid_at).toLocaleDateString("fr-FR")}.` 
       }), {
@@ -153,6 +176,13 @@ serve(async (req: Request) => {
 
     const projectedTotal = sumOthers + installmentAmount;
     if (projectedTotal > totalPrice + 1) {
+      await logPaymentAudit(supabase, {
+        ...auditBase,
+        action: "blocked_overflow",
+        status: "blocked",
+        error_message: `Somme dépassée: ${projectedTotal.toFixed(2)}€ > ${totalPrice}€`,
+        metadata: { projected_total: projectedTotal, quote_total: totalPrice },
+      });
       return new Response(JSON.stringify({ 
         error: `Erreur: la somme des versements (${projectedTotal.toFixed(2)}€) dépasserait le total du devis (${totalPrice}€). Vérifiez l'échéancier existant.` 
       }), {
@@ -306,6 +336,19 @@ serve(async (req: Request) => {
       html: emailHtml,
       type: "invoice",
       referenceId: quote.id,
+    });
+
+    // === AUDIT: log success ===
+    await logPaymentAudit(supabase, {
+      ...auditBase,
+      action: existingForThisInstallment ? "link_resent" : "link_created",
+      status: "success",
+      payment_link_url: session.url,
+      stripe_session_id: session.id,
+      metadata: {
+        was_resend: !!existingForThisInstallment,
+        previous_status: existingForThisInstallment?.status,
+      },
     });
 
     console.log(`[create-installment-payment] Sent installment ${installment_number}/${total_installments} link to ${quote.client_email} for ${installmentAmount}€`);

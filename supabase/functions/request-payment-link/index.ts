@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { EMAIL_SENDERS, wrapInBrandedLayout, greeting, paragraph, activityCard, pricingTable, priceRow, formatPrice, formatDate, badge, separator, getAppUrl } from "../_shared/email-templates.ts";
 import { sendEmailWithAudit } from "../_shared/email-audit.ts";
+import { logPaymentAudit, extractRequestContext } from "../_shared/payment-audit.ts";
 
 /**
  * request-payment-link
@@ -74,9 +75,24 @@ serve(async (req: Request) => {
       });
     }
 
+    const reqCtx = extractRequestContext(req);
+
     // === SAFEGUARD: Block standard payment link if quote is on installment plan ===
     // The 3x payment must go through create-installment-payment to enforce 33.33% rules
     if (quote.payment_option === "installments") {
+      await logPaymentAudit(supabase, {
+        performed_by: user.id,
+        performed_by_email: user.email ?? null,
+        quote_id: quote.id,
+        client_email: quote.client_email,
+        client_name: quote.client_name,
+        payment_option: "installments",
+        action: "blocked_wrong_option",
+        status: "blocked",
+        error_message: "Tentative de génération d'un lien standard sur un devis 3x",
+        source: "admin_ui",
+        ...reqCtx,
+      });
       return new Response(JSON.stringify({ 
         error: "Ce devis est configuré en paiement en 3 fois. Le lien de paiement doit être généré via l'échéancier dédié (administrateur uniquement)." 
       }), {
@@ -256,6 +272,24 @@ serve(async (req: Request) => {
         referenceId: quote.id,
       });
     }
+
+    await logPaymentAudit(supabase, {
+      performed_by: user.id,
+      performed_by_email: user.email ?? null,
+      quote_id: quote.id,
+      client_email: quote.client_email,
+      client_name: quote.client_name,
+      payment_option: paymentType === "deposit" ? "deposit" : "full",
+      requested_amount: chargeAmount,
+      expected_amount: chargeAmount,
+      action: "link_created",
+      status: "success",
+      payment_link_url: session.url,
+      stripe_session_id: session.id,
+      source: "admin_ui",
+      metadata: { deposit_percentage: depositPercentage, total_price: totalPrice },
+      ...reqCtx,
+    });
 
     console.log(`[request-payment-link] Payment link sent to ${quote.client_email} for quote ${quote.quote_number}, amount: ${chargeAmount}€`);
 
