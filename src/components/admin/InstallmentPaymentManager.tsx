@@ -294,6 +294,25 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
           </Card>
         </div>
 
+        {/* Bouton de validation pré-envoi */}
+        {schedules.some((s) => s.status === "pending") && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
+            <div className="flex-1">
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                Étape recommandée avant envoi
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Vérifier les dates (J0, J+30, J+37) et les montants, puis confirmer l'échéancier.
+              </p>
+            </div>
+            <Button onClick={() => setValidationOpen(true)} size="sm" variant="default">
+              <ShieldCheck className="h-4 w-4 mr-1.5" />
+              Valider l'échéancier
+            </Button>
+          </div>
+        )}
+
         {/* Tableau de suivi détaillé */}
         <Card className="overflow-hidden">
           <div className="bg-muted/50 px-4 py-2 border-b">
