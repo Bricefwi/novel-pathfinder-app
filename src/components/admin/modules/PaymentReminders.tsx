@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { format, differenceInDays, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { PaymentAuditLog } from "@/components/admin/PaymentAuditLog";
+import { AliceApologyEmailButton } from "@/components/admin/AliceApologyEmailButton";
 
 interface Invoice {
   id: string;
