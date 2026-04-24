@@ -210,6 +210,62 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
           </Card>
         </div>
 
+        {/* Tableau de suivi détaillé */}
+        <Card className="overflow-hidden">
+          <div className="bg-muted/50 px-4 py-2 border-b">
+            <p className="text-sm font-semibold flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-primary" />
+              Suivi détaillé des versements
+            </p>
+          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[80px]">Versement</TableHead>
+                <TableHead>Statut</TableHead>
+                <TableHead>Date d'envoi</TableHead>
+                <TableHead>Date de paiement</TableHead>
+                <TableHead className="text-right">Montant attendu</TableHead>
+                <TableHead className="text-right">Montant payé</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[1, 2, 3].map((n) => {
+                const s = getScheduleForInstallment(n);
+                const expected = n === 3 ? lastInstallment : baseInstallment;
+                const paidAmount = s?.status === "paid" ? Number(s.expected_amount) : 0;
+                return (
+                  <TableRow key={`row-${n}`}>
+                    <TableCell className="font-medium">{n}/{totalInstallments}</TableCell>
+                    <TableCell>{renderStatus(s)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {s?.link_sent_at
+                        ? format(new Date(s.link_sent_at), "dd/MM/yyyy HH:mm", { locale: fr })
+                        : <span className="italic">—</span>}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {s?.paid_at
+                        ? format(new Date(s.paid_at), "dd/MM/yyyy HH:mm", { locale: fr })
+                        : <span className="italic">—</span>}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">{expected.toFixed(2)}€</TableCell>
+                    <TableCell className="text-right font-semibold">
+                      {paidAmount > 0
+                        ? <span className="text-primary">{paidAmount.toFixed(2)}€</span>
+                        : <span className="text-muted-foreground">0,00€</span>}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              <TableRow className="bg-muted/30 font-semibold">
+                <TableCell colSpan={4} className="text-right">Total</TableCell>
+                <TableCell className="text-right">{quote.total_price.toFixed(2)}€</TableCell>
+                <TableCell className="text-right text-primary">{totalPaid.toFixed(2)}€</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </Card>
+
         {/* Garde-fou visuel */}
         <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
           <p className="font-medium mb-1">🛡️ Sécurité automatique activée</p>
