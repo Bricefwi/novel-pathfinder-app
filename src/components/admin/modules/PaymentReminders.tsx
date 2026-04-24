@@ -225,6 +225,7 @@ export function PaymentReminders() {
         <TabsList>
           <TabsTrigger value="invoices">Factures en attente ({pendingInvoices.length})</TabsTrigger>
           <TabsTrigger value="history">Historique des rappels ({reminderEmails?.length || 0})</TabsTrigger>
+          <TabsTrigger value="audit">🛡️ Audit liens paiement</TabsTrigger>
         </TabsList>
 
         <TabsContent value="invoices" className="mt-4">
