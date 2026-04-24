@@ -83,9 +83,42 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
     
     if (error) {
       toast.error(`Erreur de chargement: ${error.message}`);
-    } else {
-      setSchedules((data || []) as PaymentSchedule[]);
+      setLoading(false);
+      return;
     }
+
+    let existing = (data || []) as PaymentSchedule[];
+
+    // === AUTO-PROVISION: Create missing schedule rows at 33.33% / 33.33% / 33.34% ===
+    const missingRows = [1, 2, 3]
+      .filter((n) => !existing.find((s) => s.installment_number === n && s.status !== "cancelled"))
+      .map((n) => ({
+        quote_id: quote.id,
+        installment_number: n,
+        total_installments: 3,
+        expected_amount: n === 3 ? lastInstallment : baseInstallment,
+        percentage: n === 3
+          ? Math.round((lastInstallment / quote.total_price) * 10000) / 100
+          : Math.round((baseInstallment / quote.total_price) * 10000) / 100,
+        status: "pending" as const,
+        due_date: computeSuggestedDueDate(n),
+      }));
+
+    if (missingRows.length > 0) {
+      const { data: inserted, error: insertErr } = await supabase
+        .from("payment_schedules")
+        .insert(missingRows)
+        .select();
+      if (insertErr) {
+        toast.error(`Échéancier non initialisé: ${insertErr.message}`);
+      } else if (inserted) {
+        existing = [...existing, ...(inserted as PaymentSchedule[])].sort(
+          (a, b) => a.installment_number - b.installment_number
+        );
+      }
+    }
+
+    setSchedules(existing);
     setLoading(false);
   };
 

@@ -74,6 +74,16 @@ serve(async (req: Request) => {
       });
     }
 
+    // === SAFEGUARD: Block standard payment link if quote is on installment plan ===
+    // The 3x payment must go through create-installment-payment to enforce 33.33% rules
+    if (quote.payment_option === "installments") {
+      return new Response(JSON.stringify({ 
+        error: "Ce devis est configuré en paiement en 3 fois. Le lien de paiement doit être généré via l'échéancier dédié (administrateur uniquement)." 
+      }), {
+        status: 409, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     // Stripe setup
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
