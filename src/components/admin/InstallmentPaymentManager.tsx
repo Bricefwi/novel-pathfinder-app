@@ -117,10 +117,11 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
       .filter(Boolean);
 
     try {
-      const results = await Promise.all(updates as Array<Promise<{ error: { message: string } | null }>>);
-      const firstErr = results.find((r) => r.error);
-      if (firstErr?.error) {
-        toast.error(`Échec de la sauvegarde: ${firstErr.error.message}`);
+      const results = await Promise.all(updates.map((q) => Promise.resolve(q)));
+      const firstErr = results.find((r) => r && (r as { error?: { message: string } | null }).error);
+      if (firstErr) {
+        const errMsg = (firstErr as { error?: { message: string } }).error?.message ?? "Erreur inconnue";
+        toast.error(`Échec de la sauvegarde: ${errMsg}`);
       } else {
         toast.success("Échéancier validé et enregistré.", {
           description: "Vous pouvez maintenant envoyer les liens en toute sécurité.",
