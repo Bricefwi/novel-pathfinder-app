@@ -338,6 +338,19 @@ serve(async (req: Request) => {
       referenceId: quote.id,
     });
 
+    // === AUDIT: log success ===
+    await logPaymentAudit(supabase, {
+      ...auditBase,
+      action: existingForThisInstallment ? "link_resent" : "link_created",
+      status: "success",
+      payment_link_url: session.url,
+      stripe_session_id: session.id,
+      metadata: {
+        was_resend: !!existingForThisInstallment,
+        previous_status: existingForThisInstallment?.status,
+      },
+    });
+
     console.log(`[create-installment-payment] Sent installment ${installment_number}/${total_installments} link to ${quote.client_email} for ${installmentAmount}€`);
 
     return new Response(JSON.stringify({
