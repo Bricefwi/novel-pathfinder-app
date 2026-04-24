@@ -75,9 +75,24 @@ serve(async (req: Request) => {
       });
     }
 
+    const reqCtx = extractRequestContext(req);
+
     // === SAFEGUARD: Block standard payment link if quote is on installment plan ===
     // The 3x payment must go through create-installment-payment to enforce 33.33% rules
     if (quote.payment_option === "installments") {
+      await logPaymentAudit(supabase, {
+        performed_by: user.id,
+        performed_by_email: user.email ?? null,
+        quote_id: quote.id,
+        client_email: quote.client_email,
+        client_name: quote.client_name,
+        payment_option: "installments",
+        action: "blocked_wrong_option",
+        status: "blocked",
+        error_message: "Tentative de génération d'un lien standard sur un devis 3x",
+        source: "admin_ui",
+        ...reqCtx,
+      });
       return new Response(JSON.stringify({ 
         error: "Ce devis est configuré en paiement en 3 fois. Le lien de paiement doit être généré via l'échéancier dédié (administrateur uniquement)." 
       }), {
