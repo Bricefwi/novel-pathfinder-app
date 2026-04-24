@@ -396,9 +396,20 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
           </div>
         )}
 
-        {/* Journal d'audit contextualisé */}
+        {/* Journal d'audit contextualisé : timeline + tableau détaillé */}
         <div className="mt-6">
-          <PaymentAuditLog quoteId={quote.id} />
+          <Tabs defaultValue="timeline" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="timeline">📍 Chronologie</TabsTrigger>
+              <TabsTrigger value="table">📋 Détail tableau</TabsTrigger>
+            </TabsList>
+            <TabsContent value="timeline" className="mt-3">
+              <PaymentAttemptTimeline quoteId={quote.id} />
+            </TabsContent>
+            <TabsContent value="table" className="mt-3">
+              <PaymentAuditLog quoteId={quote.id} />
+            </TabsContent>
+          </Tabs>
         </div>
 
         <DialogFooter>
