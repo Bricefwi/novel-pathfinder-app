@@ -390,7 +390,8 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
           <div className="space-y-3 mt-2">
             {[1, 2, 3].map((n) => {
               const schedule = getScheduleForInstallment(n);
-              const expectedAmount = n === 3 ? lastInstallment : baseInstallment;
+              const expectedAmount =
+                schedule ? Number(schedule.expected_amount) : (amounts[n] ?? (n === 3 ? lastInstallment : baseInstallment));
               const isPaid = schedule?.status === "paid";
               const isLinkSent = schedule?.status === "link_sent";
               
