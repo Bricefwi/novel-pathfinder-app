@@ -138,8 +138,30 @@ serve(async (req: Request) => {
       (s) => s.installment_number === installment_number
     );
 
+    const reqCtx = extractRequestContext(req);
+    const auditBase = {
+      performed_by: user.id,
+      performed_by_email: user.email ?? null,
+      quote_id: quote.id,
+      client_email: quote.client_email,
+      client_name: quote.client_name,
+      payment_option: "installments" as const,
+      installment_number,
+      total_installments,
+      expected_amount: installmentAmount,
+      requested_amount: installmentAmount,
+      ...reqCtx,
+    };
+
     // Block if already PAID
     if (existingForThisInstallment?.status === "paid") {
+      await logPaymentAudit(supabase, {
+        ...auditBase,
+        action: "blocked_already_paid",
+        status: "blocked",
+        error_message: `Versement ${installment_number}/${total_installments} déjà payé`,
+        metadata: { existing_paid_at: existingForThisInstallment.paid_at },
+      });
       return new Response(JSON.stringify({ 
         error: `Le versement ${installment_number}/${total_installments} a déjà été payé le ${new Date(existingForThisInstallment.paid_at).toLocaleDateString("fr-FR")}.` 
       }), {
@@ -154,6 +176,13 @@ serve(async (req: Request) => {
 
     const projectedTotal = sumOthers + installmentAmount;
     if (projectedTotal > totalPrice + 1) {
+      await logPaymentAudit(supabase, {
+        ...auditBase,
+        action: "blocked_overflow",
+        status: "blocked",
+        error_message: `Somme dépassée: ${projectedTotal.toFixed(2)}€ > ${totalPrice}€`,
+        metadata: { projected_total: projectedTotal, quote_total: totalPrice },
+      });
       return new Response(JSON.stringify({ 
         error: `Erreur: la somme des versements (${projectedTotal.toFixed(2)}€) dépasserait le total du devis (${totalPrice}€). Vérifiez l'échéancier existant.` 
       }), {
