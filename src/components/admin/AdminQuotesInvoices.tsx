@@ -14,9 +14,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { FileText, Plus, Download, Eye, Receipt, CheckCircle, Mail, Loader2, Copy, CreditCard } from "lucide-react";
+import { FileText, Plus, Download, Eye, Receipt, CheckCircle, Mail, Loader2, Copy, CreditCard, CalendarClock } from "lucide-react";
 import { downloadQuotePDF, type QuoteData } from "@/components/pdf/QuotePDFGenerator";
 import { downloadInvoicePDF, type InvoiceData } from "@/components/pdf/InvoicePDFGenerator";
+import { InstallmentPaymentManager } from "@/components/admin/InstallmentPaymentManager";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
