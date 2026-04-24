@@ -45,14 +45,17 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState<number | null>(null);
   const [totalInstallments] = useState(3);
+  const [validationOpen, setValidationOpen] = useState(false);
   
-  // Suggested due dates for each installment (J0, J-30 before trip, J-7 before trip)
+  // Suggested due dates for each installment.
+  // Default: J0, J+30, J+37 (legally compliant: deposit + balance fractioned).
+  // If a trip start date is set and is sooner, fall back to J0 / J-30 / J-7 before trip.
   const computeSuggestedDueDate = (n: number): string => {
     const today = new Date();
     if (!quote.start_date) {
-      // Without trip date, spread over 60 days
       const target = new Date(today);
-      target.setDate(today.getDate() + (n - 1) * 30);
+      const offsets = [0, 30, 37];
+      target.setDate(today.getDate() + (offsets[n - 1] ?? (n - 1) * 30));
       return target.toISOString().split("T")[0];
     }
     const startDate = new Date(quote.start_date);
@@ -75,6 +78,60 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
     for (let i = 1; i <= 3; i++) out[i] = computeSuggestedDueDate(i);
     return out;
   });
+
+  // Editable expected amounts (initialized from base/last, can be overridden by validation modal)
+  const [amounts, setAmounts] = useState<Record<number, number>>(() => ({
+    1: baseInstallment,
+    2: baseInstallment,
+    3: lastInstallment,
+  }));
+
+  /**
+   * Called when admin confirms the validation screen.
+   * Persists adjusted amounts + dates on pending schedule rows in DB,
+   * then refreshes local state.
+   */
+  const applyValidatedSchedule = async (drafts: InstallmentDraft[]) => {
+    // Update local state immediately so the manager UI reflects the new plan
+    const newDates: Record<number, string> = { ...dueDates };
+    const newAmounts: Record<number, number> = { ...amounts };
+    drafts.forEach((d) => {
+      newDates[d.installment_number] = d.due_date;
+      newAmounts[d.installment_number] = d.expected_amount;
+    });
+    setDueDates(newDates);
+    setAmounts(newAmounts);
+
+    // Persist on existing PENDING schedule rows (never touch link_sent / paid)
+    const updates = drafts
+      .map((d) => {
+        const existing = schedules.find(
+          (s) => s.installment_number === d.installment_number && s.status === "pending"
+        );
+        if (!existing) return null;
+        return supabase
+          .from("payment_schedules")
+          .update({ expected_amount: d.expected_amount, due_date: d.due_date })
+          .eq("id", existing.id);
+      })
+      .filter(Boolean);
+
+    try {
+      const results = await Promise.all(updates as Array<Promise<{ error: { message: string } | null }>>);
+      const firstErr = results.find((r) => r.error);
+      if (firstErr?.error) {
+        toast.error(`Échec de la sauvegarde: ${firstErr.error.message}`);
+      } else {
+        toast.success("Échéancier validé et enregistré.", {
+          description: "Vous pouvez maintenant envoyer les liens en toute sécurité.",
+        });
+      }
+      await fetchSchedules();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erreur inconnue";
+      toast.error(`Échec de la sauvegarde: ${msg}`);
+    }
+  };
 
   const fetchSchedules = async () => {
     setLoading(true);
