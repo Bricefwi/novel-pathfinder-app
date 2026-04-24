@@ -7,9 +7,10 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Mail, CheckCircle2, Clock, AlertTriangle, Calendar, Lock, ShieldCheck } from "lucide-react";
+import { Loader2, Mail, CheckCircle2, Clock, AlertTriangle, Calendar, Lock } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PaymentAuditLog } from "./PaymentAuditLog";
-import { PaymentScheduleValidation, type InstallmentDraft } from "./PaymentScheduleValidation";
+import { PaymentAttemptTimeline } from "./PaymentAttemptTimeline";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -45,17 +46,14 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState<number | null>(null);
   const [totalInstallments] = useState(3);
-  const [validationOpen, setValidationOpen] = useState(false);
   
-  // Suggested due dates for each installment.
-  // Default: J0, J+30, J+37 (legally compliant: deposit + balance fractioned).
-  // If a trip start date is set and is sooner, fall back to J0 / J-30 / J-7 before trip.
+  // Suggested due dates for each installment (J0, J-30 before trip, J-7 before trip)
   const computeSuggestedDueDate = (n: number): string => {
     const today = new Date();
     if (!quote.start_date) {
+      // Without trip date, spread over 60 days
       const target = new Date(today);
-      const offsets = [0, 30, 37];
-      target.setDate(today.getDate() + (offsets[n - 1] ?? (n - 1) * 30));
+      target.setDate(today.getDate() + (n - 1) * 30);
       return target.toISOString().split("T")[0];
     }
     const startDate = new Date(quote.start_date);
@@ -78,61 +76,6 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
     for (let i = 1; i <= 3; i++) out[i] = computeSuggestedDueDate(i);
     return out;
   });
-
-  // Editable expected amounts (initialized from base/last, can be overridden by validation modal)
-  const [amounts, setAmounts] = useState<Record<number, number>>(() => ({
-    1: baseInstallment,
-    2: baseInstallment,
-    3: lastInstallment,
-  }));
-
-  /**
-   * Called when admin confirms the validation screen.
-   * Persists adjusted amounts + dates on pending schedule rows in DB,
-   * then refreshes local state.
-   */
-  const applyValidatedSchedule = async (drafts: InstallmentDraft[]) => {
-    // Update local state immediately so the manager UI reflects the new plan
-    const newDates: Record<number, string> = { ...dueDates };
-    const newAmounts: Record<number, number> = { ...amounts };
-    drafts.forEach((d) => {
-      newDates[d.installment_number] = d.due_date;
-      newAmounts[d.installment_number] = d.expected_amount;
-    });
-    setDueDates(newDates);
-    setAmounts(newAmounts);
-
-    // Persist on existing PENDING schedule rows (never touch link_sent / paid)
-    const updates = drafts
-      .map((d) => {
-        const existing = schedules.find(
-          (s) => s.installment_number === d.installment_number && s.status === "pending"
-        );
-        if (!existing) return null;
-        return supabase
-          .from("payment_schedules")
-          .update({ expected_amount: d.expected_amount, due_date: d.due_date })
-          .eq("id", existing.id);
-      })
-      .filter(Boolean);
-
-    try {
-      const results = await Promise.all(updates.map((q) => Promise.resolve(q)));
-      const firstErr = results.find((r) => r && (r as { error?: { message: string } | null }).error);
-      if (firstErr) {
-        const errMsg = (firstErr as { error?: { message: string } }).error?.message ?? "Erreur inconnue";
-        toast.error(`Échec de la sauvegarde: ${errMsg}`);
-      } else {
-        toast.success("Échéancier validé et enregistré.", {
-          description: "Vous pouvez maintenant envoyer les liens en toute sécurité.",
-        });
-      }
-      await fetchSchedules();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erreur inconnue";
-      toast.error(`Échec de la sauvegarde: ${msg}`);
-    }
-  };
 
   const fetchSchedules = async () => {
     setLoading(true);
@@ -294,25 +237,6 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
           </Card>
         </div>
 
-        {/* Bouton de validation pré-envoi */}
-        {schedules.some((s) => s.status === "pending") && (
-          <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 p-3">
-            <div className="flex-1">
-              <p className="text-sm font-semibold flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                Étape recommandée avant envoi
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Vérifier les dates (J0, J+30, J+37) et les montants, puis confirmer l'échéancier.
-              </p>
-            </div>
-            <Button onClick={() => setValidationOpen(true)} size="sm" variant="default">
-              <ShieldCheck className="h-4 w-4 mr-1.5" />
-              Valider l'échéancier
-            </Button>
-          </div>
-        )}
-
         {/* Tableau de suivi détaillé */}
         <Card className="overflow-hidden">
           <div className="bg-muted/50 px-4 py-2 border-b">
@@ -335,9 +259,7 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
             <TableBody>
               {[1, 2, 3].map((n) => {
                 const s = getScheduleForInstallment(n);
-                // Priorité : DB > state local (validation modal) > défaut calculé
-                const expected =
-                  s ? Number(s.expected_amount) : (amounts[n] ?? (n === 3 ? lastInstallment : baseInstallment));
+                const expected = n === 3 ? lastInstallment : baseInstallment;
                 const paidAmount = s?.status === "paid" ? Number(s.expected_amount) : 0;
                 return (
                   <TableRow key={`row-${n}`}>
@@ -390,8 +312,7 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
           <div className="space-y-3 mt-2">
             {[1, 2, 3].map((n) => {
               const schedule = getScheduleForInstallment(n);
-              const expectedAmount =
-                schedule ? Number(schedule.expected_amount) : (amounts[n] ?? (n === 3 ? lastInstallment : baseInstallment));
+              const expectedAmount = n === 3 ? lastInstallment : baseInstallment;
               const isPaid = schedule?.status === "paid";
               const isLinkSent = schedule?.status === "link_sent";
               
@@ -475,9 +396,20 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
           </div>
         )}
 
-        {/* Journal d'audit contextualisé */}
+        {/* Journal d'audit contextualisé : timeline + tableau détaillé */}
         <div className="mt-6">
-          <PaymentAuditLog quoteId={quote.id} />
+          <Tabs defaultValue="timeline" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="timeline">📍 Chronologie</TabsTrigger>
+              <TabsTrigger value="table">📋 Détail tableau</TabsTrigger>
+            </TabsList>
+            <TabsContent value="timeline" className="mt-3">
+              <PaymentAttemptTimeline quoteId={quote.id} />
+            </TabsContent>
+            <TabsContent value="table" className="mt-3">
+              <PaymentAuditLog quoteId={quote.id} />
+            </TabsContent>
+          </Tabs>
         </div>
 
         <DialogFooter>
@@ -486,17 +418,6 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
           </Button>
         </DialogFooter>
       </DialogContent>
-
-      {/* Écran de validation pré-envoi (dates J0/J+30/J+37 + contrôle de la somme) */}
-      <PaymentScheduleValidation
-        open={validationOpen}
-        onOpenChange={setValidationOpen}
-        totalPrice={quote.total_price}
-        totalInstallments={totalInstallments}
-        clientName={quote.client_name}
-        quoteNumber={quote.quote_number}
-        onConfirm={applyValidatedSchedule}
-      />
     </Dialog>
   );
 };
