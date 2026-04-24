@@ -486,6 +486,17 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Écran de validation pré-envoi (dates J0/J+30/J+37 + contrôle de la somme) */}
+      <PaymentScheduleValidation
+        open={validationOpen}
+        onOpenChange={setValidationOpen}
+        totalPrice={quote.total_price}
+        totalInstallments={totalInstallments}
+        clientName={quote.client_name}
+        quoteNumber={quote.quote_number}
+        onConfirm={applyValidatedSchedule}
+      />
     </Dialog>
   );
 };
