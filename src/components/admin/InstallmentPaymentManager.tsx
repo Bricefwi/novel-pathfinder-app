@@ -335,7 +335,9 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
             <TableBody>
               {[1, 2, 3].map((n) => {
                 const s = getScheduleForInstallment(n);
-                const expected = n === 3 ? lastInstallment : baseInstallment;
+                // Priorité : DB > state local (validation modal) > défaut calculé
+                const expected =
+                  s ? Number(s.expected_amount) : (amounts[n] ?? (n === 3 ? lastInstallment : baseInstallment));
                 const paidAmount = s?.status === "paid" ? Number(s.expected_amount) : 0;
                 return (
                   <TableRow key={`row-${n}`}>
