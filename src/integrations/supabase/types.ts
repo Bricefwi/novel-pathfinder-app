@@ -1099,6 +1099,84 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_link_audit: {
+        Row: {
+          action: string
+          amount_match: boolean | null
+          client_email: string | null
+          client_name: string | null
+          created_at: string
+          error_message: string | null
+          expected_amount: number | null
+          id: string
+          installment_number: number | null
+          invoice_id: string | null
+          ip_address: string | null
+          metadata: Json | null
+          payment_link_url: string | null
+          payment_option: string
+          performed_by: string | null
+          performed_by_email: string | null
+          quote_id: string | null
+          requested_amount: number | null
+          source: string | null
+          status: string
+          stripe_session_id: string | null
+          total_installments: number | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          amount_match?: boolean | null
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string
+          error_message?: string | null
+          expected_amount?: number | null
+          id?: string
+          installment_number?: number | null
+          invoice_id?: string | null
+          ip_address?: string | null
+          metadata?: Json | null
+          payment_link_url?: string | null
+          payment_option: string
+          performed_by?: string | null
+          performed_by_email?: string | null
+          quote_id?: string | null
+          requested_amount?: number | null
+          source?: string | null
+          status: string
+          stripe_session_id?: string | null
+          total_installments?: number | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          amount_match?: boolean | null
+          client_email?: string | null
+          client_name?: string | null
+          created_at?: string
+          error_message?: string | null
+          expected_amount?: number | null
+          id?: string
+          installment_number?: number | null
+          invoice_id?: string | null
+          ip_address?: string | null
+          metadata?: Json | null
+          payment_link_url?: string | null
+          payment_option?: string
+          performed_by?: string | null
+          performed_by_email?: string | null
+          quote_id?: string | null
+          requested_amount?: number | null
+          source?: string | null
+          status?: string
+          stripe_session_id?: string | null
+          total_installments?: number | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       payment_schedules: {
         Row: {
           cancelled_at: string | null
