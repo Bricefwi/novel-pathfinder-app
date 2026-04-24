@@ -1072,6 +1072,14 @@ export const AdminQuotesInvoices = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {installmentManagerQuote && (
+        <InstallmentPaymentManager
+          open={!!installmentManagerQuote}
+          onOpenChange={(open) => !open && setInstallmentManagerQuote(null)}
+          quote={installmentManagerQuote}
+        />
+      )}
     </div>
   );
 };
