@@ -133,6 +133,30 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
   const getScheduleForInstallment = (n: number) => schedules.find((s) => s.installment_number === n && s.status !== "cancelled");
 
   const sendInstallmentLink = async (installmentNumber: number) => {
+    // === GARDE-FOU FRONT : bloquer si un envoi est déjà en cours ===
+    if (sending !== null) {
+      toast.warning("Un envoi est déjà en cours. Merci de patienter.");
+      return;
+    }
+
+    // === GARDE-FOU FRONT : re-vérifier l'état actuel du versement avant envoi ===
+    // Empêche le double-clic même si la liste locale est légèrement désynchronisée.
+    const current = getScheduleForInstallment(installmentNumber);
+    if (current?.status === "paid") {
+      toast.error(`Ce versement (${installmentNumber}/${totalInstallments}) est déjà payé. Aucun nouveau lien ne peut être envoyé.`);
+      return;
+    }
+    if (current?.status === "link_sent") {
+      toast.error(
+        `Un lien a déjà été envoyé pour ce versement le ${
+          current.link_sent_at
+            ? format(new Date(current.link_sent_at), "dd/MM/yyyy 'à' HH:mm", { locale: fr })
+            : "—"
+        }. Renvoi bloqué automatiquement (anti-doublon).`
+      );
+      return;
+    }
+
     setSending(installmentNumber);
     try {
       const { data, error } = await supabase.functions.invoke("create-installment-payment", {
