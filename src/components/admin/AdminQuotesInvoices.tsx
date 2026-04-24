@@ -901,28 +901,47 @@ export const AdminQuotesInvoices = () => {
                             >
                               <Receipt className="h-4 w-4" />
                             </Button>
-                            <Button 
-                              size="sm" 
-                              variant="default"
-                              onClick={() => handleSendPaymentLink({
-                                id: quote.id,
-                                type: "quote",
-                                client_name: quote.client_name,
-                                client_email: quote.client_email,
-                                activity_title: quote.activity_title,
-                                amount: Number(quote.total_price),
-                                payment_type: quote.payment_option === "full" ? "full" : "deposit",
-                                deposit_percentage: Number(quote.deposit_percentage) || 30,
-                              })}
-                              disabled={sendingPaymentLink === quote.id}
-                              title="Générer un lien de paiement Stripe"
-                            >
-                              {sendingPaymentLink === quote.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <CreditCard className="h-4 w-4" />
-                              )}
-                            </Button>
+                            {quote.payment_option === "installments" ? (
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                onClick={() => setInstallmentManagerQuote({
+                                  id: quote.id,
+                                  quote_number: quote.quote_number,
+                                  client_name: quote.client_name,
+                                  client_email: quote.client_email,
+                                  activity_title: quote.activity_title,
+                                  total_price: Number(quote.total_price),
+                                  start_date: quote.start_date,
+                                })}
+                                title="Gérer l'échéancier en 3 fois"
+                              >
+                                <CalendarClock className="h-4 w-4" />
+                              </Button>
+                            ) : (
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                onClick={() => handleSendPaymentLink({
+                                  id: quote.id,
+                                  type: "quote",
+                                  client_name: quote.client_name,
+                                  client_email: quote.client_email,
+                                  activity_title: quote.activity_title,
+                                  amount: Number(quote.total_price),
+                                  payment_type: quote.payment_option === "full" ? "full" : "deposit",
+                                  deposit_percentage: Number(quote.deposit_percentage) || 30,
+                                })}
+                                disabled={sendingPaymentLink === quote.id}
+                                title="Générer un lien de paiement Stripe"
+                              >
+                                {sendingPaymentLink === quote.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <CreditCard className="h-4 w-4" />
+                                )}
+                              </Button>
+                            )}
                           </div>
                         </TableCell>
                       </TableRow>
