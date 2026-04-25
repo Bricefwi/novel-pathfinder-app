@@ -258,6 +258,27 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
     return acc;
   }, {});
 
+  // Latest event per installment (entries are sorted DESC, so first match wins)
+  // Builds an array indexed by installment_number with the most recent attempt per versement
+  const latestPerInstallment = (() => {
+    const seen = new Map<string, AuditEntry>();
+    for (const e of entries) {
+      const key = e.installment_number
+        ? `inst-${e.installment_number}`
+        : `opt-${e.payment_option}`;
+      if (!seen.has(key)) seen.set(key, e);
+    }
+    // Sort by installment number ascending (1, 2, 3) then by option name
+    return Array.from(seen.entries()).sort(([a], [b]) => {
+      const aIsInst = a.startsWith("inst-");
+      const bIsInst = b.startsWith("inst-");
+      if (aIsInst && bIsInst) return parseInt(a.slice(5)) - parseInt(b.slice(5));
+      if (aIsInst) return -1;
+      if (bIsInst) return 1;
+      return a.localeCompare(b);
+    });
+  })();
+
   return (
     <Card>
       <CardHeader>
@@ -293,7 +314,47 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
           </div>
         </div>
 
-        {/* Per-installment heatmap */}
+        {/* Latest status per installment — quick at-a-glance summary */}
+        {latestPerInstallment.length > 0 && (
+          <div className="mb-4 rounded-lg border border-border bg-muted/30 p-3">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-2 font-semibold">
+              Dernier événement par versement
+            </p>
+            <div className="space-y-1.5">
+              {latestPerInstallment.map(([key, latest]) => {
+                const cfg = STATUS_CONFIG[latest.status] || STATUS_CONFIG.error;
+                const label = key.startsWith("inst-")
+                  ? `Versement ${latest.installment_number}/${latest.total_installments || "?"}`
+                  : latest.payment_option;
+                const date = new Date(latest.created_at);
+                return (
+                  <div
+                    key={key}
+                    className="flex items-center justify-between gap-2 rounded-md bg-background/60 px-2 py-1.5 text-xs"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`flex h-5 w-5 items-center justify-center rounded-full ${cfg.bgColor} shrink-0`}>
+                        <span className="scale-75">{cfg.icon}</span>
+                      </div>
+                      <span className="font-medium truncate">{label}</span>
+                      <Badge variant="outline" className={`text-[9px] py-0 ${cfg.color} shrink-0`}>
+                        {cfg.label}
+                      </Badge>
+                    </div>
+                    <span
+                      className="text-muted-foreground text-[10px] shrink-0"
+                      title={format(date, "PPpp", { locale: fr })}
+                    >
+                      {formatDistanceToNow(date, { addSuffix: true, locale: fr })}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Per-installment heatmap (nb total/bloqué) */}
         {Object.keys(perInstallment).length > 0 && (
           <div className="mb-4 flex flex-wrap gap-2">
             {Object.entries(perInstallment).map(([key, v]) => (
