@@ -291,6 +291,8 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
   const [schedules, setSchedules] = useState<ScheduleRef[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<"all" | "success" | "blocked" | "error">("all");
+  const [actionFilter, setActionFilter] = useState<string>("all");
 
   useEffect(() => {
     const fetchTimeline = async () => {
@@ -543,13 +545,98 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
             Aucune tentative de génération de lien pour ce devis.
           </div>
         ) : (
-          <ScrollArea className="h-[480px] pr-3">
-            <div className="relative">
-              {/* Vertical line */}
-              <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-border" aria-hidden />
+          (() => {
+            // Available action types in this dataset
+            const availableActions = Array.from(new Set(entries.map((e) => e.action)));
+            const filteredEntries = entries.filter((e) => {
+              if (statusFilter !== "all" && e.status !== statusFilter) return false;
+              if (actionFilter !== "all" && e.action !== actionFilter) return false;
+              return true;
+            });
+            const filtersActive = statusFilter !== "all" || actionFilter !== "all";
+            return (
+              <>
+                {/* Filter bar */}
+                <div className="mb-3 rounded-lg border border-border bg-muted/20 p-2 space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                      Statut :
+                    </span>
+                    {(["all", "success", "blocked", "error"] as const).map((s) => {
+                      const isActive = statusFilter === s;
+                      const labels: Record<typeof s, string> = {
+                        all: "Tous",
+                        success: "Succès",
+                        blocked: "Bloqué (409)",
+                        error: "Erreur",
+                      };
+                      return (
+                        <Button
+                          key={s}
+                          size="sm"
+                          variant={isActive ? "default" : "outline"}
+                          className="h-6 text-[10px] px-2"
+                          onClick={() => setStatusFilter(s)}
+                        >
+                          {labels[s]}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
+                      Action :
+                    </span>
+                    <Button
+                      size="sm"
+                      variant={actionFilter === "all" ? "default" : "outline"}
+                      className="h-6 text-[10px] px-2"
+                      onClick={() => setActionFilter("all")}
+                    >
+                      Toutes
+                    </Button>
+                    {availableActions.map((a) => (
+                      <Button
+                        key={a}
+                        size="sm"
+                        variant={actionFilter === a ? "default" : "outline"}
+                        className="h-6 text-[10px] px-2"
+                        onClick={() => setActionFilter(a)}
+                      >
+                        {ACTION_LABELS[a] || a}
+                      </Button>
+                    ))}
+                    {filtersActive && (
+                      <span className="ml-auto text-[10px] text-muted-foreground">
+                        {filteredEntries.length} / {entries.length} affiché{filteredEntries.length > 1 ? "s" : ""}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-5 text-[10px] px-2 ml-1"
+                          onClick={() => {
+                            setStatusFilter("all");
+                            setActionFilter("all");
+                          }}
+                        >
+                          Réinitialiser
+                        </Button>
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {filteredEntries.length === 0 ? (
+                  <div className="text-center py-8 text-sm text-muted-foreground border-2 border-dashed border-border rounded-lg">
+                    Aucun événement ne correspond aux filtres sélectionnés.
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[480px] pr-3">
+                    <div className="relative">
+                      {/* Vertical line */}
+                      <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-border" aria-hidden />
 
-              <div className="space-y-3">
-                {entries.map((entry, index) => {
+                      <div className="space-y-3">
+                        {filteredEntries.map((entry) => {
+                          const index = entries.indexOf(entry);
                   const cfg = STATUS_CONFIG[entry.status] || STATUS_CONFIG.error;
                   const isExpanded = expandedIds.has(entry.id);
                   const actionLabel = ACTION_LABELS[entry.action] || entry.action;
@@ -777,7 +864,11 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
                 })}
               </div>
             </div>
-          </ScrollArea>
+                  </ScrollArea>
+                )}
+              </>
+            );
+          })()
         )}
       </CardContent>
     </Card>
