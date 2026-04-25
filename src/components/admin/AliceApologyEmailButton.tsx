@@ -232,7 +232,7 @@ export function AliceApologyEmailButton() {
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="font-mono text-xs">{recipient.trim()}</span>
                             {recipientChanged && (
-                              <Badge variant="outline" className="text-[9px] h-4 px-1 border-amber-500 text-amber-700">
+                              <Badge variant="outline" className="text-[9px] h-4 px-1 border-accent-foreground text-accent-foreground">
                                 Modifié
                               </Badge>
                             )}
@@ -245,7 +245,7 @@ export function AliceApologyEmailButton() {
                           <div className="flex items-start gap-2 mt-0.5">
                             <span className="text-xs">{subject.trim() || ALICE_SUBJECT}</span>
                             {subjectChanged && (
-                              <Badge variant="outline" className="text-[9px] h-4 px-1 border-amber-500 text-amber-700 shrink-0">
+                              <Badge variant="outline" className="text-[9px] h-4 px-1 border-accent-foreground text-accent-foreground shrink-0">
                                 Modifié
                               </Badge>
                             )}
@@ -295,9 +295,9 @@ export function AliceApologyEmailButton() {
                   <div className="rounded-lg border border-border bg-muted/20 p-3 space-y-2">
                     <div className="flex items-center gap-2">
                       {hasChanges ? (
-                        <AlertCircle className="h-4 w-4 text-amber-600" />
+                        <AlertCircle className="h-4 w-4 text-accent-foreground" />
                       ) : (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                        <CheckCircle2 className="h-4 w-4 text-primary" />
                       )}
                       <span className="text-xs font-semibold">
                         {!lastSent
@@ -331,10 +331,10 @@ export function AliceApologyEmailButton() {
                         )}
                         {messageDiff.added.length > 0 && (
                           <div>
-                            <span className="text-emerald-700 font-medium">+ {messageDiff.added.length} ligne(s) ajoutée(s)</span>
+                            <span className="text-primary font-medium">+ {messageDiff.added.length} ligne(s) ajoutée(s)</span>
                             <ul className="mt-0.5 ml-3 space-y-0.5">
                               {messageDiff.added.slice(0, 3).map((l, i) => (
-                                <li key={i} className="text-[10px] text-emerald-700/80 truncate">
+                                <li key={i} className="text-[10px] text-primary/70 truncate">
                                   + {l.slice(0, 90)}{l.length > 90 ? "…" : ""}
                                 </li>
                               ))}
@@ -348,10 +348,10 @@ export function AliceApologyEmailButton() {
                         )}
                         {messageDiff.removed.length > 0 && (
                           <div>
-                            <span className="text-rose-700 font-medium">− {messageDiff.removed.length} ligne(s) retirée(s)</span>
+                            <span className="text-destructive font-medium">− {messageDiff.removed.length} ligne(s) retirée(s)</span>
                             <ul className="mt-0.5 ml-3 space-y-0.5">
                               {messageDiff.removed.slice(0, 3).map((l, i) => (
-                                <li key={i} className="text-[10px] text-rose-700/80 truncate line-through">
+                                <li key={i} className="text-[10px] text-destructive/70 truncate line-through">
                                   − {l.slice(0, 90)}{l.length > 90 ? "…" : ""}
                                 </li>
                               ))}
