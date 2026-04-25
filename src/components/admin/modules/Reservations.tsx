@@ -146,6 +146,7 @@ export function Reservations() {
         participants: i.participants,
         amount: i.total_amount,
         status: `${i.status ?? "—"} • ${i.payment_status ?? "pending"}`,
+        payment_status: i.payment_status ?? "pending",
         created_at: i.created_at,
       }));
 
