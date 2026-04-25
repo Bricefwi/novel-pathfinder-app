@@ -25,18 +25,32 @@ const escapeHtml = (str: string) =>
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 
+interface PreviewAttachment {
+  name: string;
+  size: number;
+  type?: string;
+}
+
 interface BuildPreviewOptions {
   recipientName: string;
   subject: string;
   message: string;
   senderName?: string;
+  attachments?: PreviewAttachment[];
 }
+
+const formatBytes = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} o`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} Mo`;
+};
 
 export function buildBrandedEmailPreview({
   recipientName,
   subject,
   message,
   senderName,
+  attachments,
 }: BuildPreviewOptions): string {
   const subtitle = subject || "Réponse à votre message";
   const safeName = escapeHtml(recipientName?.trim() || "Madame, Monsieur");
@@ -49,7 +63,22 @@ export function buildBrandedEmailPreview({
     ? `<p style="margin:25px 0 0 0;color:#444;font-size:15px;line-height:1.7;">${safeSender}<br/><span style="color:#6B8E7F;font-style:italic;">${COMPANY.name}</span></p>`
     : `<p style="margin:25px 0 0 0;color:#6B8E7F;font-size:15px;font-style:italic;">${COMPANY.name}</p>`;
 
-  const body = `${greetingHtml}${messageHtml}${signatureHtml}`;
+  const attachmentsHtml =
+    attachments && attachments.length > 0
+      ? `<div style="margin-top:28px;padding:16px 18px;background:#F5F3F0;border:1px solid #E5DED2;border-radius:10px;">
+          <p style="margin:0 0 10px 0;color:#6B8E7F;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">📎 Pièces jointes (${attachments.length})</p>
+          ${attachments
+            .map(
+              (a) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px;background:#ffffff;border-radius:6px;margin-top:6px;border:1px solid #EDE6D8;">
+                <span style="color:#333;font-size:13px;font-weight:500;word-break:break-all;">${escapeHtml(a.name)}</span>
+                <span style="color:#888;font-size:12px;font-family:monospace;margin-left:12px;flex-shrink:0;">${formatBytes(a.size)}</span>
+              </div>`
+            )
+            .join("")}
+        </div>`
+      : "";
+
+  const body = `${greetingHtml}${messageHtml}${signatureHtml}${attachmentsHtml}`;
 
   return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${escapeHtml(subtitle)} – ${COMPANY.name}</title></head>
 <body style="margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#F5F3F0;-webkit-font-smoothing:antialiased;">

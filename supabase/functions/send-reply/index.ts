@@ -14,6 +14,7 @@ interface SendReplyRequest {
   message: string;
   originalMessage?: string;
   senderName?: string;
+  attachments?: Array<{ name: string; content: string }>;
 }
 
 // Simple idempotency: track recent request hashes to prevent duplicates
@@ -48,7 +49,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!isAdmin) return createAuthErrorResponse("Admin access required", 403, corsHeaders);
 
     const body: SendReplyRequest = await req.json();
-    const { to, subject, message, originalMessage, senderName } = body;
+    const { to, subject, message, originalMessage, senderName, attachments } = body;
 
     if (!to || !message?.trim()) {
       return new Response(
@@ -112,6 +113,7 @@ const handler = async (req: Request): Promise<Response> => {
       html: htmlContent,
       type: "notification",
       userId: auth.user.id,
+      attachments: attachments && attachments.length > 0 ? attachments : undefined,
     });
 
     if (!result.success) {

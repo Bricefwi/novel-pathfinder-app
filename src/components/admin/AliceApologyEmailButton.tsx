@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, MailWarning, Send, Eye, Pencil, CheckCircle2, AlertTriangle, History, RefreshCw } from "lucide-react";
+import { Loader2, MailWarning, Send, Eye, Pencil, CheckCircle2, AlertTriangle, History, RefreshCw, Paperclip, X, FileText } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,6 +65,34 @@ const STATUS_VARIANTS: Record<string, { label: string; className: string }> = {
   failed: { label: "Échec", className: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
+interface AttachmentEntry {
+  name: string;
+  size: number;
+  type: string;
+  base64: string; // contenu base64 (sans préfixe data:)
+}
+
+const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024; // 5 Mo par fichier
+const MAX_TOTAL_ATTACHMENTS_BYTES = 10 * 1024 * 1024; // 10 Mo total
+
+const formatBytes = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} o`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} Mo`;
+};
+
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.includes(",") ? result.split(",")[1] : result;
+      resolve(base64);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
 export function AliceApologyEmailButton() {
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -72,8 +100,10 @@ export function AliceApologyEmailButton() {
   const [recipient, setRecipient] = useState(ALICE_RECIPIENT);
   const [subject, setSubject] = useState(ALICE_SUBJECT);
   const [message, setMessage] = useState(ALICE_DEFAULT_MESSAGE);
+  const [attachments, setAttachments] = useState<AttachmentEntry[]>([]);
   const [history, setHistory] = useState<ApologyLogEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const trimmedRecipient = recipient.trim();
   const trimmedSubject = subject.trim() || ALICE_SUBJECT;
@@ -81,6 +111,7 @@ export function AliceApologyEmailButton() {
   const charCount = trimmedMessage.length;
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedRecipient);
   const canSend = isValidEmail && trimmedMessage.length > 0;
+  const totalAttachmentsBytes = attachments.reduce((sum, a) => sum + a.size, 0);
 
   const previewHtml = useMemo(
     () =>
@@ -89,9 +120,43 @@ export function AliceApologyEmailButton() {
         subject: subject || ALICE_SUBJECT,
         message: message || ALICE_DEFAULT_MESSAGE,
         senderName: ALICE_NAME,
+        attachments: attachments.map((a) => ({ name: a.name, size: a.size, type: a.type })),
       }),
-    [subject, message]
+    [subject, message, attachments]
   );
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+
+    const newEntries: AttachmentEntry[] = [];
+    for (const file of files) {
+      if (file.size > MAX_ATTACHMENT_BYTES) {
+        toast.error(`"${file.name}" dépasse la taille max (${formatBytes(MAX_ATTACHMENT_BYTES)}).`);
+        continue;
+      }
+      if (totalAttachmentsBytes + newEntries.reduce((s, a) => s + a.size, 0) + file.size > MAX_TOTAL_ATTACHMENTS_BYTES) {
+        toast.error(`Total des pièces jointes limité à ${formatBytes(MAX_TOTAL_ATTACHMENTS_BYTES)}.`);
+        break;
+      }
+      try {
+        const base64 = await fileToBase64(file);
+        newEntries.push({ name: file.name, size: file.size, type: file.type || "application/octet-stream", base64 });
+      } catch (err) {
+        console.error("Erreur lecture fichier", err);
+        toast.error(`Impossible de lire "${file.name}".`);
+      }
+    }
+    if (newEntries.length > 0) {
+      setAttachments((prev) => [...prev, ...newEntries]);
+      toast.success(`${newEntries.length} pièce(s) jointe(s) ajoutée(s).`);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const fetchHistory = useCallback(async () => {
     setLoadingHistory(true);
@@ -128,7 +193,12 @@ export function AliceApologyEmailButton() {
         error_message: errorMessage ?? null,
         performed_by: performedBy,
         performed_by_email: performedByEmail,
-        metadata: { source: "AliceApologyEmailButton" },
+        metadata: {
+          source: "AliceApologyEmailButton",
+          attachments_count: attachments.length,
+          attachments_total_bytes: totalAttachmentsBytes,
+          attachments_names: attachments.map((a) => a.name),
+        },
       });
     } catch (err) {
       console.error("Failed to log apology email send", err);
@@ -148,6 +218,9 @@ export function AliceApologyEmailButton() {
           subject: subject.trim() || ALICE_SUBJECT,
           message: message.trim(),
           senderName: ALICE_NAME,
+          attachments: attachments.length > 0
+            ? attachments.map((a) => ({ name: a.name, content: a.base64 }))
+            : undefined,
         },
       });
       if (error) throw error;
@@ -157,7 +230,11 @@ export function AliceApologyEmailButton() {
         toast.info("Email déjà envoyé récemment (anti-doublon).");
       } else {
         await logSend("sent");
-        toast.success(`Email d'excuse envoyé à ${recipient}.`);
+        toast.success(
+          attachments.length > 0
+            ? `Email d'excuse envoyé à ${recipient} avec ${attachments.length} pièce(s) jointe(s).`
+            : `Email d'excuse envoyé à ${recipient}.`
+        );
       }
       setOpen(false);
       setConfirmOpen(false);
@@ -245,6 +322,66 @@ export function AliceApologyEmailButton() {
                       className="font-sans text-sm leading-relaxed"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="flex items-center gap-2">
+                        <Paperclip className="h-4 w-4" />
+                        Pièces jointes (optionnel)
+                      </Label>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {formatBytes(totalAttachmentsBytes)} / {formatBytes(MAX_TOTAL_ATTACHMENTS_BYTES)}
+                      </span>
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      onChange={handleFileSelect}
+                      disabled={sending}
+                      className="hidden"
+                      id="alice-attachments"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={sending}
+                      className="gap-2 w-full"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                      Ajouter une pièce jointe
+                    </Button>
+                    {attachments.length > 0 && (
+                      <div className="space-y-1.5 mt-2">
+                        {attachments.map((a, idx) => (
+                          <div
+                            key={`${a.name}-${idx}`}
+                            className="flex items-center justify-between gap-2 rounded-md border bg-card px-3 py-2"
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <FileText className="h-4 w-4 text-primary shrink-0" />
+                              <span className="text-sm truncate">{a.name}</span>
+                              <span className="text-xs text-muted-foreground font-mono shrink-0">
+                                {formatBytes(a.size)}
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 shrink-0"
+                              onClick={() => removeAttachment(idx)}
+                              disabled={sending}
+                              aria-label={`Retirer ${a.name}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </TabsContent>
                 <TabsContent value="preview" className="py-2">
                   <div className="rounded-lg border bg-muted/30 overflow-hidden">
@@ -310,6 +447,23 @@ export function AliceApologyEmailButton() {
                         <span className="font-medium text-foreground">Caractères</span>
                         <span className="text-right font-mono">{charCount.toLocaleString("fr-FR")}</span>
                       </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="font-medium text-foreground flex items-center gap-1.5">
+                          <Paperclip className="h-3.5 w-3.5" /> Pièces jointes
+                        </span>
+                        <span className="text-right font-mono">
+                          {attachments.length === 0
+                            ? "Aucune"
+                            : `${attachments.length} · ${formatBytes(totalAttachmentsBytes)}`}
+                        </span>
+                      </div>
+                      {attachments.length > 0 && (
+                        <ul className="text-xs text-muted-foreground list-disc list-inside pl-1 pt-1">
+                          {attachments.map((a, i) => (
+                            <li key={i} className="truncate">{a.name}</li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                     {!isValidEmail && (
                       <div className="flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-destructive">
