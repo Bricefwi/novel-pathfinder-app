@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, MailWarning, Send } from "lucide-react";
+import { Loader2, MailWarning, Send, Eye, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { buildBrandedEmailPreview } from "@/lib/email-preview";
 
 const ALICE_RECIPIENT = "adamervalle@gmail.com";
 const ALICE_NAME = "Alice Damervalle";
@@ -37,6 +39,17 @@ export function AliceApologyEmailButton() {
   const [recipient, setRecipient] = useState(ALICE_RECIPIENT);
   const [subject, setSubject] = useState(ALICE_SUBJECT);
   const [message, setMessage] = useState(ALICE_DEFAULT_MESSAGE);
+
+  const previewHtml = useMemo(
+    () =>
+      buildBrandedEmailPreview({
+        recipientName: ALICE_NAME.split(" ")[0],
+        subject: subject || ALICE_SUBJECT,
+        message: message || ALICE_DEFAULT_MESSAGE,
+        senderName: ALICE_NAME,
+      }),
+    [subject, message]
+  );
 
   const handleSend = async () => {
     if (!recipient.trim() || !message.trim()) {
@@ -95,45 +108,70 @@ export function AliceApologyEmailButton() {
                 Envoyer l'email d'excuse à Alice
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-3xl">
               <DialogHeader>
                 <DialogTitle>Envoyer l'email d'excuse</DialogTitle>
                 <DialogDescription>
-                  Relisez le contenu avant envoi. Le message sera envoyé via votre adresse contact officielle, avec mise en page brandée.
+                  Relisez le contenu et l'aperçu brandé avant envoi. Le message sera envoyé via votre adresse contact officielle.
                 </DialogDescription>
               </DialogHeader>
-              <div className="space-y-4 py-2">
-                <div className="space-y-2">
-                  <Label htmlFor="alice-recipient">Destinataire</Label>
-                  <Input
-                    id="alice-recipient"
-                    type="email"
-                    value={recipient}
-                    onChange={(e) => setRecipient(e.target.value)}
-                    disabled={sending}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="alice-subject">Sujet</Label>
-                  <Input
-                    id="alice-subject"
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    disabled={sending}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="alice-message">Message</Label>
-                  <Textarea
-                    id="alice-message"
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    rows={16}
-                    disabled={sending}
-                    className="font-sans text-sm leading-relaxed"
-                  />
-                </div>
-              </div>
+              <Tabs defaultValue="edit" className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="edit" className="gap-2">
+                    <Pencil className="h-4 w-4" /> Édition
+                  </TabsTrigger>
+                  <TabsTrigger value="preview" className="gap-2">
+                    <Eye className="h-4 w-4" /> Aperçu brandé
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="edit" className="space-y-4 py-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="alice-recipient">Destinataire</Label>
+                    <Input
+                      id="alice-recipient"
+                      type="email"
+                      value={recipient}
+                      onChange={(e) => setRecipient(e.target.value)}
+                      disabled={sending}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="alice-subject">Sujet</Label>
+                    <Input
+                      id="alice-subject"
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      disabled={sending}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="alice-message">Message</Label>
+                    <Textarea
+                      id="alice-message"
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                      rows={14}
+                      disabled={sending}
+                      className="font-sans text-sm leading-relaxed"
+                    />
+                  </div>
+                </TabsContent>
+                <TabsContent value="preview" className="py-2">
+                  <div className="rounded-lg border bg-muted/30 overflow-hidden">
+                    <div className="flex items-center justify-between border-b bg-card px-4 py-2 text-xs text-muted-foreground">
+                      <span>Aperçu exact du rendu Brevo (logo, couleurs, footer)</span>
+                      <span className="font-mono">{recipient || "—"}</span>
+                    </div>
+                    <iframe
+                      title="Aperçu de l'email d'excuse"
+                      srcDoc={previewHtml}
+                      className="w-full border-0"
+                      style={{ height: "60vh", backgroundColor: "#F5F3F0" }}
+                      sandbox=""
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
               <DialogFooter className="gap-2 sm:gap-2">
                 <Button variant="ghost" onClick={handleReset} disabled={sending}>
                   Réinitialiser le texte
