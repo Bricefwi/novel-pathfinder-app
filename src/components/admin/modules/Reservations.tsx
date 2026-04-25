@@ -395,7 +395,13 @@ export function Reservations() {
             </Select>
           </div>
           <p className="text-xs text-muted-foreground">
-            {filtered.length} / {items.length} réservation(s) affichée(s).
+            {filtered.length} / {items.length} réservation(s) affichée(s)
+            {clientSearch && (
+              <>
+                {" "}— filtre client : <span className="font-medium text-foreground">« {clientSearch} »</span>
+              </>
+            )}
+            .
           </p>
         </CardContent>
       </Card>
