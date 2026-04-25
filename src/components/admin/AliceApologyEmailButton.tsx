@@ -40,6 +40,17 @@ export function AliceApologyEmailButton() {
   const [subject, setSubject] = useState(ALICE_SUBJECT);
   const [message, setMessage] = useState(ALICE_DEFAULT_MESSAGE);
 
+  const previewHtml = useMemo(
+    () =>
+      buildBrandedEmailPreview({
+        recipientName: ALICE_NAME.split(" ")[0],
+        subject: subject || ALICE_SUBJECT,
+        message: message || ALICE_DEFAULT_MESSAGE,
+        senderName: ALICE_NAME,
+      }),
+    [subject, message]
+  );
+
   const handleSend = async () => {
     if (!recipient.trim() || !message.trim()) {
       toast.error("Le destinataire et le message sont requis");
