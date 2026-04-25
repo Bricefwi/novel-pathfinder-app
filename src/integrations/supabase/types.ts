@@ -1776,33 +1776,6 @@ export type Database = {
       }
     }
     Views: {
-      accommodation_availability: {
-        Row: {
-          created_at: string | null
-          date: string | null
-          id: string | null
-          is_available: boolean | null
-          name: string | null
-          price_per_night: number | null
-        }
-        Insert: {
-          created_at?: string | null
-          date?: string | null
-          id?: string | null
-          is_available?: boolean | null
-          name?: string | null
-          price_per_night?: number | null
-        }
-        Update: {
-          created_at?: string | null
-          date?: string | null
-          id?: string | null
-          is_available?: boolean | null
-          name?: string | null
-          price_per_night?: number | null
-        }
-        Relationships: []
-      }
       client_activity_timeline: {
         Row: {
           amount: number | null
