@@ -55,7 +55,6 @@ export async function sendEmailWithAudit(params: {
   type: EmailType;
   userId?: string;
   referenceId?: string;
-  attachments?: Array<{ name: string; content: string }>;
 }): Promise<{ success: boolean; error?: string }> {
   const brevoApiKey = Deno.env.get("BREVO_API_KEY");
 
@@ -93,9 +92,6 @@ export async function sendEmailWithAudit(params: {
         to: [{ email: params.to }],
         subject: params.subject,
         htmlContent: params.html,
-        ...(params.attachments && params.attachments.length > 0
-          ? { attachment: params.attachments }
-          : {}),
         headers: {
           "X-Mailin-Track": "0",
           "X-Mailin-Track-Links": "0",
