@@ -195,6 +195,7 @@ export function Reservations() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const c = clientSearch.trim().toLowerCase();
     return items
       .filter((r) => {
         if (sourceFilter === "all") return true;
@@ -202,6 +203,13 @@ export function Reservations() {
           return r.source === "invoice" && r.payment_status === "pending";
         }
         return r.source === sourceFilter;
+      })
+      .filter((r) => {
+        if (!c) return true;
+        return (
+          r.client_name.toLowerCase().includes(c) ||
+          r.client_email.toLowerCase().includes(c)
+        );
       })
       .filter((r) => {
         if (!q) return true;
@@ -229,7 +237,7 @@ export function Reservations() {
           }
         }
       });
-  }, [items, search, sourceFilter, sortKey, sortDir]);
+  }, [items, search, clientSearch, sourceFilter, sortKey, sortDir]);
 
   const counts = useMemo(
     () => ({
