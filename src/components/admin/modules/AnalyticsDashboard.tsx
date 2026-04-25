@@ -75,13 +75,18 @@ export function AnalyticsDashboard() {
       const startStr = start.toISOString();
       const endStr = end.toISOString();
 
+      const prevStartStr = subDays(start, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))).toISOString();
+
       const [
         profilesRes,
         bookingsRes,
         quotesRes,
+        invoicesRes,
         activitiesRes,
         contactsRes,
         previousBookingsRes,
+        previousQuotesRes,
+        previousInvoicesRes,
       ] = await Promise.all([
         supabase.from("profiles").select("created_at, dream_destinations", { count: "exact" })
           .gte("created_at", startStr).lte("created_at", endStr),
@@ -89,21 +94,36 @@ export function AnalyticsDashboard() {
           .gte("created_at", startStr).lte("created_at", endStr),
         supabase.from("quotes").select("status, total_price, created_at", { count: "exact" })
           .gte("created_at", startStr).lte("created_at", endStr),
+        supabase.from("invoices").select("status, payment_status, total_amount, amount_paid, created_at", { count: "exact" })
+          .gte("created_at", startStr).lte("created_at", endStr),
         supabase.from("activities").select("country, activity_type", { count: "exact" }).eq("is_active", true),
         supabase.from("contact_requests").select("created_at", { count: "exact" })
           .gte("created_at", startStr).lte("created_at", endStr),
         // Previous period for comparison
-        supabase.from("bookings").select("status, total_price, created_at", { count: "exact" })
-          .gte("created_at", subDays(start, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))).toISOString())
-          .lt("created_at", startStr),
+        supabase.from("bookings").select("status, total_price, created_at")
+          .gte("created_at", prevStartStr).lt("created_at", startStr),
+        supabase.from("quotes").select("status, total_price, created_at")
+          .gte("created_at", prevStartStr).lt("created_at", startStr),
+        supabase.from("invoices").select("status, payment_status, total_amount, amount_paid, created_at")
+          .gte("created_at", prevStartStr).lt("created_at", startStr),
       ]);
 
       // Funnel data
       const uniqueVisitors = 1250; // Placeholder - would come from analytics
       const registered = profilesRes.count || 0;
       const quoteRequests = quotesRes.count || 0;
-      const confirmedBookings = (bookingsRes.data || []).filter(b => b.status === "confirmed").length;
-      const previousConfirmedBookings = (previousBookingsRes.data || []).filter(b => b.status === "confirmed").length;
+
+      // Réservations "en cours" = devis acceptés + factures émises + bookings confirmés
+      // (un devis accepté ou une facture représente une réservation effective)
+      const acceptedQuotes = (quotesRes.data || []).filter(q => q.status === "accepted");
+      const activeInvoices = (invoicesRes.data || []).filter(i => i.status !== "cancelled");
+      const confirmedBookingsList = (bookingsRes.data || []).filter(b => b.status === "confirmed" || b.status === "pending");
+      const totalReservations = acceptedQuotes.length + activeInvoices.length + confirmedBookingsList.length;
+
+      const prevAcceptedQuotes = (previousQuotesRes.data || []).filter(q => q.status === "accepted").length;
+      const prevActiveInvoices = (previousInvoicesRes.data || []).filter(i => i.status !== "cancelled").length;
+      const prevConfirmedBookings = (previousBookingsRes.data || []).filter(b => b.status === "confirmed" || b.status === "pending").length;
+      const previousReservations = prevAcceptedQuotes + prevActiveInvoices + prevConfirmedBookings;
 
       const funnelData = [
         { name: "Visiteurs", value: uniqueVisitors, fill: COLORS[0] },
