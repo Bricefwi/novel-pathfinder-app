@@ -368,7 +368,7 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
                           />
                         </div>
                         <Button
-                          onClick={() => sendInstallmentLink(n)}
+                          onClick={() => requestSendInstallmentLink(n)}
                           disabled={sending !== null || isLinkSent}
                           size="sm"
                           variant={isLinkSent ? "outline" : "default"}
