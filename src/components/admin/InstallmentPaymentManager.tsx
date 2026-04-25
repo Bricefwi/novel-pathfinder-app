@@ -427,6 +427,111 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
             Fermer
           </Button>
         </DialogFooter>
+
+        {/* === Confirmation explicite avant envoi du lien de paiement === */}
+        <AlertDialog
+          open={confirmInstallment !== null}
+          onOpenChange={(o) => {
+            if (!o && sending === null) {
+              setConfirmInstallment(null);
+              setAmountConfirmed(false);
+            }
+          }}
+        >
+          <AlertDialogContent className="max-w-lg">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                Confirmer le montant du versement
+              </AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3 pt-2">
+                  <p className="text-sm">
+                    Vous êtes sur le point d'envoyer un lien de paiement à <strong>{quote.client_email}</strong>.
+                    Merci de <strong>vérifier explicitement le montant</strong> avant l'envoi.
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            {confirmInstallment !== null && (() => {
+              const n = confirmInstallment;
+              const expected = n === 3 ? lastInstallment : baseInstallment;
+              const pct = ((expected / quote.total_price) * 100).toFixed(2);
+              return (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Devis</span>
+                    <span className="font-medium">{quote.quote_number}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Versement</span>
+                    <span className="font-medium">{n} / {totalInstallments}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Pourcentage</span>
+                    <span className="font-mono font-semibold">{pct} %</span>
+                  </div>
+                  <div className="flex justify-between text-base pt-1 border-t border-primary/20">
+                    <span className="text-muted-foreground">Montant à facturer</span>
+                    <span className="font-mono font-bold text-primary">{expected.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground pt-1">
+                    <span>Total devis</span>
+                    <span>{quote.total_price.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Date limite</span>
+                    <span>
+                      {dueDates[n]
+                        ? format(new Date(dueDates[n]), "dd MMMM yyyy", { locale: fr })
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground italic pt-1">
+                    Répartition standard : 33,33 % / 33,33 % / 33,34 % (le 3ᵉ versement absorbe l'arrondi).
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="flex items-start gap-2 rounded-md bg-muted/40 p-3">
+              <Checkbox
+                id="confirm-amount"
+                checked={amountConfirmed}
+                onCheckedChange={(c) => setAmountConfirmed(c === true)}
+                disabled={sending !== null}
+                className="mt-0.5"
+              />
+              <Label htmlFor="confirm-amount" className="text-sm leading-snug cursor-pointer">
+                Je confirme avoir vérifié le montant et le pourcentage du versement à envoyer.
+              </Label>
+            </div>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={sending !== null}>Annuler</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={!amountConfirmed || sending !== null}
+                onClick={(e) => {
+                  e.preventDefault();
+                  void confirmAndSendInstallmentLink();
+                }}
+              >
+                {sending !== null ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    Envoi…
+                  </>
+                ) : (
+                  <>
+                    <Mail className="h-4 w-4 mr-1.5" />
+                    Confirmer et envoyer
+                  </>
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
