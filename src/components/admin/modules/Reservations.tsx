@@ -457,9 +457,34 @@ export function Reservations() {
                     <TableCell className="text-right text-sm">{r.participants ?? "—"}</TableCell>
                     <TableCell className="text-right font-semibold">{formatAmount(r.amount)}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {r.status}
-                      </Badge>
+                      <div className="flex flex-col gap-1 items-start">
+                        <Badge variant="secondary" className="text-[10px]">
+                          {r.status}
+                        </Badge>
+                        {r.payment_status && (
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] gap-1 ${
+                              r.payment_status === "paid"
+                                ? "bg-green-500/10 text-green-700 border-green-500/30"
+                                : r.payment_status === "partial"
+                                ? "bg-amber-500/10 text-amber-700 border-amber-500/30"
+                                : r.payment_status === "refunded"
+                                ? "bg-muted text-muted-foreground border-border"
+                                : "bg-red-500/10 text-red-700 border-red-500/30"
+                            }`}
+                          >
+                            <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                            {r.payment_status === "paid"
+                              ? "Payée"
+                              : r.payment_status === "partial"
+                              ? "Partielle"
+                              : r.payment_status === "refunded"
+                              ? "Remboursée"
+                              : "En attente"}
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
