@@ -49,7 +49,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!isAdmin) return createAuthErrorResponse("Admin access required", 403, corsHeaders);
 
     const body: SendReplyRequest = await req.json();
-    const { to, subject, message, originalMessage, senderName } = body;
+    const { to, subject, message, originalMessage, senderName, attachments } = body;
 
     if (!to || !message?.trim()) {
       return new Response(
