@@ -73,6 +73,8 @@ export function ControlTowerContent({ activeModule, onModuleChange }: ControlTow
         return <AccountingDashboard />;
       case "account-health":
         return <AccountHealthDashboard />;
+      case "reservations":
+        return <Reservations />;
       
       // Legacy modules
       case "dashboard":
