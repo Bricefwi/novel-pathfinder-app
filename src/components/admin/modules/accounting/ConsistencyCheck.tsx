@@ -552,21 +552,126 @@ export function ConsistencyCheck({ kpis }: ConsistencyCheckProps) {
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">{c.hint}</p>
                 </div>
-                <div className="text-right text-xs whitespace-nowrap">
-                  <div>
-                    <span className="text-muted-foreground">KPI :</span>{" "}
-                    <span className="font-mono">{c.isCount ? c.kpi : formatEur(c.kpi)}</span>
+                <div className="flex flex-col items-end gap-1 whitespace-nowrap">
+                  <div className="text-right text-xs">
+                    <div>
+                      <span className="text-muted-foreground">KPI :</span>{" "}
+                      <span className="font-mono">{c.isCount ? c.kpi : formatEur(c.kpi)}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Base :</span>{" "}
+                      <span className="font-mono">{c.isCount ? c.raw : formatEur(c.raw)}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Base :</span>{" "}
-                    <span className="font-mono">{c.isCount ? c.raw : formatEur(c.raw)}</span>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs"
+                    onClick={() => openDrawer(c.id, c.label, c.hint)}
+                  >
+                    <Search className="h-3 w-3 mr-1" />
+                    Inspecter
+                  </Button>
                 </div>
               </div>
             ))}
           </div>
         </CardContent>
       )}
+
+      <Sheet
+        open={drawerCheckId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDrawerCheckId(null);
+            setDrawerRecords([]);
+          }
+        }}
+      >
+        <SheetContent side="right" className="w-full sm:max-w-2xl flex flex-col">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-primary" />
+              {drawerTitle}
+            </SheetTitle>
+            <SheetDescription className="text-xs">
+              {drawerDescription}
+              <br />
+              <span className="text-muted-foreground">
+                {drawerLoading ? "Chargement…" : `${drawerRecords.length} enregistrement(s) trouvé(s).`}
+              </span>
+            </SheetDescription>
+          </SheetHeader>
+
+          <ScrollArea className="flex-1 -mx-6 px-6 mt-4">
+            {drawerLoading ? (
+              <div className="flex items-center justify-center py-12 text-muted-foreground">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                Chargement des enregistrements…
+              </div>
+            ) : drawerRecords.length === 0 ? (
+              <div className="text-center py-12 text-sm text-muted-foreground">
+                Aucun enregistrement à afficher.
+              </div>
+            ) : (
+              <div className="space-y-3 pb-6">
+                {drawerRecords.map((rec) => {
+                  const meta = sourceMeta[rec.source];
+                  const Icon = meta.icon;
+                  return (
+                    <div
+                      key={`${rec.source}-${rec.id}`}
+                      className="rounded-md border bg-card p-3 space-y-2"
+                    >
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <Icon className={`h-4 w-4 ${meta.color}`} />
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold truncate">{rec.title}</p>
+                            {rec.subtitle && (
+                              <p className="text-xs text-muted-foreground truncate">{rec.subtitle}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <Badge variant="outline" className="text-[10px]">
+                            {meta.label}
+                          </Badge>
+                          {rec.status && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              {rec.status}
+                            </Badge>
+                          )}
+                          {rec.flag && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] border-amber-500/40 text-amber-700 bg-amber-500/10"
+                            >
+                              ⚠ {rec.flag}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                        {rec.fields.map((f, idx) => (
+                          <div key={idx} className="flex flex-col min-w-0">
+                            <dt className="text-muted-foreground text-[10px] uppercase tracking-wide">
+                              {f.label}
+                            </dt>
+                            <dd className="font-mono truncate" title={f.value}>
+                              {f.value}
+                            </dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </Card>
   );
 }
