@@ -113,6 +113,7 @@ const handler = async (req: Request): Promise<Response> => {
       html: htmlContent,
       type: "notification",
       userId: auth.user.id,
+      attachments: attachments && attachments.length > 0 ? attachments : undefined,
     });
 
     if (!result.success) {
