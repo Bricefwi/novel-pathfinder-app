@@ -129,7 +129,7 @@ export function AnalyticsDashboard() {
         { name: "Visiteurs", value: uniqueVisitors, fill: COLORS[0] },
         { name: "Inscrits", value: registered, fill: COLORS[1] },
         { name: "Demandes devis", value: quoteRequests, fill: COLORS[2] },
-        { name: "Ventes", value: confirmedBookings, fill: COLORS[3] },
+        { name: "Ventes", value: totalReservations, fill: COLORS[3] },
       ];
 
       // Destinations heatmap
@@ -144,36 +144,39 @@ export function AnalyticsDashboard() {
         .sort((a, b) => b.value - a.value)
         .slice(0, 8);
 
-      // Revenue calculation
-      const currentRevenue = (bookingsRes.data || [])
+      // Revenue calculation : factures payées + devis acceptés + bookings confirmés
+      const invoicePaid = (invoicesRes.data || [])
+        .reduce((acc, i) => acc + (Number(i.amount_paid) || 0), 0);
+      const acceptedQuotesRevenue = acceptedQuotes
+        .reduce((acc, q) => acc + (Number(q.total_price) || 0), 0);
+      const confirmedBookingsRevenue = (bookingsRes.data || [])
         .filter(b => b.status === "confirmed")
         .reduce((acc, b) => acc + (Number(b.total_price) || 0), 0);
-      
-      const previousRevenue = (previousBookingsRes.data || [])
+      const currentRevenue = invoicePaid + acceptedQuotesRevenue + confirmedBookingsRevenue;
+
+      const prevInvoicePaid = (previousInvoicesRes.data || [])
+        .reduce((acc, i) => acc + (Number(i.amount_paid) || 0), 0);
+      const prevAcceptedRevenue = (previousQuotesRes.data || [])
+        .filter(q => q.status === "accepted")
+        .reduce((acc, q) => acc + (Number(q.total_price) || 0), 0);
+      const prevConfirmedRevenue = (previousBookingsRes.data || [])
         .filter(b => b.status === "confirmed")
         .reduce((acc, b) => acc + (Number(b.total_price) || 0), 0);
+      const previousRevenue = prevInvoicePaid + prevAcceptedRevenue + prevConfirmedRevenue;
 
       const revenueChange = previousRevenue > 0 
         ? ((currentRevenue - previousRevenue) / previousRevenue * 100).toFixed(1)
         : "0";
 
-      // Top products by revenue
-      const productRevenue = new Map<string, { revenue: number; quantity: number }>();
-      (bookingsRes.data || []).filter(b => b.status === "confirmed").forEach(b => {
-        const activity = "Séjour"; // Would need to join with activities table
-        const current = productRevenue.get(activity) || { revenue: 0, quantity: 0 };
-        productRevenue.set(activity, { 
-          revenue: current.revenue + (Number(b.total_price) || 0),
-          quantity: current.quantity + 1
-        });
-      });
-
-      // Revenue by month
+      // Revenue by month (toutes sources confondues)
       const revenueByMonth = new Map<string, number>();
-      (bookingsRes.data || []).filter(b => b.status === "confirmed").forEach(b => {
-        const month = format(new Date(b.created_at), "MMM", { locale: fr });
-        revenueByMonth.set(month, (revenueByMonth.get(month) || 0) + (Number(b.total_price) || 0));
-      });
+      const addToMonth = (date: string, amount: number) => {
+        const month = format(new Date(date), "MMM", { locale: fr });
+        revenueByMonth.set(month, (revenueByMonth.get(month) || 0) + amount);
+      };
+      (invoicesRes.data || []).forEach(i => addToMonth(i.created_at, Number(i.amount_paid) || 0));
+      acceptedQuotes.forEach(q => addToMonth(q.created_at, Number(q.total_price) || 0));
+      (bookingsRes.data || []).filter(b => b.status === "confirmed").forEach(b => addToMonth(b.created_at, Number(b.total_price) || 0));
       const revenueData = Array.from(revenueByMonth.entries()).map(([month, revenue]) => ({
         month,
         revenue,
@@ -196,14 +199,14 @@ export function AnalyticsDashboard() {
         activityTypeData,
         totals: {
           profiles: registered,
-          bookings: bookingsRes.count || 0,
+          bookings: totalReservations,
           quotes: quoteRequests,
           contacts: contactsRes.count || 0,
           revenue: currentRevenue,
           revenueChange: parseFloat(revenueChange),
-          bookingsChange: previousConfirmedBookings > 0 
-            ? ((confirmedBookings - previousConfirmedBookings) / previousConfirmedBookings * 100)
-            : 0,
+          bookingsChange: previousReservations > 0 
+            ? ((totalReservations - previousReservations) / previousReservations * 100)
+            : (totalReservations > 0 ? 100 : 0),
         },
       };
     },
