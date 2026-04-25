@@ -41,6 +41,7 @@ import {
   LogOut,
   ExternalLink,
   BadgeCheck,
+  CalendarCheck,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { AdminModule } from "./ControlTower";
