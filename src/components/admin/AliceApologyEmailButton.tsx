@@ -65,6 +65,15 @@ const STATUS_VARIANTS: Record<string, { label: string; className: string }> = {
   failed: { label: "Échec", className: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
+interface SendError {
+  message: string;
+  category: "network" | "auth" | "rate_limit" | "server" | "validation" | "unknown";
+  hint: string;
+  status?: number;
+  details?: string;
+  attemptedAt: string;
+}
+
 export function AliceApologyEmailButton() {
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -74,6 +83,8 @@ export function AliceApologyEmailButton() {
   const [message, setMessage] = useState(ALICE_DEFAULT_MESSAGE);
   const [history, setHistory] = useState<ApologyLogEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [sendError, setSendError] = useState<SendError | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const MIN_MESSAGE_LENGTH = 20;
   const MAX_SUBJECT_LENGTH = 200;
