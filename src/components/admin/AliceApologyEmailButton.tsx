@@ -7,7 +7,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, MailWarning, Send, Eye, Pencil } from "lucide-react";
+import { Loader2, MailWarning, Send, Eye, Pencil, CheckCircle2, AlertTriangle } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { buildBrandedEmailPreview } from "@/lib/email-preview";
 
@@ -35,10 +45,18 @@ Très cordialement,`;
 
 export function AliceApologyEmailButton() {
   const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [recipient, setRecipient] = useState(ALICE_RECIPIENT);
   const [subject, setSubject] = useState(ALICE_SUBJECT);
   const [message, setMessage] = useState(ALICE_DEFAULT_MESSAGE);
+
+  const trimmedRecipient = recipient.trim();
+  const trimmedSubject = subject.trim() || ALICE_SUBJECT;
+  const trimmedMessage = message.trim();
+  const charCount = trimmedMessage.length;
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedRecipient);
+  const canSend = isValidEmail && trimmedMessage.length > 0;
 
   const previewHtml = useMemo(
     () =>
@@ -74,6 +92,7 @@ export function AliceApologyEmailButton() {
         toast.success(`Email d'excuse envoyé à ${recipient}.`);
       }
       setOpen(false);
+      setConfirmOpen(false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erreur inconnue";
       toast.error(`Impossible d'envoyer l'email : ${msg}`);
@@ -179,13 +198,73 @@ export function AliceApologyEmailButton() {
                 <Button variant="outline" onClick={() => setOpen(false)} disabled={sending}>
                   Annuler
                 </Button>
-                <Button onClick={handleSend} disabled={sending} className="gap-2">
+                <Button
+                  onClick={() => setConfirmOpen(true)}
+                  disabled={sending || !canSend}
+                  className="gap-2"
+                >
                   {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   Confirmer l'envoi
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <AlertDialog open={confirmOpen} onOpenChange={(o) => !sending && setConfirmOpen(o)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                  Confirmer l'envoi de l'email
+                </AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div className="space-y-3 pt-2">
+                    <p className="text-sm text-muted-foreground">
+                      Vérifiez le résumé ci-dessous avant l'envoi définitif. Cette action est irréversible.
+                    </p>
+                    <div className="rounded-lg border bg-muted/40 p-4 space-y-2 text-sm">
+                      <div className="flex justify-between gap-4">
+                        <span className="font-medium text-foreground">Destinataire</span>
+                        <span className="font-mono text-right break-all">{trimmedRecipient || "—"}</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="font-medium text-foreground">Sujet</span>
+                        <span className="text-right">{trimmedSubject}</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="font-medium text-foreground">Expéditeur</span>
+                        <span className="text-right">{ALICE_NAME}</span>
+                      </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="font-medium text-foreground">Caractères</span>
+                        <span className="text-right font-mono">{charCount.toLocaleString("fr-FR")}</span>
+                      </div>
+                    </div>
+                    {!isValidEmail && (
+                      <div className="flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-destructive">
+                        <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                        <span className="text-xs">L'adresse email du destinataire semble invalide.</span>
+                      </div>
+                    )}
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={sending}>Retour à l'édition</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleSend();
+                  }}
+                  disabled={sending || !canSend}
+                  className="gap-2"
+                >
+                  {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  Envoyer maintenant
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       </CardContent>
     </Card>
