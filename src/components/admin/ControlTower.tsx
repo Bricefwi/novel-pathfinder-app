@@ -34,7 +34,8 @@ export type AdminModule =
   | "legal"
   | "payment-reminders"
   | "accounting"
-  | "account-health";
+  | "account-health"
+  | "reservations";
 
 export function ControlTower() {
   const navigate = useNavigate();
