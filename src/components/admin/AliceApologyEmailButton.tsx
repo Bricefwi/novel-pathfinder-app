@@ -338,6 +338,15 @@ export function AliceApologyEmailButton() {
                   Relisez le contenu et l'aperçu brandé avant envoi. Le message sera envoyé via votre adresse contact officielle.
                 </DialogDescription>
               </DialogHeader>
+              {sendError && (
+                <ErrorBanner
+                  error={sendError}
+                  retryCount={retryCount}
+                  sending={sending}
+                  onRetry={handleRetry}
+                  onDismiss={handleDismissError}
+                />
+              )}
               <Tabs defaultValue="edit" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="edit" className="gap-2">
