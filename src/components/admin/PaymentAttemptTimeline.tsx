@@ -419,9 +419,41 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
             {entries.length} événement{entries.length > 1 ? "s" : ""}
           </Badge>
         </CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Toutes les tentatives (succès, refus 409, erreurs) regroupées par ordre antichronologique. Mise à jour en temps réel.
-        </p>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <p className="text-xs text-muted-foreground">
+            Toutes les tentatives (succès, refus 409, erreurs) regroupées par ordre antichronologique. Mise à jour en temps réel.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1"
+              disabled={entries.length === 0}
+              onClick={() => {
+                const csv = buildCsv(entries);
+                const filename = `chronologie-paiements-${quoteId}-${format(new Date(), "yyyyMMdd-HHmm")}.csv`;
+                downloadFile(csv, filename, "text/csv;charset=utf-8");
+                toast.success(`Export CSV (${entries.length} ligne${entries.length > 1 ? "s" : ""})`);
+              }}
+            >
+              <Download className="h-3 w-3" />
+              CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1"
+              disabled={entries.length === 0}
+              onClick={() => {
+                openPdfPrintWindow(entries, quoteId);
+                toast.success("Fenêtre d'impression PDF ouverte");
+              }}
+            >
+              <FileText className="h-3 w-3" />
+              PDF
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {/* Stats compactes */}
