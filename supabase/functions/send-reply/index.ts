@@ -14,6 +14,7 @@ interface SendReplyRequest {
   message: string;
   originalMessage?: string;
   senderName?: string;
+  attachments?: Array<{ name: string; content: string }>;
 }
 
 // Simple idempotency: track recent request hashes to prevent duplicates
