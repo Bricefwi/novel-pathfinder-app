@@ -242,34 +242,73 @@ export function AliceApologyEmailButton() {
                 </TabsList>
                 <TabsContent value="edit" className="space-y-4 py-2">
                   <div className="space-y-2">
-                    <Label htmlFor="alice-recipient">Destinataire</Label>
+                    <Label htmlFor="alice-recipient">
+                      Destinataire <span className="text-destructive">*</span>
+                    </Label>
                     <Input
                       id="alice-recipient"
                       type="email"
                       value={recipient}
                       onChange={(e) => setRecipient(e.target.value)}
                       disabled={sending}
+                      aria-invalid={!!recipientError}
+                      aria-describedby={recipientError ? "alice-recipient-error" : undefined}
+                      className={recipientError ? "border-destructive focus-visible:ring-destructive" : ""}
                     />
+                    {recipientError && (
+                      <p id="alice-recipient-error" className="text-xs text-destructive flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" /> {recipientError}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="alice-subject">Sujet</Label>
+                    <Label htmlFor="alice-subject">
+                      Sujet <span className="text-destructive">*</span>
+                    </Label>
                     <Input
                       id="alice-subject"
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
                       disabled={sending}
+                      maxLength={MAX_SUBJECT_LENGTH + 50}
+                      aria-invalid={!!subjectError}
+                      aria-describedby={subjectError ? "alice-subject-error" : undefined}
+                      className={subjectError ? "border-destructive focus-visible:ring-destructive" : ""}
                     />
+                    {subjectError ? (
+                      <p id="alice-subject-error" className="text-xs text-destructive flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" /> {subjectError}
+                      </p>
+                    ) : (
+                      <p className="text-xs text-muted-foreground text-right">
+                        {trimmedSubjectRaw.length}/{MAX_SUBJECT_LENGTH}
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="alice-message">Message</Label>
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="alice-message">
+                        Message <span className="text-destructive">*</span>
+                      </Label>
+                      <span className={`text-xs ${messageError ? "text-destructive" : "text-muted-foreground"}`}>
+                        {trimmedMessage.length} caractères (min. {MIN_MESSAGE_LENGTH})
+                      </span>
+                    </div>
                     <Textarea
                       id="alice-message"
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       rows={14}
                       disabled={sending}
-                      className="font-sans text-sm leading-relaxed"
+                      aria-invalid={!!messageError}
+                      aria-describedby={messageError ? "alice-message-error" : undefined}
+                      className={`font-sans text-sm leading-relaxed ${messageError ? "border-destructive focus-visible:ring-destructive" : ""}`}
                     />
+                    {messageError && (
+                      <p id="alice-message-error" className="text-xs text-destructive flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" /> {messageError}
+                      </p>
+                    )}
                   </div>
                 </TabsContent>
                 <TabsContent value="preview" className="py-2">
