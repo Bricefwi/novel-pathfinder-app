@@ -505,7 +505,9 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
                   const actionLabel = ACTION_LABELS[entry.action] || entry.action;
                   const date = new Date(entry.created_at);
                   const relatedSchedule = findSchedule(entry);
-                  const previousAttempt = findPreviousAttempt(entry, index);
+                  // Use the real index in the unfiltered list so diffing works under filtering
+                  const realIndex = entries.findIndex((e) => e.id === entry.id);
+                  const previousAttempt = findPreviousAttempt(entry, realIndex);
                   const diffs = previousAttempt ? computeDiff(entry, previousAttempt) : [];
 
                   return (
