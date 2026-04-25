@@ -34,6 +34,7 @@ import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 
 type SourceType = "quote" | "invoice" | "booking";
+type SourceFilter = "all" | SourceType | "invoice_pending";
 type SortKey = "date" | "client" | "amount" | "source";
 type SortDir = "asc" | "desc";
 
@@ -49,6 +50,7 @@ interface Reservation {
   participants: number | null;
   amount: number | null;
   status: string;
+  payment_status: string | null;
   created_at: string;
 }
 
