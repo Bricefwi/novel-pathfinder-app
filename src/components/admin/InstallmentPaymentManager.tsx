@@ -5,9 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Mail, CheckCircle2, Clock, AlertTriangle, Calendar, Lock } from "lucide-react";
+import { Loader2, Mail, CheckCircle2, Clock, AlertTriangle, Calendar, Lock, ShieldCheck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PaymentAuditLog } from "./PaymentAuditLog";
 import { PaymentAttemptTimeline } from "./PaymentAttemptTimeline";
@@ -46,6 +48,8 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState<number | null>(null);
   const [totalInstallments] = useState(3);
+  const [confirmInstallment, setConfirmInstallment] = useState<number | null>(null);
+  const [amountConfirmed, setAmountConfirmed] = useState(false);
   
   // Suggested due dates for each installment (J0, J-30 before trip, J-7 before trip)
   const computeSuggestedDueDate = (n: number): string => {
@@ -134,15 +138,12 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
 
   const getScheduleForInstallment = (n: number) => schedules.find((s) => s.installment_number === n && s.status !== "cancelled");
 
-  const sendInstallmentLink = async (installmentNumber: number) => {
-    // === GARDE-FOU FRONT : bloquer si un envoi est déjà en cours ===
+  // Step 1: open the explicit confirmation dialog (validates pre-conditions)
+  const requestSendInstallmentLink = (installmentNumber: number) => {
     if (sending !== null) {
       toast.warning("Un envoi est déjà en cours. Merci de patienter.");
       return;
     }
-
-    // === GARDE-FOU FRONT : re-vérifier l'état actuel du versement avant envoi ===
-    // Empêche le double-clic même si la liste locale est légèrement désynchronisée.
     const current = getScheduleForInstallment(installmentNumber);
     if (current?.status === "paid") {
       toast.error(`Ce versement (${installmentNumber}/${totalInstallments}) est déjà payé. Aucun nouveau lien ne peut être envoyé.`);
@@ -158,7 +159,14 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
       );
       return;
     }
+    setAmountConfirmed(false);
+    setConfirmInstallment(installmentNumber);
+  };
 
+  // Step 2: actual send (only callable after explicit UI confirmation)
+  const confirmAndSendInstallmentLink = async () => {
+    if (confirmInstallment === null) return;
+    const installmentNumber = confirmInstallment;
     setSending(installmentNumber);
     try {
       const { data, error } = await supabase.functions.invoke("create-installment-payment", {
@@ -176,6 +184,8 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
       toast.success(`Lien versement ${installmentNumber}/${totalInstallments} envoyé à ${quote.client_email}`, {
         description: `Montant: ${data.amount}€`,
       });
+      setConfirmInstallment(null);
+      setAmountConfirmed(false);
       await fetchSchedules();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur inconnue";
@@ -358,7 +368,7 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
                           />
                         </div>
                         <Button
-                          onClick={() => sendInstallmentLink(n)}
+                          onClick={() => requestSendInstallmentLink(n)}
                           disabled={sending !== null || isLinkSent}
                           size="sm"
                           variant={isLinkSent ? "outline" : "default"}
@@ -417,6 +427,111 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
             Fermer
           </Button>
         </DialogFooter>
+
+        {/* === Confirmation explicite avant envoi du lien de paiement === */}
+        <AlertDialog
+          open={confirmInstallment !== null}
+          onOpenChange={(o) => {
+            if (!o && sending === null) {
+              setConfirmInstallment(null);
+              setAmountConfirmed(false);
+            }
+          }}
+        >
+          <AlertDialogContent className="max-w-lg">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                Confirmer le montant du versement
+              </AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-3 pt-2">
+                  <p className="text-sm">
+                    Vous êtes sur le point d'envoyer un lien de paiement à <strong>{quote.client_email}</strong>.
+                    Merci de <strong>vérifier explicitement le montant</strong> avant l'envoi.
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            {confirmInstallment !== null && (() => {
+              const n = confirmInstallment;
+              const expected = n === 3 ? lastInstallment : baseInstallment;
+              const pct = ((expected / quote.total_price) * 100).toFixed(2);
+              return (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Devis</span>
+                    <span className="font-medium">{quote.quote_number}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Versement</span>
+                    <span className="font-medium">{n} / {totalInstallments}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Pourcentage</span>
+                    <span className="font-mono font-semibold">{pct} %</span>
+                  </div>
+                  <div className="flex justify-between text-base pt-1 border-t border-primary/20">
+                    <span className="text-muted-foreground">Montant à facturer</span>
+                    <span className="font-mono font-bold text-primary">{expected.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground pt-1">
+                    <span>Total devis</span>
+                    <span>{quote.total_price.toFixed(2)} €</span>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Date limite</span>
+                    <span>
+                      {dueDates[n]
+                        ? format(new Date(dueDates[n]), "dd MMMM yyyy", { locale: fr })
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-muted-foreground italic pt-1">
+                    Répartition standard : 33,33 % / 33,33 % / 33,34 % (le 3ᵉ versement absorbe l'arrondi).
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="flex items-start gap-2 rounded-md bg-muted/40 p-3">
+              <Checkbox
+                id="confirm-amount"
+                checked={amountConfirmed}
+                onCheckedChange={(c) => setAmountConfirmed(c === true)}
+                disabled={sending !== null}
+                className="mt-0.5"
+              />
+              <Label htmlFor="confirm-amount" className="text-sm leading-snug cursor-pointer">
+                Je confirme avoir vérifié le montant et le pourcentage du versement à envoyer.
+              </Label>
+            </div>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={sending !== null}>Annuler</AlertDialogCancel>
+              <AlertDialogAction
+                disabled={!amountConfirmed || sending !== null}
+                onClick={(e) => {
+                  e.preventDefault();
+                  void confirmAndSendInstallmentLink();
+                }}
+              >
+                {sending !== null ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    Envoi…
+                  </>
+                ) : (
+                  <>
+                    <Mail className="h-4 w-4 mr-1.5" />
+                    Confirmer et envoyer
+                  </>
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
