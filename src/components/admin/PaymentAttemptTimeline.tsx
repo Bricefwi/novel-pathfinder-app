@@ -864,7 +864,11 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
                 })}
               </div>
             </div>
-          </ScrollArea>
+                  </ScrollArea>
+                )}
+              </>
+            );
+          })()
         )}
       </CardContent>
     </Card>
