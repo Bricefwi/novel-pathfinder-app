@@ -75,12 +75,38 @@ export function AliceApologyEmailButton() {
   const [history, setHistory] = useState<ApologyLogEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
+  const MIN_MESSAGE_LENGTH = 20;
+  const MAX_SUBJECT_LENGTH = 200;
+  const MAX_RECIPIENT_LENGTH = 255;
+
   const trimmedRecipient = recipient.trim();
-  const trimmedSubject = subject.trim() || ALICE_SUBJECT;
+  const trimmedSubjectRaw = subject.trim();
+  const trimmedSubject = trimmedSubjectRaw || ALICE_SUBJECT;
   const trimmedMessage = message.trim();
   const charCount = trimmedMessage.length;
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedRecipient);
-  const canSend = isValidEmail && trimmedMessage.length > 0;
+
+  const recipientError = !trimmedRecipient
+    ? "L'adresse email du destinataire est requise."
+    : !isValidEmail
+    ? "Format d'email invalide (ex. nom@domaine.com)."
+    : trimmedRecipient.length > MAX_RECIPIENT_LENGTH
+    ? `L'adresse ne doit pas dépasser ${MAX_RECIPIENT_LENGTH} caractères.`
+    : null;
+
+  const subjectError = !trimmedSubjectRaw
+    ? "Le sujet ne peut pas être vide."
+    : trimmedSubjectRaw.length > MAX_SUBJECT_LENGTH
+    ? `Le sujet ne doit pas dépasser ${MAX_SUBJECT_LENGTH} caractères.`
+    : null;
+
+  const messageError = !trimmedMessage
+    ? "Le message ne peut pas être vide."
+    : trimmedMessage.length < MIN_MESSAGE_LENGTH
+    ? `Le message doit contenir au moins ${MIN_MESSAGE_LENGTH} caractères (actuellement ${trimmedMessage.length}).`
+    : null;
+
+  const canSend = !recipientError && !subjectError && !messageError;
 
   const previewHtml = useMemo(
     () =>
