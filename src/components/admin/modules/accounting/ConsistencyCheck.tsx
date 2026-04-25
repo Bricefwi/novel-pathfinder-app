@@ -676,6 +676,8 @@ export function ConsistencyCheck({ kpis }: ConsistencyCheckProps) {
             </ScrollArea>
           </div>
         )}
+      </CardHeader>
+
       {(expanded || !allOk) && (
         <CardContent className="space-y-2">
           {!allOk && (
