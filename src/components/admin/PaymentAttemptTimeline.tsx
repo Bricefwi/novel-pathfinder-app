@@ -15,6 +15,10 @@ import {
   Activity,
   ChevronDown,
   ChevronRight,
+  CreditCard,
+  ArrowRight,
+  GitCompare,
+  Receipt,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -83,21 +87,99 @@ const ACTION_LABELS: Record<string, string> = {
   failed: "Échec technique",
 };
 
+interface ScheduleRef {
+  id: string;
+  installment_number: number;
+  total_installments: number;
+  status: string;
+  expected_amount: number;
+}
+
+const buildStripeDashboardUrl = (sessionId: string): string => {
+  // Detect test vs live based on session id prefix; both use the same dashboard URL pattern
+  const base = "https://dashboard.stripe.com";
+  if (sessionId.startsWith("cs_test_")) return `${base}/test/payments?query=${sessionId}`;
+  return `${base}/payments?query=${sessionId}`;
+};
+
+interface DiffItem {
+  field: string;
+  before: string;
+  after: string;
+}
+
+const computeDiff = (curr: AuditEntry, prev: AuditEntry): DiffItem[] => {
+  const diffs: DiffItem[] = [];
+  const fmtAmt = (a: number | null) => (a == null ? "—" : `${Number(a).toFixed(2)}€`);
+
+  if (curr.payment_option !== prev.payment_option) {
+    diffs.push({ field: "Option de paiement", before: prev.payment_option, after: curr.payment_option });
+  }
+  if ((curr.installment_number ?? null) !== (prev.installment_number ?? null)) {
+    diffs.push({
+      field: "Versement",
+      before: prev.installment_number ? `${prev.installment_number}/${prev.total_installments}` : "—",
+      after: curr.installment_number ? `${curr.installment_number}/${curr.total_installments}` : "—",
+    });
+  }
+  if ((curr.requested_amount ?? null) !== (prev.requested_amount ?? null)) {
+    diffs.push({
+      field: "Montant demandé",
+      before: fmtAmt(prev.requested_amount),
+      after: fmtAmt(curr.requested_amount),
+    });
+  }
+  if ((curr.expected_amount ?? null) !== (prev.expected_amount ?? null)) {
+    diffs.push({
+      field: "Montant attendu",
+      before: fmtAmt(prev.expected_amount),
+      after: fmtAmt(curr.expected_amount),
+    });
+  }
+  if (curr.status !== prev.status) {
+    diffs.push({ field: "Statut", before: prev.status, after: curr.status });
+  }
+  if (curr.action !== prev.action) {
+    diffs.push({
+      field: "Action",
+      before: ACTION_LABELS[prev.action] || prev.action,
+      after: ACTION_LABELS[curr.action] || curr.action,
+    });
+  }
+  if ((curr.performed_by_email ?? null) !== (prev.performed_by_email ?? null)) {
+    diffs.push({
+      field: "Auteur",
+      before: prev.performed_by_email || "—",
+      after: curr.performed_by_email || "—",
+    });
+  }
+  return diffs;
+};
+
 export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps) => {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleRef[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchTimeline = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("payment_link_audit")
-        .select("*")
-        .eq("quote_id", quoteId)
-        .order("created_at", { ascending: false });
+      const [auditRes, schedulesRes] = await Promise.all([
+        supabase
+          .from("payment_link_audit")
+          .select("*")
+          .eq("quote_id", quoteId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("payment_schedules")
+          .select("id, installment_number, total_installments, status, expected_amount")
+          .eq("quote_id", quoteId)
+          .order("installment_number", { ascending: true }),
+      ]);
 
-      if (!error && data) setEntries(data as AuditEntry[]);
+      if (!auditRes.error && auditRes.data) setEntries(auditRes.data as AuditEntry[]);
+      if (!schedulesRes.error && schedulesRes.data) setSchedules(schedulesRes.data as ScheduleRef[]);
       setLoading(false);
     };
 
@@ -133,6 +215,29 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
       return next;
     });
   };
+
+  // Find related payment schedule for a given audit entry (by installment number)
+  const findSchedule = (entry: AuditEntry): ScheduleRef | undefined => {
+    if (!entry.installment_number) return undefined;
+    return schedules.find((s) => s.installment_number === entry.installment_number);
+  };
+
+  // Find the previous attempt (chronologically older) for the SAME installment
+  // entries are sorted DESC, so the "previous" attempt is the next index in the array
+  const findPreviousAttempt = (entry: AuditEntry, index: number): AuditEntry | undefined => {
+    for (let i = index + 1; i < entries.length; i++) {
+      const candidate = entries[i];
+      // Same scope (same installment OR both targeting the same payment_option without installment)
+      if (
+        candidate.installment_number === entry.installment_number &&
+        candidate.payment_option === entry.payment_option
+      ) {
+        return candidate;
+      }
+    }
+    return undefined;
+  };
+
 
   // Group by installment for sub-totals
   const stats = {
@@ -221,11 +326,14 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
               <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-border" aria-hidden />
 
               <div className="space-y-3">
-                {entries.map((entry) => {
+                {entries.map((entry, index) => {
                   const cfg = STATUS_CONFIG[entry.status] || STATUS_CONFIG.error;
                   const isExpanded = expandedIds.has(entry.id);
                   const actionLabel = ACTION_LABELS[entry.action] || entry.action;
                   const date = new Date(entry.created_at);
+                  const relatedSchedule = findSchedule(entry);
+                  const previousAttempt = findPreviousAttempt(entry, index);
+                  const diffs = previousAttempt ? computeDiff(entry, previousAttempt) : [];
 
                   return (
                     <div key={entry.id} className="relative pl-10">
@@ -304,16 +412,72 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
                                 )}
                               </div>
 
-                              {entry.payment_link_url && (
-                                <a
-                                  href={entry.payment_link_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 mt-2 text-xs text-primary hover:underline"
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                  Voir le lien Stripe
-                                </a>
+                              {/* Direct links to related Stripe / payment schedule */}
+                              <div className="flex flex-wrap gap-3 mt-2">
+                                {entry.payment_link_url && (
+                                  <a
+                                    href={entry.payment_link_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                                  >
+                                    <CreditCard className="h-3 w-3" />
+                                    Ouvrir le lien de paiement
+                                  </a>
+                                )}
+                                {entry.stripe_session_id && (
+                                  <a
+                                    href={buildStripeDashboardUrl(entry.stripe_session_id)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                    Voir sur Stripe Dashboard
+                                  </a>
+                                )}
+                                {relatedSchedule && (
+                                  <span
+                                    className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+                                    title={`Échéance ${relatedSchedule.installment_number}/${relatedSchedule.total_installments} • Statut : ${relatedSchedule.status} • ${Number(relatedSchedule.expected_amount).toFixed(2)}€`}
+                                  >
+                                    <Receipt className="h-3 w-3" />
+                                    Versement {relatedSchedule.installment_number}/{relatedSchedule.total_installments}
+                                    <Badge
+                                      variant={relatedSchedule.status === "paid" ? "default" : "outline"}
+                                      className="text-[9px] py-0 ml-1"
+                                    >
+                                      {relatedSchedule.status}
+                                    </Badge>
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Diff summary vs previous attempt for the same scope */}
+                              {diffs.length > 0 && previousAttempt && (
+                                <div className="mt-2 rounded-md border border-border/60 bg-background/50 p-2">
+                                  <div className="flex items-center gap-1.5 mb-1.5 text-[11px] font-medium text-muted-foreground">
+                                    <GitCompare className="h-3 w-3" />
+                                    Changements depuis la tentative précédente
+                                    <span className="text-muted-foreground/60">
+                                      ({formatDistanceToNow(new Date(previousAttempt.created_at), { locale: fr })} plus tôt)
+                                    </span>
+                                  </div>
+                                  <ul className="space-y-1 text-[11px]">
+                                    {diffs.map((d) => (
+                                      <li key={d.field} className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-muted-foreground">{d.field} :</span>
+                                        <code className="bg-muted/70 px-1 rounded line-through opacity-70">
+                                          {d.before}
+                                        </code>
+                                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                                        <code className="bg-primary/10 text-primary px-1 rounded font-medium">
+                                          {d.after}
+                                        </code>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
                               )}
                             </div>
 
@@ -343,6 +507,14 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
                                   <span className="text-muted-foreground">Stripe session :</span>{" "}
                                   <code className="bg-muted px-1 rounded text-[10px] break-all">
                                     {entry.stripe_session_id}
+                                  </code>
+                                </div>
+                              )}
+                              {relatedSchedule && (
+                                <div className="col-span-2">
+                                  <span className="text-muted-foreground">ID échéance :</span>{" "}
+                                  <code className="bg-muted px-1 rounded text-[10px] break-all">
+                                    {relatedSchedule.id}
                                   </code>
                                 </div>
                               )}
