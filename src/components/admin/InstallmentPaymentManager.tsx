@@ -138,15 +138,12 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
 
   const getScheduleForInstallment = (n: number) => schedules.find((s) => s.installment_number === n && s.status !== "cancelled");
 
-  const sendInstallmentLink = async (installmentNumber: number) => {
-    // === GARDE-FOU FRONT : bloquer si un envoi est déjà en cours ===
+  // Step 1: open the explicit confirmation dialog (validates pre-conditions)
+  const requestSendInstallmentLink = (installmentNumber: number) => {
     if (sending !== null) {
       toast.warning("Un envoi est déjà en cours. Merci de patienter.");
       return;
     }
-
-    // === GARDE-FOU FRONT : re-vérifier l'état actuel du versement avant envoi ===
-    // Empêche le double-clic même si la liste locale est légèrement désynchronisée.
     const current = getScheduleForInstallment(installmentNumber);
     if (current?.status === "paid") {
       toast.error(`Ce versement (${installmentNumber}/${totalInstallments}) est déjà payé. Aucun nouveau lien ne peut être envoyé.`);
@@ -162,7 +159,14 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
       );
       return;
     }
+    setAmountConfirmed(false);
+    setConfirmInstallment(installmentNumber);
+  };
 
+  // Step 2: actual send (only callable after explicit UI confirmation)
+  const confirmAndSendInstallmentLink = async () => {
+    if (confirmInstallment === null) return;
+    const installmentNumber = confirmInstallment;
     setSending(installmentNumber);
     try {
       const { data, error } = await supabase.functions.invoke("create-installment-payment", {
@@ -180,6 +184,8 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
       toast.success(`Lien versement ${installmentNumber}/${totalInstallments} envoyé à ${quote.client_email}`, {
         description: `Montant: ${data.amount}€`,
       });
+      setConfirmInstallment(null);
+      setAmountConfirmed(false);
       await fetchSchedules();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erreur inconnue";
