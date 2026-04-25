@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, MailWarning, Send } from "lucide-react";
+import { Loader2, MailWarning, Send, Eye, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { buildBrandedEmailPreview } from "@/lib/email-preview";
 
 const ALICE_RECIPIENT = "adamervalle@gmail.com";
 const ALICE_NAME = "Alice Damervalle";
