@@ -543,7 +543,31 @@ export function ConsistencyCheck({ kpis }: ConsistencyCheckProps) {
               </>
             )}
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRunAutomatic}
+              disabled={runningAuto}
+              title="Lance le contrôle automatique et enregistre le résultat"
+            >
+              <PlayCircle className={`h-4 w-4 mr-2 ${runningAuto ? "animate-pulse" : ""}`} />
+              {runningAuto ? "Analyse…" : "Lancer auto"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setHistoryOpen((v) => !v)}
+              className={consistency?.hasActiveAlert ? "border-amber-500/50" : ""}
+            >
+              <History className="h-4 w-4 mr-2" />
+              Historique
+              {consistency && consistency.unacknowledgedCount > 0 && (
+                <Badge variant="outline" className="ml-2 h-5 text-[10px] border-amber-500/50 text-amber-700 bg-amber-500/10">
+                  {consistency.unacknowledgedCount}
+                </Badge>
+              )}
+            </Button>
             <Button
               variant={allOk ? "outline" : "default"}
               size="sm"
@@ -559,8 +583,99 @@ export function ConsistencyCheck({ kpis }: ConsistencyCheckProps) {
             </Button>
           </div>
         </div>
-      </CardHeader>
-
+        {consistency?.hasActiveAlert && consistency.latest && (
+          <Alert className="mt-3 border-amber-500/50 bg-amber-500/10">
+            <ShieldAlert className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-sm flex items-center justify-between gap-2 flex-wrap">
+              <span>
+                Contrôle automatique du{" "}
+                {format(new Date(consistency.latest.run_at), "dd MMM yyyy à HH:mm", { locale: fr })} :{" "}
+                {consistency.latest.divergences_count} écart(s) détecté(s)
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleAcknowledge(consistency.latest!.id)}
+                className="h-7 text-xs"
+              >
+                <BellOff className="h-3 w-3 mr-1" />
+                Marquer comme lu
+              </Button>
+            </AlertTitle>
+            <AlertDescription className="text-xs mt-1">
+              {consistency.latest.divergences.slice(0, 3).map((d) => d.label).join(" · ")}
+              {consistency.latest.divergences.length > 3 && " · …"}
+            </AlertDescription>
+          </Alert>
+        )}
+        {historyOpen && consistency && (
+          <div className="mt-3 rounded-md border bg-card">
+            <div className="px-3 py-2 border-b text-xs font-medium text-muted-foreground flex items-center gap-2">
+              <History className="h-3.5 w-3.5" />
+              Historique des contrôles automatiques ({consistency.runs.length})
+            </div>
+            <ScrollArea className="max-h-72">
+              <div className="divide-y">
+                {consistency.runs.length === 0 ? (
+                  <div className="px-3 py-4 text-xs text-muted-foreground text-center">
+                    Aucun contrôle enregistré pour le moment.
+                  </div>
+                ) : (
+                  consistency.runs.map((r) => {
+                    const hasDiv = r.divergences_count > 0;
+                    const unack = hasDiv && !r.acknowledged_at;
+                    return (
+                      <div
+                        key={r.id}
+                        className={`px-3 py-2 flex items-center justify-between gap-2 text-xs ${
+                          unack ? "bg-amber-500/5" : ""
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          {hasDiv ? (
+                            <ShieldAlert className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                          ) : (
+                            <ShieldCheck className="h-3.5 w-3.5 text-green-600 shrink-0" />
+                          )}
+                          <div className="min-w-0">
+                            <div className="font-medium truncate">
+                              {format(new Date(r.run_at), "dd MMM yyyy HH:mm", { locale: fr })}
+                              <span className="ml-2 text-muted-foreground font-normal">
+                                ({formatDistanceToNow(new Date(r.run_at), { addSuffix: true, locale: fr })})
+                              </span>
+                            </div>
+                            <div className="text-muted-foreground truncate">
+                              {r.triggered_by === "manual" ? "Lancement manuel" : "Quotidien"} ·{" "}
+                              {r.divergences_count}/{r.total_checks} écart(s)
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {unack && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-2 text-[10px]"
+                              onClick={() => handleAcknowledge(r.id)}
+                            >
+                              <BellOff className="h-3 w-3 mr-1" />
+                              Lu
+                            </Button>
+                          )}
+                          {r.acknowledged_at && (
+                            <Badge variant="outline" className="text-[10px]">
+                              Acquitté
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </ScrollArea>
+          </div>
+        )}
       {(expanded || !allOk) && (
         <CardContent className="space-y-2">
           {!allOk && (
