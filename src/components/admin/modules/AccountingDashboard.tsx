@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import { useAccountingData, type DateRange } from "./accounting/useAccountingData";
 import { exportAccountingExcel } from "./accounting/AccountingExcelExport";
+import { ConsistencyCheck } from "./accounting/ConsistencyCheck";
 
 const COLORS = ["hsl(20, 90%, 48%)", "hsl(47, 100%, 50%)", "hsl(200, 70%, 50%)", "hsl(150, 60%, 45%)", "hsl(280, 60%, 55%)", "hsl(340, 70%, 50%)", "hsl(30, 80%, 55%)", "hsl(170, 60%, 45%)"];
 const formatEur = (v: number) => `${v.toFixed(2)} €`;
