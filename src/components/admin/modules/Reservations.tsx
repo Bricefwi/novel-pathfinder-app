@@ -28,6 +28,7 @@ import {
   Loader2,
   RefreshCcw,
   X,
+  User,
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -85,6 +86,7 @@ export function Reservations() {
   const [items, setItems] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [clientSearch, setClientSearch] = useState("");
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -194,6 +196,7 @@ export function Reservations() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const c = clientSearch.trim().toLowerCase();
     return items
       .filter((r) => {
         if (sourceFilter === "all") return true;
@@ -201,6 +204,13 @@ export function Reservations() {
           return r.source === "invoice" && r.payment_status === "pending";
         }
         return r.source === sourceFilter;
+      })
+      .filter((r) => {
+        if (!c) return true;
+        return (
+          r.client_name.toLowerCase().includes(c) ||
+          r.client_email.toLowerCase().includes(c)
+        );
       })
       .filter((r) => {
         if (!q) return true;
@@ -228,7 +238,7 @@ export function Reservations() {
           }
         }
       });
-  }, [items, search, sourceFilter, sortKey, sortDir]);
+  }, [items, search, clientSearch, sourceFilter, sortKey, sortDir]);
 
   const counts = useMemo(
     () => ({
@@ -311,10 +321,30 @@ export function Reservations() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-col md:flex-row gap-3">
+            <div className="relative md:w-72">
+              <User className="absolute left-2.5 top-2.5 h-4 w-4 text-primary" />
+              <Input
+                placeholder="Filtrer par client (nom ou email)…"
+                value={clientSearch}
+                onChange={(e) => setClientSearch(e.target.value)}
+                className="pl-8 pr-8"
+                aria-label="Filtrer par client"
+              />
+              {clientSearch && (
+                <button
+                  type="button"
+                  onClick={() => setClientSearch("")}
+                  className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                  aria-label="Effacer le filtre client"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher : client, email, activité, référence…"
+                placeholder="Rechercher : activité, référence…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8 pr-8"
@@ -365,7 +395,13 @@ export function Reservations() {
             </Select>
           </div>
           <p className="text-xs text-muted-foreground">
-            {filtered.length} / {items.length} réservation(s) affichée(s).
+            {filtered.length} / {items.length} réservation(s) affichée(s)
+            {clientSearch && (
+              <>
+                {" "}— filtre client : <span className="font-medium text-foreground">« {clientSearch} »</span>
+              </>
+            )}
+            .
           </p>
         </CardContent>
       </Card>
