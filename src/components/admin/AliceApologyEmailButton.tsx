@@ -322,6 +322,66 @@ export function AliceApologyEmailButton() {
                       className="font-sans text-sm leading-relaxed"
                     />
                   </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="flex items-center gap-2">
+                        <Paperclip className="h-4 w-4" />
+                        Pièces jointes (optionnel)
+                      </Label>
+                      <span className="text-xs text-muted-foreground font-mono">
+                        {formatBytes(totalAttachmentsBytes)} / {formatBytes(MAX_TOTAL_ATTACHMENTS_BYTES)}
+                      </span>
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      onChange={handleFileSelect}
+                      disabled={sending}
+                      className="hidden"
+                      id="alice-attachments"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={sending}
+                      className="gap-2 w-full"
+                    >
+                      <Paperclip className="h-4 w-4" />
+                      Ajouter une pièce jointe
+                    </Button>
+                    {attachments.length > 0 && (
+                      <div className="space-y-1.5 mt-2">
+                        {attachments.map((a, idx) => (
+                          <div
+                            key={`${a.name}-${idx}`}
+                            className="flex items-center justify-between gap-2 rounded-md border bg-card px-3 py-2"
+                          >
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                              <FileText className="h-4 w-4 text-primary shrink-0" />
+                              <span className="text-sm truncate">{a.name}</span>
+                              <span className="text-xs text-muted-foreground font-mono shrink-0">
+                                {formatBytes(a.size)}
+                              </span>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 shrink-0"
+                              onClick={() => removeAttachment(idx)}
+                              disabled={sending}
+                              aria-label={`Retirer ${a.name}`}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </TabsContent>
                 <TabsContent value="preview" className="py-2">
                   <div className="rounded-lg border bg-muted/30 overflow-hidden">
