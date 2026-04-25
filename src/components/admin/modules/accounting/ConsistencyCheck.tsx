@@ -227,6 +227,43 @@ export function ConsistencyCheck({ kpis }: ConsistencyCheckProps) {
     }
   };
 
+  const handleRunAutomatic = async () => {
+    setRunningAuto(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "daily-consistency-check",
+        { body: { triggered_by: "manual" } }
+      );
+      if (error) throw error;
+      await refetchRuns();
+      const div = data?.divergences_count ?? 0;
+      if (div > 0) {
+        toast.warning(`${div} écart(s) détecté(s)`, {
+          description: "Consultez l'historique pour les détails.",
+        });
+      } else {
+        toast.success("Aucun écart détecté", {
+          description: "Toutes les sources sont cohérentes.",
+        });
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      toast.error("Erreur lors du lancement", { description: msg });
+    } finally {
+      setRunningAuto(false);
+    }
+  };
+
+  const handleAcknowledge = async (runId: string) => {
+    try {
+      await acknowledgeConsistencyRun(runId);
+      await refetchRuns();
+      toast.success("Alerte marquée comme lue");
+    } catch (e) {
+      toast.error("Impossible de marquer comme lue");
+    }
+  };
+
   const fmtDate = (d?: string | null) =>
     d ? format(new Date(d), "dd MMM yyyy", { locale: fr }) : "—";
 
