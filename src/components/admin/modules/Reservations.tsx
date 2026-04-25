@@ -330,14 +330,15 @@ export function Reservations() {
                 </button>
               )}
             </div>
-            <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as typeof sourceFilter)}>
+            <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as SourceFilter)}>
               <SelectTrigger className="md:w-56">
                 <SelectValue placeholder="Source" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes les sources</SelectItem>
                 <SelectItem value="quote">Devis acceptés</SelectItem>
-                <SelectItem value="invoice">Factures actives</SelectItem>
+                <SelectItem value="invoice_pending">Factures en attente de paiement</SelectItem>
+                <SelectItem value="invoice">Factures actives (toutes)</SelectItem>
                 <SelectItem value="booking">Réservations confirmées</SelectItem>
               </SelectContent>
             </Select>
