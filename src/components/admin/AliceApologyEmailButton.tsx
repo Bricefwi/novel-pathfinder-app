@@ -92,6 +92,7 @@ export function AliceApologyEmailButton() {
         toast.success(`Email d'excuse envoyé à ${recipient}.`);
       }
       setOpen(false);
+      setConfirmOpen(false);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erreur inconnue";
       toast.error(`Impossible d'envoyer l'email : ${msg}`);
