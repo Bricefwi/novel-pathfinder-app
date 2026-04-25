@@ -283,6 +283,33 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
     });
   })();
 
+  // Distinct installment keys present in the audit (for the filter dropdown)
+  const distinctInstallments = Array.from(
+    new Set(
+      entries
+        .filter((e) => e.installment_number != null)
+        .map((e) => `${e.installment_number}/${e.total_installments || "?"}`),
+    ),
+  ).sort((a, b) => parseInt(a) - parseInt(b));
+
+  // Apply filters
+  const filteredEntries = entries.filter((e) => {
+    if (statusFilter !== "all" && e.status !== statusFilter) return false;
+    if (installmentFilter !== "all") {
+      const key = e.installment_number
+        ? `${e.installment_number}/${e.total_installments || "?"}`
+        : null;
+      if (key !== installmentFilter) return false;
+    }
+    return true;
+  });
+
+  const isFiltering = statusFilter !== "all" || installmentFilter !== "all";
+  const resetFilters = () => {
+    setStatusFilter("all");
+    setInstallmentFilter("all");
+  };
+
   return (
     <Card>
       <CardHeader>
