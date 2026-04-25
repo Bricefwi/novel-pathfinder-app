@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, MailWarning, Send, Eye, Pencil, CheckCircle2, AlertTriangle, History, RefreshCw } from "lucide-react";
+import { Loader2, MailWarning, Send, Eye, Pencil, CheckCircle2, AlertTriangle, History, RefreshCw, XCircle, RotateCw, Wifi, ShieldAlert, Clock, Server } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,6 +65,107 @@ const STATUS_VARIANTS: Record<string, { label: string; className: string }> = {
   failed: { label: "Échec", className: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
+interface SendError {
+  message: string;
+  category: "network" | "auth" | "rate_limit" | "server" | "validation" | "unknown";
+  hint: string;
+  status?: number;
+  details?: string;
+  attemptedAt: string;
+}
+
+const CATEGORY_META: Record<SendError["category"], { label: string; Icon: typeof AlertTriangle }> = {
+  network: { label: "Problème réseau", Icon: Wifi },
+  auth: { label: "Accès refusé", Icon: ShieldAlert },
+  rate_limit: { label: "Limite atteinte", Icon: Clock },
+  server: { label: "Erreur serveur", Icon: Server },
+  validation: { label: "Données refusées", Icon: AlertTriangle },
+  unknown: { label: "Erreur inattendue", Icon: XCircle },
+};
+
+interface ErrorBannerProps {
+  error: SendError;
+  retryCount: number;
+  sending: boolean;
+  onRetry: () => void;
+  onDismiss: () => void;
+}
+
+const ErrorBanner = ({ error, retryCount, sending, onRetry, onDismiss }: ErrorBannerProps) => {
+  const meta = CATEGORY_META[error.category];
+  const Icon = meta.Icon;
+  return (
+    <div
+      role="alert"
+      aria-live="assertive"
+      className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 space-y-3"
+    >
+      <div className="flex items-start gap-3">
+        <div className="rounded-full bg-destructive/10 p-2 text-destructive shrink-0">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className="border-destructive/40 text-destructive bg-background">
+              {meta.label}
+            </Badge>
+            {typeof error.status === "number" && (
+              <Badge variant="outline" className="font-mono text-xs">
+                HTTP {error.status}
+              </Badge>
+            )}
+            {retryCount > 0 && (
+              <Badge variant="outline" className="text-xs">
+                Tentative {retryCount + 1}
+              </Badge>
+            )}
+            <span className="text-xs text-muted-foreground font-mono ml-auto">
+              {format(new Date(error.attemptedAt), "HH:mm:ss", { locale: fr })}
+            </span>
+          </div>
+          <p className="text-sm font-medium text-foreground break-words">{error.message}</p>
+          <p className="text-xs text-muted-foreground">{error.hint}</p>
+          {error.details && error.details !== error.message && (
+            <details className="text-xs text-muted-foreground pt-1">
+              <summary className="cursor-pointer hover:text-foreground transition-colors">
+                Détails techniques
+              </summary>
+              <pre className="mt-2 p-2 rounded bg-muted/60 border overflow-x-auto whitespace-pre-wrap break-all font-mono text-[11px]">
+                {error.details}
+              </pre>
+            </details>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2 justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onDismiss}
+          disabled={sending}
+          className="h-8"
+        >
+          Ignorer
+        </Button>
+        <Button
+          variant="default"
+          size="sm"
+          onClick={onRetry}
+          disabled={sending}
+          className="h-8 gap-1.5"
+        >
+          {sending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RotateCw className="h-3.5 w-3.5" />
+          )}
+          Réessayer l'envoi
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 export function AliceApologyEmailButton() {
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -74,6 +175,8 @@ export function AliceApologyEmailButton() {
   const [message, setMessage] = useState(ALICE_DEFAULT_MESSAGE);
   const [history, setHistory] = useState<ApologyLogEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [sendError, setSendError] = useState<SendError | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   const MIN_MESSAGE_LENGTH = 20;
   const MAX_SUBJECT_LENGTH = 200;
@@ -161,6 +264,86 @@ export function AliceApologyEmailButton() {
     }
   };
 
+  const classifyError = (err: unknown, data: any): SendError => {
+    const now = new Date().toISOString();
+    // Supabase FunctionsHttpError carries `context.status`
+    const anyErr = err as any;
+    const status: number | undefined = anyErr?.context?.status ?? anyErr?.status;
+    const rawMessage =
+      data?.error ||
+      anyErr?.context?.responseJson?.error ||
+      anyErr?.message ||
+      (err instanceof Error ? err.message : "Erreur inconnue");
+    const details = data?.details || anyErr?.context?.responseJson?.details;
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      return {
+        message: "Pas de connexion Internet détectée.",
+        category: "network",
+        hint: "Vérifiez votre connexion réseau et réessayez.",
+        attemptedAt: now,
+      };
+    }
+    if (anyErr?.name === "FunctionsFetchError" || rawMessage?.toLowerCase?.().includes("failed to fetch")) {
+      return {
+        message: "Impossible de joindre le serveur d'envoi.",
+        category: "network",
+        hint: "Le service est peut-être momentanément indisponible. Réessayez dans quelques secondes.",
+        status,
+        details: rawMessage,
+        attemptedAt: now,
+      };
+    }
+    if (status === 401 || status === 403) {
+      return {
+        message: "Vous n'êtes pas autorisé à envoyer cet email.",
+        category: "auth",
+        hint: "Reconnectez-vous en tant qu'administrateur, puis réessayez.",
+        status,
+        details: rawMessage,
+        attemptedAt: now,
+      };
+    }
+    if (status === 429) {
+      return {
+        message: "Trop d'envois récents — limite de débit atteinte.",
+        category: "rate_limit",
+        hint: "Patientez environ une minute avant de réessayer.",
+        status,
+        details: rawMessage,
+        attemptedAt: now,
+      };
+    }
+    if (status === 400 || status === 422) {
+      return {
+        message: rawMessage || "Données invalides refusées par le serveur.",
+        category: "validation",
+        hint: "Vérifiez l'adresse, le sujet et le contenu, puis réessayez.",
+        status,
+        details,
+        attemptedAt: now,
+      };
+    }
+    if (status && status >= 500) {
+      return {
+        message: "Le serveur a rencontré une erreur lors de l'envoi.",
+        category: "server",
+        hint: "Réessayez dans quelques instants. Si le problème persiste, contactez le support technique.",
+        status,
+        details: rawMessage,
+        attemptedAt: now,
+      };
+    }
+    return {
+      message: rawMessage || "Erreur inconnue lors de l'envoi.",
+      category: "unknown",
+      hint: "Réessayez. Si l'erreur persiste, copiez les détails ci-dessous et contactez le support.",
+      status,
+      details,
+      attemptedAt: now,
+    };
+  };
+
   const handleSend = async () => {
     const firstError = recipientError || subjectError || messageError;
     if (firstError) {
@@ -169,8 +352,10 @@ export function AliceApologyEmailButton() {
       return;
     }
     setSending(true);
+    setSendError(null);
+    let data: any = null;
     try {
-      const { data, error } = await supabase.functions.invoke("send-reply", {
+      const res = await supabase.functions.invoke("send-reply", {
         body: {
           to: recipient.trim(),
           subject: subject.trim() || ALICE_SUBJECT,
@@ -178,7 +363,8 @@ export function AliceApologyEmailButton() {
           senderName: ALICE_NAME,
         },
       });
-      if (error) throw error;
+      data = res.data;
+      if (res.error) throw res.error;
       if (data?.error) throw new Error(data.error);
       if (data?.deduplicated) {
         await logSend("deduplicated");
@@ -187,18 +373,29 @@ export function AliceApologyEmailButton() {
         await logSend("sent");
         toast.success(`Email d'excuse envoyé à ${recipient}.`);
       }
+      setRetryCount(0);
       setOpen(false);
       setConfirmOpen(false);
       fetchHistory();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erreur inconnue";
-      await logSend("failed", msg);
-      toast.error(`Impossible d'envoyer l'email : ${msg}`);
+      const classified = classifyError(err, data);
+      setSendError(classified);
+      await logSend("failed", `[${classified.category}] ${classified.message}${classified.details ? ` — ${classified.details}` : ""}`);
+      toast.error(classified.message);
+      setConfirmOpen(false);
+      setOpen(true); // garder le dialog ouvert pour permettre la correction
       fetchHistory();
     } finally {
       setSending(false);
     }
   };
+
+  const handleRetry = () => {
+    setRetryCount((c) => c + 1);
+    handleSend();
+  };
+
+  const handleDismissError = () => setSendError(null);
 
   const handleReset = () => {
     setRecipient(ALICE_RECIPIENT);
@@ -233,6 +430,15 @@ export function AliceApologyEmailButton() {
                   Relisez le contenu et l'aperçu brandé avant envoi. Le message sera envoyé via votre adresse contact officielle.
                 </DialogDescription>
               </DialogHeader>
+              {sendError && (
+                <ErrorBanner
+                  error={sendError}
+                  retryCount={retryCount}
+                  sending={sending}
+                  onRetry={handleRetry}
+                  onDismiss={handleDismissError}
+                />
+              )}
               <Tabs defaultValue="edit" className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="edit" className="gap-2">
