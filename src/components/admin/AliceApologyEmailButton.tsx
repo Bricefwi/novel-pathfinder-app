@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, MailWarning, Send, Eye, Pencil, CheckCircle2, AlertTriangle, History, RefreshCw } from "lucide-react";
+import { Loader2, MailWarning, Send, Eye, Pencil, CheckCircle2, AlertTriangle, History, RefreshCw, Paperclip, X, FileText } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
