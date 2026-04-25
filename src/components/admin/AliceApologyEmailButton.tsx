@@ -74,6 +74,98 @@ interface SendError {
   attemptedAt: string;
 }
 
+const CATEGORY_META: Record<SendError["category"], { label: string; Icon: typeof AlertTriangle }> = {
+  network: { label: "Problème réseau", Icon: Wifi },
+  auth: { label: "Accès refusé", Icon: ShieldAlert },
+  rate_limit: { label: "Limite atteinte", Icon: Clock },
+  server: { label: "Erreur serveur", Icon: Server },
+  validation: { label: "Données refusées", Icon: AlertTriangle },
+  unknown: { label: "Erreur inattendue", Icon: XCircle },
+};
+
+interface ErrorBannerProps {
+  error: SendError;
+  retryCount: number;
+  sending: boolean;
+  onRetry: () => void;
+  onDismiss: () => void;
+}
+
+const ErrorBanner = ({ error, retryCount, sending, onRetry, onDismiss }: ErrorBannerProps) => {
+  const meta = CATEGORY_META[error.category];
+  const Icon = meta.Icon;
+  return (
+    <div
+      role="alert"
+      aria-live="assertive"
+      className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 space-y-3"
+    >
+      <div className="flex items-start gap-3">
+        <div className="rounded-full bg-destructive/10 p-2 text-destructive shrink-0">
+          <Icon className="h-4 w-4" />
+        </div>
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className="border-destructive/40 text-destructive bg-background">
+              {meta.label}
+            </Badge>
+            {typeof error.status === "number" && (
+              <Badge variant="outline" className="font-mono text-xs">
+                HTTP {error.status}
+              </Badge>
+            )}
+            {retryCount > 0 && (
+              <Badge variant="outline" className="text-xs">
+                Tentative {retryCount + 1}
+              </Badge>
+            )}
+            <span className="text-xs text-muted-foreground font-mono ml-auto">
+              {format(new Date(error.attemptedAt), "HH:mm:ss", { locale: fr })}
+            </span>
+          </div>
+          <p className="text-sm font-medium text-foreground break-words">{error.message}</p>
+          <p className="text-xs text-muted-foreground">{error.hint}</p>
+          {error.details && error.details !== error.message && (
+            <details className="text-xs text-muted-foreground pt-1">
+              <summary className="cursor-pointer hover:text-foreground transition-colors">
+                Détails techniques
+              </summary>
+              <pre className="mt-2 p-2 rounded bg-muted/60 border overflow-x-auto whitespace-pre-wrap break-all font-mono text-[11px]">
+                {error.details}
+              </pre>
+            </details>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-2 justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onDismiss}
+          disabled={sending}
+          className="h-8"
+        >
+          Ignorer
+        </Button>
+        <Button
+          variant="default"
+          size="sm"
+          onClick={onRetry}
+          disabled={sending}
+          className="h-8 gap-1.5"
+        >
+          {sending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <RotateCw className="h-3.5 w-3.5" />
+          )}
+          Réessayer l'envoi
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 export function AliceApologyEmailButton() {
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
