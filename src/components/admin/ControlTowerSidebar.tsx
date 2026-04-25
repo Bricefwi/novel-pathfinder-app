@@ -47,6 +47,8 @@ import { supabase } from "@/integrations/supabase/client";
 import type { AdminModule } from "./ControlTower";
 import logoAnArwen from "@/assets/logo-an-arwen.png";
 import { calculateProfileCompletion, type ProfileForCompletion } from "@/lib/profile-utils";
+import { useConsistencyRuns } from "@/hooks/use-consistency-runs";
+import { AlertTriangle } from "lucide-react";
 
 interface ControlTowerSidebarProps {
   activeModule: AdminModule;
