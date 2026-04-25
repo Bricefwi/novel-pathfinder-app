@@ -321,10 +321,30 @@ export function Reservations() {
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-col md:flex-row gap-3">
+            <div className="relative md:w-72">
+              <User className="absolute left-2.5 top-2.5 h-4 w-4 text-primary" />
+              <Input
+                placeholder="Filtrer par client (nom ou email)…"
+                value={clientSearch}
+                onChange={(e) => setClientSearch(e.target.value)}
+                className="pl-8 pr-8"
+                aria-label="Filtrer par client"
+              />
+              {clientSearch && (
+                <button
+                  type="button"
+                  onClick={() => setClientSearch("")}
+                  className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                  aria-label="Effacer le filtre client"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher : client, email, activité, référence…"
+                placeholder="Rechercher : activité, référence…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-8 pr-8"
