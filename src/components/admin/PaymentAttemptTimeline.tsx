@@ -19,7 +19,10 @@ import {
   ArrowRight,
   GitCompare,
   Receipt,
+  Download,
+  FileText,
 } from "lucide-react";
+import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
