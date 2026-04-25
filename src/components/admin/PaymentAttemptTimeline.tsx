@@ -163,6 +163,8 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
   const [schedules, setSchedules] = useState<ScheduleRef[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [statusFilter, setStatusFilter] = useState<"all" | "success" | "blocked" | "error">("all");
+  const [installmentFilter, setInstallmentFilter] = useState<string>("all");
 
   useEffect(() => {
     const fetchTimeline = async () => {
