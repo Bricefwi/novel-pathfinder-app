@@ -218,6 +218,9 @@ export function AliceApologyEmailButton() {
           subject: subject.trim() || ALICE_SUBJECT,
           message: message.trim(),
           senderName: ALICE_NAME,
+          attachments: attachments.length > 0
+            ? attachments.map((a) => ({ name: a.name, content: a.base64 }))
+            : undefined,
         },
       });
       if (error) throw error;
