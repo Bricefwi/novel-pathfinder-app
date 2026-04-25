@@ -447,6 +447,23 @@ export function AliceApologyEmailButton() {
                         <span className="font-medium text-foreground">Caractères</span>
                         <span className="text-right font-mono">{charCount.toLocaleString("fr-FR")}</span>
                       </div>
+                      <div className="flex justify-between gap-4">
+                        <span className="font-medium text-foreground flex items-center gap-1.5">
+                          <Paperclip className="h-3.5 w-3.5" /> Pièces jointes
+                        </span>
+                        <span className="text-right font-mono">
+                          {attachments.length === 0
+                            ? "Aucune"
+                            : `${attachments.length} · ${formatBytes(totalAttachmentsBytes)}`}
+                        </span>
+                      </div>
+                      {attachments.length > 0 && (
+                        <ul className="text-xs text-muted-foreground list-disc list-inside pl-1 pt-1">
+                          {attachments.map((a, i) => (
+                            <li key={i} className="truncate">{a.name}</li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
                     {!isValidEmail && (
                       <div className="flex items-start gap-2 rounded-md bg-destructive/10 p-3 text-destructive">
