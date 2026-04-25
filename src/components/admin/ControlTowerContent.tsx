@@ -26,6 +26,7 @@ import { SiteAudit } from "./modules/SiteAudit";
 import { PaymentReminders } from "./modules/PaymentReminders";
 import { AccountingDashboard } from "./modules/AccountingDashboard";
 import { AccountHealthDashboard } from "./modules/AccountHealthDashboard";
+import { Reservations } from "./modules/Reservations";
 
 interface ControlTowerContentProps {
   activeModule: AdminModule;
