@@ -122,6 +122,16 @@ export function AccountingDashboard() {
         </div>
       </div>
 
+      {/* Consistency check */}
+      <ConsistencyCheck
+        kpis={{
+          totalInvoiced: kpis.totalInvoiced,
+          totalPaid: kpis.totalPaid,
+          totalCollected: kpis.totalCollected,
+          invoiceCount: kpis.invoiceCount,
+        }}
+      />
+
       {/* KPIs - 2 rows of 4 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
