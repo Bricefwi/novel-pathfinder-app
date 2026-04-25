@@ -100,6 +100,8 @@ export function ControlTowerSidebar({ activeModule, onModuleChange, onOpenComman
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [userEmail, setUserEmail] = useState<string>("");
   const [isProfileComplete, setIsProfileComplete] = useState(false);
+  const { data: consistency } = useConsistencyRuns();
+  const consistencyAlertCount = consistency?.unacknowledgedCount ?? 0;
 
   useEffect(() => {
     const fetchUserProfile = async () => {
