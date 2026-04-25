@@ -34,6 +34,7 @@ import { fr } from "date-fns/locale";
 import { toast } from "sonner";
 
 type SourceType = "quote" | "invoice" | "booking";
+type SourceFilter = "all" | SourceType | "invoice_pending";
 type SortKey = "date" | "client" | "amount" | "source";
 type SortDir = "asc" | "desc";
 
@@ -49,6 +50,7 @@ interface Reservation {
   participants: number | null;
   amount: number | null;
   status: string;
+  payment_status: string | null;
   created_at: string;
 }
 
@@ -83,7 +85,7 @@ export function Reservations() {
   const [items, setItems] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [sourceFilter, setSourceFilter] = useState<"all" | SourceType>("all");
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
@@ -128,6 +130,7 @@ export function Reservations() {
         participants: q.participants,
         amount: q.total_price,
         status: q.status ?? "accepted",
+        payment_status: null,
         created_at: q.created_at,
       }));
 
@@ -143,6 +146,7 @@ export function Reservations() {
         participants: i.participants,
         amount: i.total_amount,
         status: `${i.status ?? "—"} • ${i.payment_status ?? "pending"}`,
+        payment_status: i.payment_status ?? "pending",
         created_at: i.created_at,
       }));
 
@@ -170,6 +174,7 @@ export function Reservations() {
           participants: b.participants,
           amount: b.total_price,
           status: b.status ?? "confirmed",
+          payment_status: null,
           created_at: b.created_at,
         })
       );
@@ -190,7 +195,13 @@ export function Reservations() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items
-      .filter((r) => sourceFilter === "all" || r.source === sourceFilter)
+      .filter((r) => {
+        if (sourceFilter === "all") return true;
+        if (sourceFilter === "invoice_pending") {
+          return r.source === "invoice" && r.payment_status === "pending";
+        }
+        return r.source === sourceFilter;
+      })
       .filter((r) => {
         if (!q) return true;
         return (
@@ -224,6 +235,9 @@ export function Reservations() {
       total: items.length,
       quote: items.filter((i) => i.source === "quote").length,
       invoice: items.filter((i) => i.source === "invoice").length,
+      invoice_pending: items.filter(
+        (i) => i.source === "invoice" && i.payment_status === "pending"
+      ).length,
       booking: items.filter((i) => i.source === "booking").length,
     }),
     [items]
@@ -253,38 +267,38 @@ export function Reservations() {
         </Button>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Total</p>
-            <p className="text-2xl font-bold">{counts.total}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-primary/30">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <FileSignature className="h-3 w-3" /> Devis acceptés
-            </p>
-            <p className="text-2xl font-bold text-primary">{counts.quote}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-secondary">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Receipt className="h-3 w-3" /> Factures actives
-            </p>
-            <p className="text-2xl font-bold text-secondary-foreground">{counts.invoice}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-accent-foreground/20">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <CalendarCheck className="h-3 w-3" /> Réservations confirmées
-            </p>
-            <p className="text-2xl font-bold">{counts.booking}</p>
-          </CardContent>
-        </Card>
+      {/* Stat cards (clickable filters) */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {([
+          { id: "all", label: "Total", count: counts.total, icon: null, ringClass: "ring-foreground/40" },
+          { id: "quote", label: "Devis acceptés", count: counts.quote, icon: FileSignature, ringClass: "ring-primary" },
+          { id: "invoice_pending", label: "Factures en attente", count: counts.invoice_pending, icon: Receipt, ringClass: "ring-destructive" },
+          { id: "invoice", label: "Factures actives", count: counts.invoice, icon: Receipt, ringClass: "ring-secondary-foreground" },
+          { id: "booking", label: "Réservations confirmées", count: counts.booking, icon: CalendarCheck, ringClass: "ring-accent-foreground/40" },
+        ] as const).map((card) => {
+          const Icon = card.icon;
+          const active = sourceFilter === card.id;
+          return (
+            <button
+              key={card.id}
+              type="button"
+              onClick={() => setSourceFilter(card.id as SourceFilter)}
+              className={`text-left transition-all rounded-lg ${active ? `ring-2 ${card.ringClass}` : "hover:ring-1 hover:ring-border"}`}
+              aria-pressed={active}
+            >
+              <Card className={active ? "border-transparent" : ""}>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    {Icon && <Icon className="h-3 w-3" />} {card.label}
+                  </p>
+                  <p className={`text-2xl font-bold ${card.id === "invoice_pending" && card.count > 0 ? "text-destructive" : ""}`}>
+                    {card.count}
+                  </p>
+                </CardContent>
+              </Card>
+            </button>
+          );
+        })}
       </div>
 
       {/* Filters */}
@@ -316,14 +330,15 @@ export function Reservations() {
                 </button>
               )}
             </div>
-            <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as typeof sourceFilter)}>
+            <Select value={sourceFilter} onValueChange={(v) => setSourceFilter(v as SourceFilter)}>
               <SelectTrigger className="md:w-56">
                 <SelectValue placeholder="Source" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes les sources</SelectItem>
                 <SelectItem value="quote">Devis acceptés</SelectItem>
-                <SelectItem value="invoice">Factures actives</SelectItem>
+                <SelectItem value="invoice_pending">Factures en attente de paiement</SelectItem>
+                <SelectItem value="invoice">Factures actives (toutes)</SelectItem>
                 <SelectItem value="booking">Réservations confirmées</SelectItem>
               </SelectContent>
             </Select>
