@@ -15,6 +15,10 @@ import {
   Activity,
   ChevronDown,
   ChevronRight,
+  CreditCard,
+  ArrowRight,
+  GitCompare,
+  Receipt,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
