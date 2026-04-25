@@ -5,8 +5,45 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ShieldCheck, ShieldAlert, RefreshCcw, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  ShieldCheck,
+  ShieldAlert,
+  RefreshCcw,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  Loader2,
+  FileText,
+  Receipt,
+  CalendarCheck,
+  CreditCard,
+  ListChecks,
+} from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+
+type DrawerSource = "invoices" | "payments" | "quotes" | "bookings" | "schedules";
+
+interface DrawerRecord {
+  id: string;
+  source: DrawerSource;
+  title: string;
+  subtitle?: string;
+  amount?: number;
+  status?: string | null;
+  date?: string | null;
+  fields: Array<{ label: string; value: string }>;
+  flag?: string;
+}
 
 interface ConsistencyCheckProps {
   /** KPI values computed locally from the invoices cache. */
