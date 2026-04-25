@@ -230,7 +230,11 @@ export function AliceApologyEmailButton() {
         toast.info("Email déjà envoyé récemment (anti-doublon).");
       } else {
         await logSend("sent");
-        toast.success(`Email d'excuse envoyé à ${recipient}.`);
+        toast.success(
+          attachments.length > 0
+            ? `Email d'excuse envoyé à ${recipient} avec ${attachments.length} pièce(s) jointe(s).`
+            : `Email d'excuse envoyé à ${recipient}.`
+        );
       }
       setOpen(false);
       setConfirmOpen(false);
