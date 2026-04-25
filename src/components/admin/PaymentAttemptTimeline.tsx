@@ -402,6 +402,77 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
           </div>
         )}
 
+        {/* Filtres : statut + versement */}
+        {entries.length > 0 && (
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-muted/20 p-2">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Filter className="h-3.5 w-3.5" />
+              <span className="font-medium">Filtres :</span>
+            </div>
+
+            {/* Filtre statut */}
+            <div className="flex flex-wrap gap-1">
+              {([
+                { key: "all", label: "Tous", color: "" },
+                { key: "success", label: "Succès", color: "text-primary" },
+                { key: "blocked", label: "Bloqués (409)", color: "text-destructive" },
+                { key: "error", label: "Erreurs", color: "text-orange-600 dark:text-orange-400" },
+              ] as const).map((opt) => (
+                <Button
+                  key={opt.key}
+                  size="sm"
+                  variant={statusFilter === opt.key ? "default" : "outline"}
+                  className={`h-7 text-xs px-2 ${statusFilter !== opt.key ? opt.color : ""}`}
+                  onClick={() => setStatusFilter(opt.key)}
+                >
+                  {opt.label}
+                </Button>
+              ))}
+            </div>
+
+            {/* Filtre versement (uniquement si plusieurs disponibles) */}
+            {distinctInstallments.length > 0 && (
+              <div className="flex flex-wrap gap-1 ml-2 border-l border-border pl-2">
+                <Button
+                  size="sm"
+                  variant={installmentFilter === "all" ? "default" : "outline"}
+                  className="h-7 text-xs px-2"
+                  onClick={() => setInstallmentFilter("all")}
+                >
+                  Tous versements
+                </Button>
+                {distinctInstallments.map((key) => (
+                  <Button
+                    key={key}
+                    size="sm"
+                    variant={installmentFilter === key ? "default" : "outline"}
+                    className="h-7 text-xs px-2"
+                    onClick={() => setInstallmentFilter(key)}
+                  >
+                    {key}
+                  </Button>
+                ))}
+              </div>
+            )}
+
+            {isFiltering && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs px-2 ml-auto text-muted-foreground hover:text-foreground"
+                onClick={resetFilters}
+              >
+                <X className="h-3 w-3 mr-1" />
+                Réinitialiser
+              </Button>
+            )}
+
+            <Badge variant="outline" className="ml-auto text-[10px]">
+              {filteredEntries.length} / {entries.length} affiché{filteredEntries.length > 1 ? "s" : ""}
+            </Badge>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex justify-center p-8">
             <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -411,6 +482,16 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
             <Clock className="h-8 w-8 mx-auto mb-2 opacity-40" />
             Aucune tentative de génération de lien pour ce devis.
           </div>
+        ) : filteredEntries.length === 0 ? (
+          <div className="text-center py-8 text-sm text-muted-foreground border-2 border-dashed border-border rounded-lg">
+            <Filter className="h-8 w-8 mx-auto mb-2 opacity-40" />
+            Aucune tentative ne correspond aux filtres sélectionnés.
+            <div className="mt-2">
+              <Button size="sm" variant="outline" onClick={resetFilters}>
+                Réinitialiser les filtres
+              </Button>
+            </div>
+          </div>
         ) : (
           <ScrollArea className="h-[480px] pr-3">
             <div className="relative">
@@ -418,7 +499,7 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
               <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-border" aria-hidden />
 
               <div className="space-y-3">
-                {entries.map((entry, index) => {
+                {filteredEntries.map((entry, index) => {
                   const cfg = STATUS_CONFIG[entry.status] || STATUS_CONFIG.error;
                   const isExpanded = expandedIds.has(entry.id);
                   const actionLabel = ACTION_LABELS[entry.action] || entry.action;
