@@ -172,6 +172,86 @@ export function AliceApologyEmailButton() {
     }
   };
 
+  const classifyError = (err: unknown, data: any): SendError => {
+    const now = new Date().toISOString();
+    // Supabase FunctionsHttpError carries `context.status`
+    const anyErr = err as any;
+    const status: number | undefined = anyErr?.context?.status ?? anyErr?.status;
+    const rawMessage =
+      data?.error ||
+      anyErr?.context?.responseJson?.error ||
+      anyErr?.message ||
+      (err instanceof Error ? err.message : "Erreur inconnue");
+    const details = data?.details || anyErr?.context?.responseJson?.details;
+
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      return {
+        message: "Pas de connexion Internet détectée.",
+        category: "network",
+        hint: "Vérifiez votre connexion réseau et réessayez.",
+        attemptedAt: now,
+      };
+    }
+    if (anyErr?.name === "FunctionsFetchError" || rawMessage?.toLowerCase?.().includes("failed to fetch")) {
+      return {
+        message: "Impossible de joindre le serveur d'envoi.",
+        category: "network",
+        hint: "Le service est peut-être momentanément indisponible. Réessayez dans quelques secondes.",
+        status,
+        details: rawMessage,
+        attemptedAt: now,
+      };
+    }
+    if (status === 401 || status === 403) {
+      return {
+        message: "Vous n'êtes pas autorisé à envoyer cet email.",
+        category: "auth",
+        hint: "Reconnectez-vous en tant qu'administrateur, puis réessayez.",
+        status,
+        details: rawMessage,
+        attemptedAt: now,
+      };
+    }
+    if (status === 429) {
+      return {
+        message: "Trop d'envois récents — limite de débit atteinte.",
+        category: "rate_limit",
+        hint: "Patientez environ une minute avant de réessayer.",
+        status,
+        details: rawMessage,
+        attemptedAt: now,
+      };
+    }
+    if (status === 400 || status === 422) {
+      return {
+        message: rawMessage || "Données invalides refusées par le serveur.",
+        category: "validation",
+        hint: "Vérifiez l'adresse, le sujet et le contenu, puis réessayez.",
+        status,
+        details,
+        attemptedAt: now,
+      };
+    }
+    if (status && status >= 500) {
+      return {
+        message: "Le serveur a rencontré une erreur lors de l'envoi.",
+        category: "server",
+        hint: "Réessayez dans quelques instants. Si le problème persiste, contactez le support technique.",
+        status,
+        details: rawMessage,
+        attemptedAt: now,
+      };
+    }
+    return {
+      message: rawMessage || "Erreur inconnue lors de l'envoi.",
+      category: "unknown",
+      hint: "Réessayez. Si l'erreur persiste, copiez les détails ci-dessous et contactez le support.",
+      status,
+      details,
+      attemptedAt: now,
+    };
+  };
+
   const handleSend = async () => {
     const firstError = recipientError || subjectError || messageError;
     if (firstError) {
@@ -180,8 +260,10 @@ export function AliceApologyEmailButton() {
       return;
     }
     setSending(true);
+    setSendError(null);
+    let data: any = null;
     try {
-      const { data, error } = await supabase.functions.invoke("send-reply", {
+      const res = await supabase.functions.invoke("send-reply", {
         body: {
           to: recipient.trim(),
           subject: subject.trim() || ALICE_SUBJECT,
@@ -189,7 +271,8 @@ export function AliceApologyEmailButton() {
           senderName: ALICE_NAME,
         },
       });
-      if (error) throw error;
+      data = res.data;
+      if (res.error) throw res.error;
       if (data?.error) throw new Error(data.error);
       if (data?.deduplicated) {
         await logSend("deduplicated");
@@ -198,18 +281,29 @@ export function AliceApologyEmailButton() {
         await logSend("sent");
         toast.success(`Email d'excuse envoyé à ${recipient}.`);
       }
+      setRetryCount(0);
       setOpen(false);
       setConfirmOpen(false);
       fetchHistory();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erreur inconnue";
-      await logSend("failed", msg);
-      toast.error(`Impossible d'envoyer l'email : ${msg}`);
+      const classified = classifyError(err, data);
+      setSendError(classified);
+      await logSend("failed", `[${classified.category}] ${classified.message}${classified.details ? ` — ${classified.details}` : ""}`);
+      toast.error(classified.message);
+      setConfirmOpen(false);
+      setOpen(true); // garder le dialog ouvert pour permettre la correction
       fetchHistory();
     } finally {
       setSending(false);
     }
   };
+
+  const handleRetry = () => {
+    setRetryCount((c) => c + 1);
+    handleSend();
+  };
+
+  const handleDismissError = () => setSendError(null);
 
   const handleReset = () => {
     setRecipient(ALICE_RECIPIENT);
