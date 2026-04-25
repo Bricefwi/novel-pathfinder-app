@@ -19,6 +19,8 @@ import {
   ArrowRight,
   GitCompare,
   Receipt,
+  Filter,
+  X,
 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
