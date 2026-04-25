@@ -258,6 +258,27 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
     return acc;
   }, {});
 
+  // Latest event per installment (entries are sorted DESC, so first match wins)
+  // Builds an array indexed by installment_number with the most recent attempt per versement
+  const latestPerInstallment = (() => {
+    const seen = new Map<string, AuditEntry>();
+    for (const e of entries) {
+      const key = e.installment_number
+        ? `inst-${e.installment_number}`
+        : `opt-${e.payment_option}`;
+      if (!seen.has(key)) seen.set(key, e);
+    }
+    // Sort by installment number ascending (1, 2, 3) then by option name
+    return Array.from(seen.entries()).sort(([a], [b]) => {
+      const aIsInst = a.startsWith("inst-");
+      const bIsInst = b.startsWith("inst-");
+      if (aIsInst && bIsInst) return parseInt(a.slice(5)) - parseInt(b.slice(5));
+      if (aIsInst) return -1;
+      if (bIsInst) return 1;
+      return a.localeCompare(b);
+    });
+  })();
+
   return (
     <Card>
       <CardHeader>
