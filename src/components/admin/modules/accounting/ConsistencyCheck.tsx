@@ -82,6 +82,9 @@ export function ConsistencyCheck({ kpis }: ConsistencyCheckProps) {
   const [drawerLoading, setDrawerLoading] = useState(false);
   const [drawerTitle, setDrawerTitle] = useState("");
   const [drawerDescription, setDrawerDescription] = useState("");
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [runningAuto, setRunningAuto] = useState(false);
+  const { data: consistency, refetch: refetchRuns } = useConsistencyRuns();
 
   const { data: raw, isLoading, refetch } = useQuery({
     queryKey: ["accounting-consistency-raw"],
