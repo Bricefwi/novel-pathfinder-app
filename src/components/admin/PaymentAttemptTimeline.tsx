@@ -635,8 +635,18 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
                                 )}
                               </div>
 
-                              {/* Direct links to related Stripe / payment schedule */}
+                              {/* Direct links to related Stripe / payment schedule / quote */}
                               <div className="flex flex-wrap gap-3 mt-2">
+                                <a
+                                  href={`/admin?section=quotes-invoices&quoteId=${quoteId}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                                  title="Ouvrir la fiche du devis dans un nouvel onglet"
+                                >
+                                  <Receipt className="h-3 w-3" />
+                                  Voir le devis
+                                </a>
                                 {entry.payment_link_url && (
                                   <a
                                     href={entry.payment_link_url}
