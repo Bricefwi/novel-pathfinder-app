@@ -137,26 +137,40 @@ export function ControlTowerSidebar({ activeModule, onModuleChange, onOpenComman
     return userEmail.charAt(0).toUpperCase();
   };
 
-  const renderMenuItem = (item: { id: AdminModule; label: string; icon: React.ElementType; badge?: string }) => (
-    <SidebarMenuItem key={item.id}>
-      <SidebarMenuButton
-        isActive={activeModule === item.id}
-        onClick={() => onModuleChange(item.id)}
-        tooltip={item.label}
-      >
-        <item.icon className="h-4 w-4" />
-        <span className="flex-1">{item.label}</span>
-        {item.badge && (
-          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-            item.badge === "NEW" ? "bg-primary/10 text-primary" : 
-            item.badge === "SOON" ? "bg-muted text-muted-foreground" : ""
-          }`}>
-            {item.badge}
-          </span>
-        )}
-      </SidebarMenuButton>
-    </SidebarMenuItem>
-  );
+  const renderMenuItem = (item: { id: AdminModule; label: string; icon: React.ElementType; badge?: string }) => {
+    const showConsistencyAlert =
+      item.id === "accounting" && consistencyAlertCount > 0;
+    return (
+      <SidebarMenuItem key={item.id}>
+        <SidebarMenuButton
+          isActive={activeModule === item.id}
+          onClick={() => onModuleChange(item.id)}
+          tooltip={
+            showConsistencyAlert
+              ? `${item.label} — ${consistencyAlertCount} écart(s) détecté(s)`
+              : item.label
+          }
+        >
+          <item.icon className="h-4 w-4" />
+          <span className="flex-1">{item.label}</span>
+          {showConsistencyAlert && (
+            <span className="relative flex h-4 w-4 items-center justify-center">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500/40" />
+              <AlertTriangle className="relative h-3 w-3 text-amber-600" />
+            </span>
+          )}
+          {item.badge && !showConsistencyAlert && (
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+              item.badge === "NEW" ? "bg-primary/10 text-primary" :
+              item.badge === "SOON" ? "bg-muted text-muted-foreground" : ""
+            }`}>
+              {item.badge}
+            </span>
+          )}
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    );
+  };
 
   return (
     <Sidebar collapsible="icon" className="border-r">
