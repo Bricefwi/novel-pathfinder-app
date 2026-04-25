@@ -193,7 +193,12 @@ export function AliceApologyEmailButton() {
         error_message: errorMessage ?? null,
         performed_by: performedBy,
         performed_by_email: performedByEmail,
-        metadata: { source: "AliceApologyEmailButton" },
+        metadata: {
+          source: "AliceApologyEmailButton",
+          attachments_count: attachments.length,
+          attachments_total_bytes: totalAttachmentsBytes,
+          attachments_names: attachments.map((a) => a.name),
+        },
       });
     } catch (err) {
       console.error("Failed to log apology email send", err);
