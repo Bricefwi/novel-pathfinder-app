@@ -685,7 +685,7 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
                                     >
                                       {relatedSchedule.status}
                                     </Badge>
-                                  </span>
+                                  </a>
                                 )}
                               </div>
 
