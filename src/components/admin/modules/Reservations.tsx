@@ -174,6 +174,7 @@ export function Reservations() {
           participants: b.participants,
           amount: b.total_price,
           status: b.status ?? "confirmed",
+          payment_status: null,
           created_at: b.created_at,
         })
       );
