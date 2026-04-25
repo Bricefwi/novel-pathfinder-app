@@ -162,8 +162,10 @@ export function AliceApologyEmailButton() {
   };
 
   const handleSend = async () => {
-    if (!recipient.trim() || !message.trim()) {
-      toast.error("Le destinataire et le message sont requis");
+    const firstError = recipientError || subjectError || messageError;
+    if (firstError) {
+      toast.error(firstError);
+      setConfirmOpen(false);
       return;
     }
     setSending(true);
