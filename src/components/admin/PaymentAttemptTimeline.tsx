@@ -87,21 +87,99 @@ const ACTION_LABELS: Record<string, string> = {
   failed: "Échec technique",
 };
 
+interface ScheduleRef {
+  id: string;
+  installment_number: number;
+  total_installments: number;
+  status: string;
+  expected_amount: number;
+}
+
+const buildStripeDashboardUrl = (sessionId: string): string => {
+  // Detect test vs live based on session id prefix; both use the same dashboard URL pattern
+  const base = "https://dashboard.stripe.com";
+  if (sessionId.startsWith("cs_test_")) return `${base}/test/payments?query=${sessionId}`;
+  return `${base}/payments?query=${sessionId}`;
+};
+
+interface DiffItem {
+  field: string;
+  before: string;
+  after: string;
+}
+
+const computeDiff = (curr: AuditEntry, prev: AuditEntry): DiffItem[] => {
+  const diffs: DiffItem[] = [];
+  const fmtAmt = (a: number | null) => (a == null ? "—" : `${Number(a).toFixed(2)}€`);
+
+  if (curr.payment_option !== prev.payment_option) {
+    diffs.push({ field: "Option de paiement", before: prev.payment_option, after: curr.payment_option });
+  }
+  if ((curr.installment_number ?? null) !== (prev.installment_number ?? null)) {
+    diffs.push({
+      field: "Versement",
+      before: prev.installment_number ? `${prev.installment_number}/${prev.total_installments}` : "—",
+      after: curr.installment_number ? `${curr.installment_number}/${curr.total_installments}` : "—",
+    });
+  }
+  if ((curr.requested_amount ?? null) !== (prev.requested_amount ?? null)) {
+    diffs.push({
+      field: "Montant demandé",
+      before: fmtAmt(prev.requested_amount),
+      after: fmtAmt(curr.requested_amount),
+    });
+  }
+  if ((curr.expected_amount ?? null) !== (prev.expected_amount ?? null)) {
+    diffs.push({
+      field: "Montant attendu",
+      before: fmtAmt(prev.expected_amount),
+      after: fmtAmt(curr.expected_amount),
+    });
+  }
+  if (curr.status !== prev.status) {
+    diffs.push({ field: "Statut", before: prev.status, after: curr.status });
+  }
+  if (curr.action !== prev.action) {
+    diffs.push({
+      field: "Action",
+      before: ACTION_LABELS[prev.action] || prev.action,
+      after: ACTION_LABELS[curr.action] || curr.action,
+    });
+  }
+  if ((curr.performed_by_email ?? null) !== (prev.performed_by_email ?? null)) {
+    diffs.push({
+      field: "Auteur",
+      before: prev.performed_by_email || "—",
+      after: curr.performed_by_email || "—",
+    });
+  }
+  return diffs;
+};
+
 export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps) => {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleRef[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchTimeline = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("payment_link_audit")
-        .select("*")
-        .eq("quote_id", quoteId)
-        .order("created_at", { ascending: false });
+      const [auditRes, schedulesRes] = await Promise.all([
+        supabase
+          .from("payment_link_audit")
+          .select("*")
+          .eq("quote_id", quoteId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("payment_schedules")
+          .select("id, installment_number, total_installments, status, expected_amount")
+          .eq("quote_id", quoteId)
+          .order("installment_number", { ascending: true }),
+      ]);
 
-      if (!error && data) setEntries(data as AuditEntry[]);
+      if (!auditRes.error && auditRes.data) setEntries(auditRes.data as AuditEntry[]);
+      if (!schedulesRes.error && schedulesRes.data) setSchedules(schedulesRes.data as ScheduleRef[]);
       setLoading(false);
     };
 
@@ -137,6 +215,29 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
       return next;
     });
   };
+
+  // Find related payment schedule for a given audit entry (by installment number)
+  const findSchedule = (entry: AuditEntry): ScheduleRef | undefined => {
+    if (!entry.installment_number) return undefined;
+    return schedules.find((s) => s.installment_number === entry.installment_number);
+  };
+
+  // Find the previous attempt (chronologically older) for the SAME installment
+  // entries are sorted DESC, so the "previous" attempt is the next index in the array
+  const findPreviousAttempt = (entry: AuditEntry, index: number): AuditEntry | undefined => {
+    for (let i = index + 1; i < entries.length; i++) {
+      const candidate = entries[i];
+      // Same scope (same installment OR both targeting the same payment_option without installment)
+      if (
+        candidate.installment_number === entry.installment_number &&
+        candidate.payment_option === entry.payment_option
+      ) {
+        return candidate;
+      }
+    }
+    return undefined;
+  };
+
 
   // Group by installment for sub-totals
   const stats = {
