@@ -267,38 +267,38 @@ export function Reservations() {
         </Button>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground">Total</p>
-            <p className="text-2xl font-bold">{counts.total}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-primary/30">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <FileSignature className="h-3 w-3" /> Devis acceptés
-            </p>
-            <p className="text-2xl font-bold text-primary">{counts.quote}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-secondary">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <Receipt className="h-3 w-3" /> Factures actives
-            </p>
-            <p className="text-2xl font-bold text-secondary-foreground">{counts.invoice}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-accent-foreground/20">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-              <CalendarCheck className="h-3 w-3" /> Réservations confirmées
-            </p>
-            <p className="text-2xl font-bold">{counts.booking}</p>
-          </CardContent>
-        </Card>
+      {/* Stat cards (clickable filters) */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {([
+          { id: "all", label: "Total", count: counts.total, icon: null, ringClass: "ring-foreground/40" },
+          { id: "quote", label: "Devis acceptés", count: counts.quote, icon: FileSignature, ringClass: "ring-primary" },
+          { id: "invoice_pending", label: "Factures en attente", count: counts.invoice_pending, icon: Receipt, ringClass: "ring-destructive" },
+          { id: "invoice", label: "Factures actives", count: counts.invoice, icon: Receipt, ringClass: "ring-secondary-foreground" },
+          { id: "booking", label: "Réservations confirmées", count: counts.booking, icon: CalendarCheck, ringClass: "ring-accent-foreground/40" },
+        ] as const).map((card) => {
+          const Icon = card.icon;
+          const active = sourceFilter === card.id;
+          return (
+            <button
+              key={card.id}
+              type="button"
+              onClick={() => setSourceFilter(card.id as SourceFilter)}
+              className={`text-left transition-all rounded-lg ${active ? `ring-2 ${card.ringClass}` : "hover:ring-1 hover:ring-border"}`}
+              aria-pressed={active}
+            >
+              <Card className={active ? "border-transparent" : ""}>
+                <CardContent className="p-4">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    {Icon && <Icon className="h-3 w-3" />} {card.label}
+                  </p>
+                  <p className={`text-2xl font-bold ${card.id === "invoice_pending" && card.count > 0 ? "text-destructive" : ""}`}>
+                    {card.count}
+                  </p>
+                </CardContent>
+              </Card>
+            </button>
+          );
+        })}
       </div>
 
       {/* Filters */}
