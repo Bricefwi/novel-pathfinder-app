@@ -85,7 +85,7 @@ export function Reservations() {
   const [items, setItems] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [sourceFilter, setSourceFilter] = useState<"all" | SourceType>("all");
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
 
