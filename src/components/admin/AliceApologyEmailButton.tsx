@@ -65,6 +65,34 @@ const STATUS_VARIANTS: Record<string, { label: string; className: string }> = {
   failed: { label: "Échec", className: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
+interface AttachmentEntry {
+  name: string;
+  size: number;
+  type: string;
+  base64: string; // contenu base64 (sans préfixe data:)
+}
+
+const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024; // 5 Mo par fichier
+const MAX_TOTAL_ATTACHMENTS_BYTES = 10 * 1024 * 1024; // 10 Mo total
+
+const formatBytes = (bytes: number): string => {
+  if (bytes < 1024) return `${bytes} o`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} Mo`;
+};
+
+const fileToBase64 = (file: File): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.includes(",") ? result.split(",")[1] : result;
+      resolve(base64);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+
 export function AliceApologyEmailButton() {
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -72,8 +100,10 @@ export function AliceApologyEmailButton() {
   const [recipient, setRecipient] = useState(ALICE_RECIPIENT);
   const [subject, setSubject] = useState(ALICE_SUBJECT);
   const [message, setMessage] = useState(ALICE_DEFAULT_MESSAGE);
+  const [attachments, setAttachments] = useState<AttachmentEntry[]>([]);
   const [history, setHistory] = useState<ApologyLogEntry[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const trimmedRecipient = recipient.trim();
   const trimmedSubject = subject.trim() || ALICE_SUBJECT;
@@ -81,6 +111,7 @@ export function AliceApologyEmailButton() {
   const charCount = trimmedMessage.length;
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedRecipient);
   const canSend = isValidEmail && trimmedMessage.length > 0;
+  const totalAttachmentsBytes = attachments.reduce((sum, a) => sum + a.size, 0);
 
   const previewHtml = useMemo(
     () =>
@@ -89,9 +120,43 @@ export function AliceApologyEmailButton() {
         subject: subject || ALICE_SUBJECT,
         message: message || ALICE_DEFAULT_MESSAGE,
         senderName: ALICE_NAME,
+        attachments: attachments.map((a) => ({ name: a.name, size: a.size, type: a.type })),
       }),
-    [subject, message]
+    [subject, message, attachments]
   );
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+
+    const newEntries: AttachmentEntry[] = [];
+    for (const file of files) {
+      if (file.size > MAX_ATTACHMENT_BYTES) {
+        toast.error(`"${file.name}" dépasse la taille max (${formatBytes(MAX_ATTACHMENT_BYTES)}).`);
+        continue;
+      }
+      if (totalAttachmentsBytes + newEntries.reduce((s, a) => s + a.size, 0) + file.size > MAX_TOTAL_ATTACHMENTS_BYTES) {
+        toast.error(`Total des pièces jointes limité à ${formatBytes(MAX_TOTAL_ATTACHMENTS_BYTES)}.`);
+        break;
+      }
+      try {
+        const base64 = await fileToBase64(file);
+        newEntries.push({ name: file.name, size: file.size, type: file.type || "application/octet-stream", base64 });
+      } catch (err) {
+        console.error("Erreur lecture fichier", err);
+        toast.error(`Impossible de lire "${file.name}".`);
+      }
+    }
+    if (newEntries.length > 0) {
+      setAttachments((prev) => [...prev, ...newEntries]);
+      toast.success(`${newEntries.length} pièce(s) jointe(s) ajoutée(s).`);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const fetchHistory = useCallback(async () => {
     setLoadingHistory(true);
