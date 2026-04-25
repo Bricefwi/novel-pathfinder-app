@@ -48,6 +48,8 @@ export const InstallmentPaymentManager = ({ open, onOpenChange, quote }: Install
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState<number | null>(null);
   const [totalInstallments] = useState(3);
+  const [confirmInstallment, setConfirmInstallment] = useState<number | null>(null);
+  const [amountConfirmed, setAmountConfirmed] = useState(false);
   
   // Suggested due dates for each installment (J0, J-30 before trip, J-7 before trip)
   const computeSuggestedDueDate = (n: number): string => {
