@@ -515,6 +515,45 @@ export type Database = {
         }
         Relationships: []
       }
+      consistency_check_runs: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          created_at: string
+          divergences: Json
+          divergences_count: number
+          id: string
+          run_at: string
+          total_checks: number
+          totals: Json
+          triggered_by: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          divergences?: Json
+          divergences_count?: number
+          id?: string
+          run_at?: string
+          total_checks?: number
+          totals?: Json
+          triggered_by?: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          created_at?: string
+          divergences?: Json
+          divergences_count?: number
+          id?: string
+          run_at?: string
+          total_checks?: number
+          totals?: Json
+          triggered_by?: string
+        }
+        Relationships: []
+      }
       contact_requests: {
         Row: {
           activity_id: string | null
