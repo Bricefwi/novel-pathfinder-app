@@ -60,6 +60,7 @@ interface UserProfile extends ProfileForCompletion {
 
 const CORE_MODULES = [
   { id: "dashboard" as const, label: "Vue d'ensemble", icon: LayoutDashboard },
+  { id: "reservations" as const, label: "Réservations", icon: CalendarCheck, badge: "NEW" },
   { id: "stocks" as const, label: "Gestion des Stocks", icon: Package, badge: "NEW" },
   { id: "crm" as const, label: "CRM 360°", icon: Users, badge: "NEW" },
   { id: "inbox" as const, label: "Inbox Unifiée", icon: Inbox, badge: "NEW" },
