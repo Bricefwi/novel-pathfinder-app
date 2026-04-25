@@ -45,10 +45,18 @@ Très cordialement,`;
 
 export function AliceApologyEmailButton() {
   const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [recipient, setRecipient] = useState(ALICE_RECIPIENT);
   const [subject, setSubject] = useState(ALICE_SUBJECT);
   const [message, setMessage] = useState(ALICE_DEFAULT_MESSAGE);
+
+  const trimmedRecipient = recipient.trim();
+  const trimmedSubject = subject.trim() || ALICE_SUBJECT;
+  const trimmedMessage = message.trim();
+  const charCount = trimmedMessage.length;
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedRecipient);
+  const canSend = isValidEmail && trimmedMessage.length > 0;
 
   const previewHtml = useMemo(
     () =>
