@@ -73,6 +73,11 @@ export function ConsistencyCheck({ kpis }: ConsistencyCheckProps) {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
+  const [drawerCheckId, setDrawerCheckId] = useState<string | null>(null);
+  const [drawerRecords, setDrawerRecords] = useState<DrawerRecord[]>([]);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [drawerTitle, setDrawerTitle] = useState("");
+  const [drawerDescription, setDrawerDescription] = useState("");
 
   const { data: raw, isLoading, refetch } = useQuery({
     queryKey: ["accounting-consistency-raw"],
