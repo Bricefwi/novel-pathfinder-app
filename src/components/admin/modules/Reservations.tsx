@@ -235,6 +235,9 @@ export function Reservations() {
       total: items.length,
       quote: items.filter((i) => i.source === "quote").length,
       invoice: items.filter((i) => i.source === "invoice").length,
+      invoice_pending: items.filter(
+        (i) => i.source === "invoice" && i.payment_status === "pending"
+      ).length,
       booking: items.filter((i) => i.source === "booking").length,
     }),
     [items]
