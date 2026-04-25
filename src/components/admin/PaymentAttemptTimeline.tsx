@@ -670,19 +670,22 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
                                   </a>
                                 )}
                                 {relatedSchedule && (
-                                  <span
-                                    className="inline-flex items-center gap-1 text-xs text-muted-foreground"
-                                    title={`Échéance ${relatedSchedule.installment_number}/${relatedSchedule.total_installments} • Statut : ${relatedSchedule.status} • ${Number(relatedSchedule.expected_amount).toFixed(2)}€`}
+                                  <a
+                                    href={`/admin?section=quotes-invoices&quoteId=${quoteId}&scheduleId=${relatedSchedule.id}#schedule-${relatedSchedule.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                                    title={`Ouvrir l'échéance ${relatedSchedule.installment_number}/${relatedSchedule.total_installments} • Statut : ${relatedSchedule.status} • ${Number(relatedSchedule.expected_amount).toFixed(2)}€`}
                                   >
                                     <Receipt className="h-3 w-3" />
-                                    Versement {relatedSchedule.installment_number}/{relatedSchedule.total_installments}
+                                    Voir l'échéance {relatedSchedule.installment_number}/{relatedSchedule.total_installments}
                                     <Badge
                                       variant={relatedSchedule.status === "paid" ? "default" : "outline"}
                                       className="text-[9px] py-0 ml-1"
                                     >
                                       {relatedSchedule.status}
                                     </Badge>
-                                  </span>
+                                  </a>
                                 )}
                               </div>
 
