@@ -326,11 +326,14 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
               <div className="absolute left-[15px] top-2 bottom-2 w-0.5 bg-border" aria-hidden />
 
               <div className="space-y-3">
-                {entries.map((entry) => {
+                {entries.map((entry, index) => {
                   const cfg = STATUS_CONFIG[entry.status] || STATUS_CONFIG.error;
                   const isExpanded = expandedIds.has(entry.id);
                   const actionLabel = ACTION_LABELS[entry.action] || entry.action;
                   const date = new Date(entry.created_at);
+                  const relatedSchedule = findSchedule(entry);
+                  const previousAttempt = findPreviousAttempt(entry, index);
+                  const diffs = previousAttempt ? computeDiff(entry, previousAttempt) : [];
 
                   return (
                     <div key={entry.id} className="relative pl-10">
@@ -409,16 +412,72 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
                                 )}
                               </div>
 
-                              {entry.payment_link_url && (
-                                <a
-                                  href={entry.payment_link_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 mt-2 text-xs text-primary hover:underline"
-                                >
-                                  <ExternalLink className="h-3 w-3" />
-                                  Voir le lien Stripe
-                                </a>
+                              {/* Direct links to related Stripe / payment schedule */}
+                              <div className="flex flex-wrap gap-3 mt-2">
+                                {entry.payment_link_url && (
+                                  <a
+                                    href={entry.payment_link_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                                  >
+                                    <CreditCard className="h-3 w-3" />
+                                    Ouvrir le lien de paiement
+                                  </a>
+                                )}
+                                {entry.stripe_session_id && (
+                                  <a
+                                    href={buildStripeDashboardUrl(entry.stripe_session_id)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                    Voir sur Stripe Dashboard
+                                  </a>
+                                )}
+                                {relatedSchedule && (
+                                  <span
+                                    className="inline-flex items-center gap-1 text-xs text-muted-foreground"
+                                    title={`Échéance ${relatedSchedule.installment_number}/${relatedSchedule.total_installments} • Statut : ${relatedSchedule.status} • ${Number(relatedSchedule.expected_amount).toFixed(2)}€`}
+                                  >
+                                    <Receipt className="h-3 w-3" />
+                                    Versement {relatedSchedule.installment_number}/{relatedSchedule.total_installments}
+                                    <Badge
+                                      variant={relatedSchedule.status === "paid" ? "default" : "outline"}
+                                      className="text-[9px] py-0 ml-1"
+                                    >
+                                      {relatedSchedule.status}
+                                    </Badge>
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Diff summary vs previous attempt for the same scope */}
+                              {diffs.length > 0 && previousAttempt && (
+                                <div className="mt-2 rounded-md border border-border/60 bg-background/50 p-2">
+                                  <div className="flex items-center gap-1.5 mb-1.5 text-[11px] font-medium text-muted-foreground">
+                                    <GitCompare className="h-3 w-3" />
+                                    Changements depuis la tentative précédente
+                                    <span className="text-muted-foreground/60">
+                                      ({formatDistanceToNow(new Date(previousAttempt.created_at), { locale: fr })} plus tôt)
+                                    </span>
+                                  </div>
+                                  <ul className="space-y-1 text-[11px]">
+                                    {diffs.map((d) => (
+                                      <li key={d.field} className="flex items-center gap-1.5 flex-wrap">
+                                        <span className="text-muted-foreground">{d.field} :</span>
+                                        <code className="bg-muted/70 px-1 rounded line-through opacity-70">
+                                          {d.before}
+                                        </code>
+                                        <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                                        <code className="bg-primary/10 text-primary px-1 rounded font-medium">
+                                          {d.after}
+                                        </code>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
                               )}
                             </div>
 
@@ -448,6 +507,14 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
                                   <span className="text-muted-foreground">Stripe session :</span>{" "}
                                   <code className="bg-muted px-1 rounded text-[10px] break-all">
                                     {entry.stripe_session_id}
+                                  </code>
+                                </div>
+                              )}
+                              {relatedSchedule && (
+                                <div className="col-span-2">
+                                  <span className="text-muted-foreground">ID échéance :</span>{" "}
+                                  <code className="bg-muted px-1 rounded text-[10px] break-all">
+                                    {relatedSchedule.id}
                                   </code>
                                 </div>
                               )}
