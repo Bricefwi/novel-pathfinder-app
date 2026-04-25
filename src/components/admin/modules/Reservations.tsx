@@ -195,7 +195,13 @@ export function Reservations() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items
-      .filter((r) => sourceFilter === "all" || r.source === sourceFilter)
+      .filter((r) => {
+        if (sourceFilter === "all") return true;
+        if (sourceFilter === "invoice_pending") {
+          return r.source === "invoice" && r.payment_status === "pending";
+        }
+        return r.source === sourceFilter;
+      })
       .filter((r) => {
         if (!q) return true;
         return (
