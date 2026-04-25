@@ -306,6 +306,48 @@ export type Database = {
         }
         Relationships: []
       }
+      apology_email_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          message_length: number
+          metadata: Json | null
+          performed_by: string | null
+          performed_by_email: string | null
+          recipient: string
+          sender_name: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_length?: number
+          metadata?: Json | null
+          performed_by?: string | null
+          performed_by_email?: string | null
+          recipient: string
+          sender_name?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_length?: number
+          metadata?: Json | null
+          performed_by?: string | null
+          performed_by_email?: string | null
+          recipient?: string
+          sender_name?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       app_config: {
         Row: {
           created_at: string | null

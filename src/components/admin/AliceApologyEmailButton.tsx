@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, MailWarning, Send, Eye, Pencil, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2, MailWarning, Send, Eye, Pencil, CheckCircle2, AlertTriangle, History, RefreshCw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +22,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { buildBrandedEmailPreview } from "@/lib/email-preview";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 
 const ALICE_RECIPIENT = "adamervalle@gmail.com";
 const ALICE_NAME = "Alice Damervalle";
@@ -43,6 +47,24 @@ Encore une fois, toutes nos excuses pour ce désagrément. Nous restons à votre
 
 Très cordialement,`;
 
+interface ApologyLogEntry {
+  id: string;
+  recipient: string;
+  subject: string;
+  sender_name: string | null;
+  message_length: number;
+  status: string;
+  error_message: string | null;
+  performed_by_email: string | null;
+  created_at: string;
+}
+
+const STATUS_VARIANTS: Record<string, { label: string; className: string }> = {
+  sent: { label: "Envoyé", className: "bg-primary/10 text-primary border-primary/20" },
+  deduplicated: { label: "Doublon évité", className: "bg-muted text-muted-foreground border-border" },
+  failed: { label: "Échec", className: "bg-destructive/10 text-destructive border-destructive/20" },
+};
+
 export function AliceApologyEmailButton() {
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -50,6 +72,8 @@ export function AliceApologyEmailButton() {
   const [recipient, setRecipient] = useState(ALICE_RECIPIENT);
   const [subject, setSubject] = useState(ALICE_SUBJECT);
   const [message, setMessage] = useState(ALICE_DEFAULT_MESSAGE);
+  const [history, setHistory] = useState<ApologyLogEntry[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   const trimmedRecipient = recipient.trim();
   const trimmedSubject = subject.trim() || ALICE_SUBJECT;
@@ -69,6 +93,48 @@ export function AliceApologyEmailButton() {
     [subject, message]
   );
 
+  const fetchHistory = useCallback(async () => {
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("apology_email_log")
+        .select("id, recipient, subject, sender_name, message_length, status, error_message, performed_by_email, created_at")
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      setHistory((data ?? []) as ApologyLogEntry[]);
+    } catch (err) {
+      console.error("Failed to fetch apology email history", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchHistory();
+  }, [fetchHistory]);
+
+  const logSend = async (status: string, errorMessage?: string) => {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const performedBy = userData?.user?.id ?? null;
+      const performedByEmail = userData?.user?.email ?? null;
+      await (supabase as any).from("apology_email_log").insert({
+        recipient: trimmedRecipient,
+        subject: trimmedSubject,
+        sender_name: ALICE_NAME,
+        message_length: charCount,
+        status,
+        error_message: errorMessage ?? null,
+        performed_by: performedBy,
+        performed_by_email: performedByEmail,
+        metadata: { source: "AliceApologyEmailButton" },
+      });
+    } catch (err) {
+      console.error("Failed to log apology email send", err);
+    }
+  };
+
   const handleSend = async () => {
     if (!recipient.trim() || !message.trim()) {
       toast.error("Le destinataire et le message sont requis");
@@ -87,15 +153,20 @@ export function AliceApologyEmailButton() {
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
       if (data?.deduplicated) {
+        await logSend("deduplicated");
         toast.info("Email déjà envoyé récemment (anti-doublon).");
       } else {
+        await logSend("sent");
         toast.success(`Email d'excuse envoyé à ${recipient}.`);
       }
       setOpen(false);
       setConfirmOpen(false);
+      fetchHistory();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erreur inconnue";
+      await logSend("failed", msg);
       toast.error(`Impossible d'envoyer l'email : ${msg}`);
+      fetchHistory();
     } finally {
       setSending(false);
     }
@@ -115,7 +186,7 @@ export function AliceApologyEmailButton() {
           Email d'excuse — Cas Alice Damervalle
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
           Texte d'excuse préparé suite à l'incident du paiement en 3 fois. Vous pouvez relire / modifier puis envoyer en un clic.
         </p>
@@ -265,6 +336,83 @@ export function AliceApologyEmailButton() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+        </div>
+
+        {/* Historique des envois */}
+        <div className="space-y-2 pt-2 border-t border-border">
+          <div className="flex items-center justify-between">
+            <h4 className="text-sm font-medium flex items-center gap-2 text-foreground">
+              <History className="h-4 w-4" />
+              Historique des envois
+              {history.length > 0 && (
+                <Badge variant="outline" className="ml-1">
+                  {history.length}
+                </Badge>
+              )}
+            </h4>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={fetchHistory}
+              disabled={loadingHistory}
+              className="h-7 gap-1.5 text-xs"
+            >
+              <RefreshCw className={`h-3 w-3 ${loadingHistory ? "animate-spin" : ""}`} />
+              Actualiser
+            </Button>
+          </div>
+          {loadingHistory && history.length === 0 ? (
+            <div className="flex items-center justify-center py-6 text-muted-foreground text-sm">
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Chargement…
+            </div>
+          ) : history.length === 0 ? (
+            <p className="text-xs text-muted-foreground italic py-4 text-center">
+              Aucun envoi enregistré pour le moment.
+            </p>
+          ) : (
+            <ScrollArea className="h-[280px] rounded-md border bg-card">
+              <div className="divide-y divide-border">
+                {history.map((entry) => {
+                  const variant = STATUS_VARIANTS[entry.status] ?? {
+                    label: entry.status,
+                    className: "bg-muted text-muted-foreground border-border",
+                  };
+                  return (
+                    <div key={entry.id} className="p-3 space-y-1.5 hover:bg-muted/30 transition-colors">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="space-y-0.5 min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline" className={`text-xs ${variant.className}`}>
+                              {variant.label}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground font-mono">
+                              {format(new Date(entry.created_at), "dd MMM yyyy 'à' HH:mm", { locale: fr })}
+                            </span>
+                          </div>
+                          <p className="text-sm font-medium truncate text-foreground">{entry.recipient}</p>
+                          <p className="text-xs text-muted-foreground truncate">{entry.subject}</p>
+                        </div>
+                        <div className="text-right text-xs text-muted-foreground shrink-0">
+                          <div className="font-mono">{entry.message_length} car.</div>
+                        </div>
+                      </div>
+                      {entry.performed_by_email && (
+                        <p className="text-xs text-muted-foreground">
+                          Par <span className="font-medium">{entry.performed_by_email}</span>
+                        </p>
+                      )}
+                      {entry.error_message && (
+                        <p className="text-xs text-destructive bg-destructive/5 rounded px-2 py-1 mt-1">
+                          {entry.error_message}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          )}
         </div>
       </CardContent>
     </Card>
