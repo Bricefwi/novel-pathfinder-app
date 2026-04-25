@@ -19,7 +19,10 @@ import {
   ArrowRight,
   GitCompare,
   Receipt,
+  Download,
+  FileText,
 } from "lucide-react";
+import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -156,6 +159,133 @@ const computeDiff = (curr: AuditEntry, prev: AuditEntry): DiffItem[] => {
   return diffs;
 };
 
+const CSV_COLUMNS: { key: keyof AuditEntry | "action_label" | "status_label"; header: string }[] = [
+  { key: "created_at", header: "Date" },
+  { key: "status", header: "Statut" },
+  { key: "status_label", header: "Statut (libellé)" },
+  { key: "action", header: "Action" },
+  { key: "action_label", header: "Action (libellé)" },
+  { key: "payment_option", header: "Option de paiement" },
+  { key: "installment_number", header: "N° versement" },
+  { key: "total_installments", header: "Total versements" },
+  { key: "requested_amount", header: "Montant demandé (€)" },
+  { key: "expected_amount", header: "Montant attendu (€)" },
+  { key: "amount_match", header: "Montant cohérent" },
+  { key: "performed_by_email", header: "Auteur" },
+  { key: "source", header: "Source" },
+  { key: "ip_address", header: "IP" },
+  { key: "stripe_session_id", header: "Stripe session" },
+  { key: "payment_link_url", header: "Lien de paiement" },
+  { key: "error_message", header: "Message d'erreur" },
+  { key: "metadata", header: "Metadata" },
+  { key: "id", header: "ID audit" },
+];
+
+const escapeCsvCell = (value: unknown): string => {
+  if (value === null || value === undefined) return "";
+  const str = typeof value === "object" ? JSON.stringify(value) : String(value);
+  if (/[",\n;]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+  return str;
+};
+
+const buildCsv = (entries: AuditEntry[]): string => {
+  const header = CSV_COLUMNS.map((c) => c.header).join(";");
+  const rows = entries.map((e) =>
+    CSV_COLUMNS.map((c) => {
+      if (c.key === "action_label") return escapeCsvCell(ACTION_LABELS[e.action] || e.action);
+      if (c.key === "status_label") return escapeCsvCell(STATUS_CONFIG[e.status]?.label || e.status);
+      if (c.key === "created_at")
+        return escapeCsvCell(format(new Date(e.created_at), "dd/MM/yyyy HH:mm:ss", { locale: fr }));
+      return escapeCsvCell((e as unknown as Record<string, unknown>)[c.key as string]);
+    }).join(";"),
+  );
+  return [header, ...rows].join("\n");
+};
+
+const downloadFile = (content: string | Blob, filename: string, mime: string) => {
+  const blob = content instanceof Blob ? content : new Blob([`\ufeff${content}`], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
+
+const openPdfPrintWindow = (entries: AuditEntry[], quoteId: string) => {
+  const win = window.open("", "_blank", "width=900,height=1000");
+  if (!win) {
+    toast.error("Impossible d'ouvrir la fenêtre d'impression. Autorisez les pop-ups.");
+    return;
+  }
+  const generated = format(new Date(), "dd/MM/yyyy 'à' HH:mm", { locale: fr });
+  const rows = entries
+    .map((e) => {
+      const cfg = STATUS_CONFIG[e.status] || STATUS_CONFIG.error;
+      const date = format(new Date(e.created_at), "dd/MM/yyyy HH:mm:ss", { locale: fr });
+      const installment = e.installment_number
+        ? `${e.installment_number}/${e.total_installments || "?"}`
+        : "—";
+      const amounts = `${e.requested_amount != null ? Number(e.requested_amount).toFixed(2) + "€" : "—"} / ${
+        e.expected_amount != null ? Number(e.expected_amount).toFixed(2) + "€" : "—"
+      }`;
+      const meta = e.metadata && Object.keys(e.metadata).length > 0
+        ? `<pre>${JSON.stringify(e.metadata, null, 2).replace(/</g, "&lt;")}</pre>`
+        : "—";
+      return `
+        <tr>
+          <td>${date}</td>
+          <td><span class="badge ${e.status}">${cfg.label}</span><br/><small>${ACTION_LABELS[e.action] || e.action}</small></td>
+          <td>${e.payment_option}<br/><small>vers. ${installment}</small></td>
+          <td>${amounts}${e.amount_match === false ? '<br/><small class="warn">incohérent</small>' : ""}</td>
+          <td><small>${e.performed_by_email || "—"}</small><br/><small>${e.source || ""}</small></td>
+          <td><small>${e.ip_address || "—"}</small></td>
+          <td><small style="word-break:break-all">${e.stripe_session_id || "—"}</small></td>
+          <td><small style="word-break:break-all">${e.payment_link_url || "—"}</small></td>
+          <td><small style="color:#b91c1c">${e.error_message || ""}</small>${meta !== "—" ? `<details><summary>Metadata</summary>${meta}</details>` : ""}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  win.document.write(`<!doctype html><html><head><meta charset="utf-8"/>
+    <title>Chronologie paiements - ${quoteId}</title>
+    <style>
+      body { font-family: 'Inter', system-ui, sans-serif; padding: 24px; color: #1a1a1a; }
+      h1 { font-family: Georgia, serif; font-size: 20px; margin: 0 0 4px; }
+      .meta { color: #6b7280; font-size: 11px; margin-bottom: 16px; }
+      table { width: 100%; border-collapse: collapse; font-size: 10px; }
+      th, td { border: 1px solid #e5e7eb; padding: 6px; text-align: left; vertical-align: top; }
+      th { background: #f9fafb; font-weight: 600; }
+      .badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: 600; font-size: 9px; }
+      .badge.success { background: #dcfce7; color: #166534; }
+      .badge.blocked { background: #fee2e2; color: #991b1b; }
+      .badge.error { background: #ffedd5; color: #9a3412; }
+      .warn { color: #b91c1c; font-weight: 600; }
+      pre { background: #f3f4f6; padding: 4px; font-size: 9px; white-space: pre-wrap; word-break: break-all; max-width: 200px; }
+      details { margin-top: 4px; }
+      @media print { body { padding: 12px; } }
+    </style>
+  </head><body>
+    <h1>Chronologie des tentatives de paiement</h1>
+    <div class="meta">Devis : ${quoteId} • Généré le ${generated} • ${entries.length} événement(s)</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th><th>Statut / Action</th><th>Option / Versement</th>
+          <th>Demandé / Attendu</th><th>Auteur</th><th>IP</th>
+          <th>Stripe session</th><th>Lien</th><th>Erreur / Metadata</th>
+        </tr>
+      </thead>
+      <tbody>${rows || '<tr><td colspan="9" style="text-align:center">Aucune tentative</td></tr>'}</tbody>
+    </table>
+    <script>setTimeout(() => window.print(), 400);</script>
+  </body></html>`);
+  win.document.close();
+};
+
 export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps) => {
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [schedules, setSchedules] = useState<ScheduleRef[]>([]);
@@ -289,9 +419,41 @@ export const PaymentAttemptTimeline = ({ quoteId }: PaymentAttemptTimelineProps)
             {entries.length} événement{entries.length > 1 ? "s" : ""}
           </Badge>
         </CardTitle>
-        <p className="text-xs text-muted-foreground">
-          Toutes les tentatives (succès, refus 409, erreurs) regroupées par ordre antichronologique. Mise à jour en temps réel.
-        </p>
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <p className="text-xs text-muted-foreground">
+            Toutes les tentatives (succès, refus 409, erreurs) regroupées par ordre antichronologique. Mise à jour en temps réel.
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1"
+              disabled={entries.length === 0}
+              onClick={() => {
+                const csv = buildCsv(entries);
+                const filename = `chronologie-paiements-${quoteId}-${format(new Date(), "yyyyMMdd-HHmm")}.csv`;
+                downloadFile(csv, filename, "text/csv;charset=utf-8");
+                toast.success(`Export CSV (${entries.length} ligne${entries.length > 1 ? "s" : ""})`);
+              }}
+            >
+              <Download className="h-3 w-3" />
+              CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1"
+              disabled={entries.length === 0}
+              onClick={() => {
+                openPdfPrintWindow(entries, quoteId);
+                toast.success("Fenêtre d'impression PDF ouverte");
+              }}
+            >
+              <FileText className="h-3 w-3" />
+              PDF
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent>
         {/* Stats compactes */}
