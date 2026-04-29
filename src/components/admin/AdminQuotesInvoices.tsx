@@ -617,6 +617,12 @@ export const AdminQuotesInvoices = () => {
           </div>
         )}
 
+        <DuplicateQuoteAlert
+          clientEmail={formData.client_email}
+          activityTitle={formData.activity_title}
+          onLinked={() => queryClient.invalidateQueries({ queryKey: ["admin-quotes"] })}
+        />
+
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="client_name">Nom du client *</Label>
