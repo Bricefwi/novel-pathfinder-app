@@ -368,13 +368,14 @@ serve(async (req) => {
       }
     }
 
-    console.log(`[rappel-paiement] sent=${sentCount} skipped_paid=${skippedPaid} skipped_duplicate=${skippedDuplicate} schedules_checked=${schedules.length}`);
+    console.log(`[rappel-paiement] sent=${sentCount} skipped_paid=${skippedPaid} skipped_cancelled=${skippedCancelled} skipped_duplicate=${skippedDuplicate} schedules_checked=${schedules.length}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         sent: sentCount,
         skipped_paid: skippedPaid,
+        skipped_cancelled: skippedCancelled,
         skipped_duplicate: skippedDuplicate,
         total_checked: schedules.length,
         details,
