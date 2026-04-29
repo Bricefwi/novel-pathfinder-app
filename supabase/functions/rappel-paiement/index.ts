@@ -82,10 +82,12 @@ serve(async (req) => {
         due_date, status, link_sent_at, paid_at,
         quote_id, invoice_id,
         quotes:quote_id (
-          id, quote_number, client_name, client_email, activity_title, start_date, total_price
+          id, quote_number, client_name, client_email, activity_title, start_date, total_price,
+          status, cancelled_at, cancellation_reason
         ),
         invoices:invoice_id (
-          id, invoice_number, client_name, client_email, activity_title, start_date
+          id, invoice_number, client_name, client_email, activity_title, start_date,
+          status, payment_status
         )
       `)
       .in("status", ["pending", "sent"])
