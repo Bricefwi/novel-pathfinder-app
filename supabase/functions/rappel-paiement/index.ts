@@ -337,7 +337,7 @@ serve(async (req) => {
 
       const adminBody = [
         greeting("Admin"),
-        paragraph(`<strong>${sentCount}</strong> rappel(s) envoyé(s) — <strong>${skippedPaid}</strong> ignoré(s) (déjà payé) — <strong>${skippedDuplicate}</strong> ignoré(s) (palier déjà envoyé).`),
+        paragraph(`<strong>${sentCount}</strong> rappel(s) envoyé(s) — <strong>${skippedPaid}</strong> ignoré(s) (déjà payé) — <strong>${skippedCancelled}</strong> ignoré(s) (devis annulé) — <strong>${skippedDuplicate}</strong> ignoré(s) (palier déjà envoyé).`),
         `<table role="presentation" style="width:100%;border-collapse:collapse;margin:20px 0;background:#F5F3F0;border-radius:12px;overflow:hidden;">
           <thead><tr style="background:#E8652B;color:white;">
             <th style="padding:10px;text-align:left;">Référence</th>
