@@ -5,7 +5,7 @@ import { authenticateRequest, verifyAdminRole, createAuthErrorResponse } from ".
 import { sendEmailWithAudit } from "../_shared/email-audit.ts";
 import {
   EMAIL_SENDERS, wrapInBrandedLayout, getAppUrl,
-  greeting, paragraph, separator,
+  greeting, paragraph, separator, badge,
 } from "../_shared/email-templates.ts";
 
 interface CancelQuoteRequest {
