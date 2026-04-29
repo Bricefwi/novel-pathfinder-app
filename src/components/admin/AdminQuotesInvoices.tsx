@@ -19,6 +19,7 @@ import { downloadQuotePDF, type QuoteData } from "@/components/pdf/QuotePDFGener
 import { downloadInvoicePDF, type InvoiceData } from "@/components/pdf/InvoicePDFGenerator";
 import { InstallmentPaymentManager } from "@/components/admin/InstallmentPaymentManager";
 import { CancelQuoteButton } from "@/components/admin/CancelQuoteButton";
+import { DuplicateQuoteAlert } from "@/components/admin/DuplicateQuoteAlert";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -615,6 +616,12 @@ export const AdminQuotesInvoices = () => {
             </Select>
           </div>
         )}
+
+        <DuplicateQuoteAlert
+          clientEmail={formData.client_email}
+          activityTitle={formData.activity_title}
+          onLinked={() => queryClient.invalidateQueries({ queryKey: ["admin-quotes"] })}
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
