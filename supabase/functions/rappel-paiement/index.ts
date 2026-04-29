@@ -159,6 +159,43 @@ serve(async (req) => {
     // STEP 4 — Boucle de relance avec garde-fous
     // ──────────────────────────────────────────────────────────────────
     for (const schedule of schedules) {
+      // Garde-fou 0 : devis ou facture parent annulé(e)
+      const parentQuote = (schedule as any).quotes;
+      const parentInvoice = (schedule as any).invoices;
+      const isCancelled =
+        (parentQuote && parentQuote.status === "cancelled") ||
+        (parentInvoice && (parentInvoice.status === "cancelled" || parentInvoice.payment_status === "cancelled"));
+
+      if (isCancelled) {
+        skippedCancelled++;
+        const ref = parentQuote?.quote_number || parentInvoice?.invoice_number || schedule.id;
+        const motif = parentQuote?.cancellation_reason || "Devis/facture annulé(e)";
+        console.log(`[rappel-paiement] ⛔ Skip schedule ${schedule.id} (${ref}) — parent annulé. Motif: ${motif}`);
+
+        // Auto-correction : annuler le schedule pending pour cohérence
+        if (schedule.status === "pending" || schedule.status === "sent") {
+          await supabase
+            .from("payment_schedules")
+            .update({
+              status: "cancelled",
+              cancelled_at: new Date().toISOString(),
+              notes: `Annulé automatiquement — parent ${ref} annulé. Motif : ${motif}`,
+            })
+            .eq("id", schedule.id);
+        }
+
+        // Audit trace
+        await supabase.from("email_audit_log").insert({
+          type: "reminder_skipped",
+          recipient: parentQuote?.client_email || parentInvoice?.client_email || "system",
+          subject: `[SKIP] Relance échéance ${schedule.installment_number} bloquée — ${ref} annulé`,
+          status: "skipped",
+          error_message: `Parent cancelled. Motif: ${motif}`,
+          reference_id: schedule.id,
+        });
+        continue;
+      }
+
       // Garde-fou 1 : versement déjà payé (vérification croisée payments)
       const paidKey = schedule.quote_id
         ? `${schedule.quote_id}:${schedule.installment_number}`
