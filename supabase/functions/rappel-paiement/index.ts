@@ -151,6 +151,7 @@ serve(async (req) => {
     const sender = EMAIL_SENDERS.factures;
     let sentCount = 0;
     let skippedPaid = 0;
+    let skippedCancelled = 0;
     let skippedDuplicate = 0;
     const details: Array<{ schedule: string; stage: string; email: string; installment: string }> = [];
 
