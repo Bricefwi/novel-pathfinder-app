@@ -19,6 +19,7 @@ import { downloadQuotePDF, type QuoteData } from "@/components/pdf/QuotePDFGener
 import { downloadInvoicePDF, type InvoiceData } from "@/components/pdf/InvoicePDFGenerator";
 import { InstallmentPaymentManager } from "@/components/admin/InstallmentPaymentManager";
 import { CancelQuoteButton } from "@/components/admin/CancelQuoteButton";
+import { DuplicateQuoteAlert } from "@/components/admin/DuplicateQuoteAlert";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
