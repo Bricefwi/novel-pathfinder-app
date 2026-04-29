@@ -5,7 +5,7 @@ import { authenticateRequest, verifyAdminRole, createAuthErrorResponse } from ".
 import { sendEmailWithAudit } from "../_shared/email-audit.ts";
 import {
   EMAIL_SENDERS, wrapInBrandedLayout, getAppUrl,
-  greeting, paragraph, separator,
+  greeting, paragraph, separator, badge,
 } from "../_shared/email-templates.ts";
 
 interface CancelQuoteRequest {
@@ -111,7 +111,12 @@ const handler = async (req: Request): Promise<Response> => {
             `Ce devis a été <strong>annulé</strong> et n'est plus valable. Si vous receviez encore des relances pour ce devis, vous pouvez les ignorer.`
           );
 
+      const statusBanner = `<div style="text-align:center;margin:0 0 20px 0;">
+        ${badge(`❌ DEVIS ${quote.quote_number} — ANNULÉ`, "#B85450")}
+      </div>`;
+
       const bodyContent = [
+        statusBanner,
         greeting(firstName),
         paragraph(defaultMessage),
         explanation,

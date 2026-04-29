@@ -287,12 +287,17 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
       case 'draft':
       case 'pending':
       case 'sent':
-        return <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-500/30">À valider</Badge>;
+        return <Badge className="bg-yellow-500/10 text-yellow-700 border-yellow-500/30">⏳ Actif – à valider</Badge>;
       case 'accepted':
       case 'validated':
-        return <Badge className="bg-green-500/10 text-green-700 border-green-500/30">Validé</Badge>;
+        return <Badge className="bg-green-500/10 text-green-700 border-green-500/30">✓ Validé</Badge>;
+      case 'paid':
+      case 'partial':
+        return <Badge className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30">💳 Payé</Badge>;
+      case 'cancelled':
+        return <Badge className="bg-destructive/10 text-destructive border-destructive/30">❌ Annulé – ne plus utiliser</Badge>;
       case 'expired':
-        return <Badge className="bg-muted text-muted-foreground">Expiré</Badge>;
+        return <Badge className="bg-muted text-muted-foreground">⌛ Expiré</Badge>;
       case 'rejected':
         return <Badge className="bg-destructive/10 text-destructive border-destructive/30">Refusé</Badge>;
       default:

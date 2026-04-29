@@ -86,7 +86,11 @@ const handler = async (req: Request): Promise<Response> => {
     const body = [
       greeting(quoteData.client_name),
       paragraph("Nous avons le plaisir de vous adresser votre devis personnalisé pour la prestation suivante. Nous espérons que cette proposition correspondra à vos attentes."),
-      `<div style="text-align:center;margin:15px 0;">${badge(`Devis N° ${quoteData.quote_number}`)}</div>`,
+      `<div style="text-align:center;margin:15px 0;">
+        ${badge(`Devis N° ${quoteData.quote_number}`)}
+        &nbsp;${badge("✓ ACTIF", "#6B8E7F")}
+      </div>
+      <p style="text-align:center;color:#888;font-size:12px;margin:0 0 15px 0;">Ceci est le devis de référence à conserver pour votre dossier.</p>`,
       activityCard({
         title: quoteData.activity_title,
         duration: quoteData.activity_duration,
