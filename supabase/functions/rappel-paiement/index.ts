@@ -82,10 +82,12 @@ serve(async (req) => {
         due_date, status, link_sent_at, paid_at,
         quote_id, invoice_id,
         quotes:quote_id (
-          id, quote_number, client_name, client_email, activity_title, start_date, total_price
+          id, quote_number, client_name, client_email, activity_title, start_date, total_price,
+          status, cancelled_at, cancellation_reason
         ),
         invoices:invoice_id (
-          id, invoice_number, client_name, client_email, activity_title, start_date
+          id, invoice_number, client_name, client_email, activity_title, start_date,
+          status, payment_status
         )
       `)
       .in("status", ["pending", "sent"])
@@ -149,6 +151,7 @@ serve(async (req) => {
     const sender = EMAIL_SENDERS.factures;
     let sentCount = 0;
     let skippedPaid = 0;
+    let skippedCancelled = 0;
     let skippedDuplicate = 0;
     const details: Array<{ schedule: string; stage: string; email: string; installment: string }> = [];
 
@@ -156,6 +159,43 @@ serve(async (req) => {
     // STEP 4 — Boucle de relance avec garde-fous
     // ──────────────────────────────────────────────────────────────────
     for (const schedule of schedules) {
+      // Garde-fou 0 : devis ou facture parent annulé(e)
+      const parentQuote = (schedule as any).quotes;
+      const parentInvoice = (schedule as any).invoices;
+      const isCancelled =
+        (parentQuote && parentQuote.status === "cancelled") ||
+        (parentInvoice && (parentInvoice.status === "cancelled" || parentInvoice.payment_status === "cancelled"));
+
+      if (isCancelled) {
+        skippedCancelled++;
+        const ref = parentQuote?.quote_number || parentInvoice?.invoice_number || schedule.id;
+        const motif = parentQuote?.cancellation_reason || "Devis/facture annulé(e)";
+        console.log(`[rappel-paiement] ⛔ Skip schedule ${schedule.id} (${ref}) — parent annulé. Motif: ${motif}`);
+
+        // Auto-correction : annuler le schedule pending pour cohérence
+        if (schedule.status === "pending" || schedule.status === "sent") {
+          await supabase
+            .from("payment_schedules")
+            .update({
+              status: "cancelled",
+              cancelled_at: new Date().toISOString(),
+              notes: `Annulé automatiquement — parent ${ref} annulé. Motif : ${motif}`,
+            })
+            .eq("id", schedule.id);
+        }
+
+        // Audit trace
+        await supabase.from("email_audit_log").insert({
+          type: "reminder_skipped",
+          recipient: parentQuote?.client_email || parentInvoice?.client_email || "system",
+          subject: `[SKIP] Relance échéance ${schedule.installment_number} bloquée — ${ref} annulé`,
+          status: "skipped",
+          error_message: `Parent cancelled. Motif: ${motif}`,
+          reference_id: schedule.id,
+        });
+        continue;
+      }
+
       // Garde-fou 1 : versement déjà payé (vérification croisée payments)
       const paidKey = schedule.quote_id
         ? `${schedule.quote_id}:${schedule.installment_number}`
@@ -297,7 +337,7 @@ serve(async (req) => {
 
       const adminBody = [
         greeting("Admin"),
-        paragraph(`<strong>${sentCount}</strong> rappel(s) envoyé(s) — <strong>${skippedPaid}</strong> ignoré(s) (déjà payé) — <strong>${skippedDuplicate}</strong> ignoré(s) (palier déjà envoyé).`),
+        paragraph(`<strong>${sentCount}</strong> rappel(s) envoyé(s) — <strong>${skippedPaid}</strong> ignoré(s) (déjà payé) — <strong>${skippedCancelled}</strong> ignoré(s) (devis annulé) — <strong>${skippedDuplicate}</strong> ignoré(s) (palier déjà envoyé).`),
         `<table role="presentation" style="width:100%;border-collapse:collapse;margin:20px 0;background:#F5F3F0;border-radius:12px;overflow:hidden;">
           <thead><tr style="background:#E8652B;color:white;">
             <th style="padding:10px;text-align:left;">Référence</th>
@@ -328,13 +368,14 @@ serve(async (req) => {
       }
     }
 
-    console.log(`[rappel-paiement] sent=${sentCount} skipped_paid=${skippedPaid} skipped_duplicate=${skippedDuplicate} schedules_checked=${schedules.length}`);
+    console.log(`[rappel-paiement] sent=${sentCount} skipped_paid=${skippedPaid} skipped_cancelled=${skippedCancelled} skipped_duplicate=${skippedDuplicate} schedules_checked=${schedules.length}`);
 
     return new Response(
       JSON.stringify({
         success: true,
         sent: sentCount,
         skipped_paid: skippedPaid,
+        skipped_cancelled: skippedCancelled,
         skipped_duplicate: skippedDuplicate,
         total_checked: schedules.length,
         details,

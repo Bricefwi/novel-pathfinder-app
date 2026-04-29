@@ -85,12 +85,31 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    // Annuler les éventuelles échéances de paiement non payées
-    await supabaseService
+    // Annuler les éventuelles échéances de paiement non payées + tracer le motif dans les notes
+    const cancellationNote = `Annulé suite à l'annulation du devis ${quote.quote_number} le ${new Date().toLocaleDateString("fr-FR")}. Motif : ${reason || "non précisé"}`;
+    const { data: cancelledSchedules } = await supabaseService
       .from("payment_schedules")
-      .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
+      .update({
+        status: "cancelled",
+        cancelled_at: new Date().toISOString(),
+        notes: cancellationNote,
+      })
       .eq("quote_id", quote_id)
-      .in("status", ["pending"]);
+      .in("status", ["pending", "sent"])
+      .select("id, installment_number");
+
+    // Audit : tracer chaque relance désormais bloquée pour ce devis
+    if (cancelledSchedules && cancelledSchedules.length > 0) {
+      const auditRows = cancelledSchedules.map((s) => ({
+        type: "reminder_blocked",
+        recipient: quote.client_email,
+        subject: `[BLOCK] Relances futures stoppées — versement ${s.installment_number} du devis ${quote.quote_number}`,
+        status: "blocked",
+        error_message: `Devis annulé par ${auth.user.email}. Motif : ${reason || "non précisé"}`,
+        reference_id: s.id,
+      }));
+      await supabaseService.from("email_audit_log").insert(auditRows);
+    }
 
     // Envoyer email d'excuse au client
     let emailResult: { success: boolean; error?: string } = { success: true };
