@@ -30,14 +30,14 @@ const statusColors: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
   draft: "Brouillon",
-  sent: "Envoyé",
-  accepted: "Accepté",
+  sent: "✓ Actif – Envoyé",
+  accepted: "✓ Accepté",
   rejected: "Refusé",
-  expired: "Expiré",
-  pending: "En attente",
-  partial: "Partiellement payé",
-  paid: "Payé",
-  cancelled: "Annulé",
+  expired: "⌛ Expiré",
+  pending: "⏳ En attente",
+  partial: "💳 Partiellement payé",
+  paid: "💳 Payé",
+  cancelled: "❌ Annulé",
 };
 
 interface UserDocumentsProps {
