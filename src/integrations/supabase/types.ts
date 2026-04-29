@@ -1570,11 +1570,60 @@ export type Database = {
         }
         Relationships: []
       }
+      quote_cancellation_log: {
+        Row: {
+          cancelled_by: string | null
+          cancelled_by_email: string | null
+          client_email: string
+          client_name: string | null
+          created_at: string
+          email_error: string | null
+          email_sent: boolean | null
+          id: string
+          metadata: Json | null
+          quote_id: string
+          quote_number: string
+          reason: string | null
+        }
+        Insert: {
+          cancelled_by?: string | null
+          cancelled_by_email?: string | null
+          client_email: string
+          client_name?: string | null
+          created_at?: string
+          email_error?: string | null
+          email_sent?: boolean | null
+          id?: string
+          metadata?: Json | null
+          quote_id: string
+          quote_number: string
+          reason?: string | null
+        }
+        Update: {
+          cancelled_by?: string | null
+          cancelled_by_email?: string | null
+          client_email?: string
+          client_name?: string | null
+          created_at?: string
+          email_error?: string | null
+          email_sent?: boolean | null
+          id?: string
+          metadata?: Json | null
+          quote_id?: string
+          quote_number?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
       quotes: {
         Row: {
           activity_duration: string | null
           activity_id: string | null
           activity_title: string
+          cancellation_email_sent: boolean | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           cgu_accepted: boolean | null
           cgu_accepted_at: string | null
           cgv_accepted: boolean | null
@@ -1609,6 +1658,10 @@ export type Database = {
           activity_duration?: string | null
           activity_id?: string | null
           activity_title: string
+          cancellation_email_sent?: boolean | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           cgu_accepted?: boolean | null
           cgu_accepted_at?: string | null
           cgv_accepted?: boolean | null
@@ -1643,6 +1696,10 @@ export type Database = {
           activity_duration?: string | null
           activity_id?: string | null
           activity_title?: string
+          cancellation_email_sent?: boolean | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           cgu_accepted?: boolean | null
           cgu_accepted_at?: string | null
           cgv_accepted?: boolean | null

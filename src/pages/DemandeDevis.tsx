@@ -275,6 +275,41 @@ const DemandeDevis = () => {
       return;
     }
 
+    // 🛡️ Détection doublons : check si une demande récente existe pour cet email + ce séjour
+    try {
+      const sejourTitle = selectedSejourDetails?.title || form.selectedSejour;
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: existingRequests } = await supabase
+        .from("contact_requests")
+        .select("id, created_at, subject")
+        .eq("email", result.data.email.trim().toLowerCase())
+        .eq("is_archived", false)
+        .gte("created_at", thirtyDaysAgo)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      const duplicate = existingRequests?.find((r) =>
+        r.subject?.toLowerCase().includes((sejourTitle || "__none__").toLowerCase())
+      );
+
+      if (duplicate) {
+        const daysAgo = Math.floor(
+          (Date.now() - new Date(duplicate.created_at).getTime()) / (1000 * 60 * 60 * 24)
+        );
+        const dayLabel = daysAgo === 0 ? "aujourd'hui" : daysAgo === 1 ? "hier" : `il y a ${daysAgo} jours`;
+        const confirmed = window.confirm(
+          `⚠️ Vous avez déjà envoyé une demande pour ce séjour ${dayLabel}.\n\n` +
+          `Pour éviter un doublon, nous vous recommandons de :\n` +
+          `1. Vérifier vos emails (y compris vos courriers indésirables)\n` +
+          `2. Nous contacter au 06 59 22 62 70 si vous n'avez rien reçu\n\n` +
+          `Voulez-vous tout de même envoyer cette nouvelle demande ?`
+        );
+        if (!confirmed) return;
+      }
+    } catch (dupErr) {
+      console.warn("[DemandeDevis] Vérification doublon échouée:", dupErr);
+    }
+
     setLoading(true);
 
     const paymentLabel = form.paymentOption === "deposit" 
