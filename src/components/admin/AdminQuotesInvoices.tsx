@@ -18,6 +18,7 @@ import { FileText, Plus, Download, Eye, Receipt, CheckCircle, Mail, Loader2, Cop
 import { downloadQuotePDF, type QuoteData } from "@/components/pdf/QuotePDFGenerator";
 import { downloadInvoicePDF, type InvoiceData } from "@/components/pdf/InvoicePDFGenerator";
 import { InstallmentPaymentManager } from "@/components/admin/InstallmentPaymentManager";
+import { CancelQuoteButton } from "@/components/admin/CancelQuoteButton";
 
 const statusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -942,6 +943,17 @@ export const AdminQuotesInvoices = () => {
                                 )}
                               </Button>
                             )}
+                            <CancelQuoteButton
+                              quote={{
+                                id: quote.id,
+                                quote_number: quote.quote_number,
+                                client_name: quote.client_name,
+                                client_email: quote.client_email,
+                                activity_title: quote.activity_title,
+                                status: quote.status,
+                                total_price: quote.total_price,
+                              }}
+                            />
                           </div>
                         </TableCell>
                       </TableRow>
