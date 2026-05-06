@@ -482,7 +482,7 @@ export const AdminQuotesInvoices = () => {
     client_email: string;
     activity_title: string;
     amount: number;
-    payment_type: "full" | "deposit";
+    payment_type: "full" | "deposit" | "balance";
     deposit_percentage?: number;
   }) => {
     setSendingPaymentLink(params.id);
@@ -995,6 +995,7 @@ export const AdminQuotesInvoices = () => {
                         <TableHead>Client</TableHead>
                         <TableHead>Prestation</TableHead>
                         <TableHead>Montant</TableHead>
+                        <TableHead>Paiement</TableHead>
                         <TableHead>Statut</TableHead>
                         <TableHead>Validé</TableHead>
                         <TableHead>Date</TableHead>
@@ -1002,7 +1003,13 @@ export const AdminQuotesInvoices = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {invoices.map(invoice => (
+                      {invoices.map(invoice => {
+                        const total = Number(invoice.total_amount) || 0;
+                        const paid = Number(invoice.amount_paid) || 0;
+                        const balance = Math.max(0, total - paid);
+                        const hasBalance = balance > 0.01;
+                        const hasPartial = paid > 0.01 && hasBalance;
+                        return (
                         <TableRow key={invoice.id}>
                           <TableCell className="font-mono">{invoice.invoice_number}</TableCell>
                           <TableCell>
@@ -1012,10 +1019,21 @@ export const AdminQuotesInvoices = () => {
                             </div>
                           </TableCell>
                           <TableCell>{invoice.activity_title}</TableCell>
-                          <TableCell className="font-medium">{Number(invoice.total_amount).toFixed(2)} €</TableCell>
+                          <TableCell className="font-medium">{total.toFixed(2)} €</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-0.5 text-xs">
+                              <span className="text-emerald-700">
+                                ✓ Payé : <strong>{paid.toFixed(2)} €</strong>
+                              </span>
+                              <span className={hasBalance ? "text-amber-700" : "text-muted-foreground"}>
+                                {hasBalance ? "⏳ Restant : " : "— Soldé : "}
+                                <strong>{balance.toFixed(2)} €</strong>
+                              </span>
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <Badge className={statusColors[invoice.payment_status || "pending"]}>
-                              {statusLabels[invoice.payment_status || "pending"]}
+                              {hasPartial ? "Partiel" : statusLabels[invoice.payment_status || "pending"]}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -1029,7 +1047,7 @@ export const AdminQuotesInvoices = () => {
                             {format(new Date(invoice.created_at), "dd/MM/yyyy", { locale: fr })}
                           </TableCell>
                           <TableCell>
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 flex-wrap">
                               <Button 
                                 size="sm" 
                                 variant="outline" 
@@ -1048,7 +1066,7 @@ export const AdminQuotesInvoices = () => {
                               <Button size="sm" variant="outline" onClick={() => handleDownloadInvoice(invoice)} title="Télécharger PDF">
                                 <Download className="h-4 w-4" />
                               </Button>
-                              {invoice.payment_status !== "paid" && (
+                              {invoice.payment_status !== "paid" && hasBalance && (
                                 <Button 
                                   size="sm" 
                                   variant="default"
@@ -1058,11 +1076,11 @@ export const AdminQuotesInvoices = () => {
                                     client_name: invoice.client_name,
                                     client_email: invoice.client_email,
                                     activity_title: invoice.activity_title,
-                                    amount: Number(invoice.total_amount),
-                                    payment_type: "full",
+                                    amount: balance,
+                                    payment_type: hasPartial ? "balance" : "full",
                                   })}
                                   disabled={sendingPaymentLink === invoice.id}
-                                  title="Générer un lien de paiement Stripe"
+                                  title={hasPartial ? `Envoyer un lien de paiement pour le solde (${balance.toFixed(2)} €)` : "Générer un lien de paiement Stripe"}
                                   className="gap-2"
                                 >
                                   {sendingPaymentLink === invoice.id ? (
@@ -1070,13 +1088,16 @@ export const AdminQuotesInvoices = () => {
                                   ) : (
                                     <CreditCard className="h-4 w-4" />
                                   )}
-                                  <span className="hidden sm:inline">Paiement</span>
+                                  <span className="hidden sm:inline">
+                                    {hasPartial ? `Lien solde ${balance.toFixed(0)} €` : "Paiement"}
+                                  </span>
                                 </Button>
                               )}
                             </div>
                           </TableCell>
                         </TableRow>
-                      ))}
+                        );
+                      })}
                     </TableBody>
                   </Table>
                 </div>

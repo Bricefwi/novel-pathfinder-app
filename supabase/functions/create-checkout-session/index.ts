@@ -85,6 +85,7 @@ serve(async (req: Request) => {
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
     // Calculate actual amount to charge
+    // payment_type values: "full" | "deposit" | "balance" (solde restant dû)
     const chargeAmount = payment_type === "deposit" && deposit_percentage
       ? Math.ceil(amount * (deposit_percentage / 100))
       : amount;
@@ -94,6 +95,8 @@ serve(async (req: Request) => {
     // Build description
     const description = payment_type === "deposit"
       ? `Acompte ${deposit_percentage}% – ${activity_title}`
+      : payment_type === "balance"
+      ? `Solde restant dû – ${activity_title}`
       : `Paiement intégral – ${activity_title}`;
 
     // Check if Stripe customer exists
@@ -157,6 +160,8 @@ serve(async (req: Request) => {
     const sender = EMAIL_SENDERS.factures;
     const paymentLabel = payment_type === "deposit"
       ? `Acompte de ${deposit_percentage}% (${formatPrice(chargeAmount)})`
+      : payment_type === "balance"
+      ? `Solde restant dû (${formatPrice(chargeAmount)})`
       : `Paiement intégral (${formatPrice(chargeAmount)})`;
 
     const emailBody = `
