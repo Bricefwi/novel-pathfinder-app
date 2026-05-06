@@ -57,6 +57,50 @@ export const AdminQuotesInvoices = () => {
   const [sendingPaymentLink, setSendingPaymentLink] = useState<string | null>(null);
   const [installmentManagerQuote, setInstallmentManagerQuote] = useState<{ id: string; quote_number: string; client_name: string; client_email: string; activity_title: string; total_price: number; start_date: string | null } | null>(null);
   const [editingQuote, setEditingQuote] = useState<typeof quotes extends (infer T)[] ? T : never | null>(null);
+  const [recordPaymentInvoice, setRecordPaymentInvoice] = useState<{ id: string; invoice_number: string; total_amount: number; amount_paid: number; client_name: string } | null>(null);
+  const [recordPaymentAmount, setRecordPaymentAmount] = useState<string>("");
+  const [recordPaymentNote, setRecordPaymentNote] = useState<string>("");
+  const [recordingPayment, setRecordingPayment] = useState(false);
+
+  const handleRecordPayment = async () => {
+    if (!recordPaymentInvoice) return;
+    const amount = parseFloat(recordPaymentAmount.replace(",", "."));
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Montant invalide");
+      return;
+    }
+    const newPaid = Number(recordPaymentInvoice.amount_paid) + amount;
+    if (newPaid > Number(recordPaymentInvoice.total_amount) + 0.01) {
+      toast.error(`Le total payé (${newPaid.toFixed(2)} €) dépasserait le montant de la facture (${recordPaymentInvoice.total_amount} €)`);
+      return;
+    }
+    const newStatus = newPaid >= Number(recordPaymentInvoice.total_amount) - 0.01 ? "paid" : "partial";
+    setRecordingPayment(true);
+    try {
+      const { error } = await supabase
+        .from("invoices")
+        .update({
+          amount_paid: newPaid,
+          payment_status: newStatus,
+          paid_at: newStatus === "paid" ? new Date().toISOString() : null,
+          notes: recordPaymentNote
+            ? `[Paiement manuel ${new Date().toLocaleDateString("fr-FR")}] +${amount.toFixed(2)} € — ${recordPaymentNote}`
+            : undefined,
+        })
+        .eq("id", recordPaymentInvoice.id);
+      if (error) throw error;
+      toast.success(`Paiement de ${amount.toFixed(2)} € enregistré pour ${recordPaymentInvoice.client_name}`);
+      setRecordPaymentInvoice(null);
+      setRecordPaymentAmount("");
+      setRecordPaymentNote("");
+      queryClient.invalidateQueries({ queryKey: ["admin-invoices"] });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Erreur inconnue";
+      toast.error(`Échec : ${msg}`);
+    } finally {
+      setRecordingPayment(false);
+    }
+  };
 
   // Send test email function
   const handleSendTestEmail = async () => {
