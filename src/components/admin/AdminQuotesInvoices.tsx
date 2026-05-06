@@ -1186,6 +1186,50 @@ export const AdminQuotesInvoices = () => {
           quote={installmentManagerQuote}
         />
       )}
+
+      <Dialog open={!!recordPaymentInvoice} onOpenChange={(o) => { if (!o) { setRecordPaymentInvoice(null); setRecordPaymentAmount(""); setRecordPaymentNote(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enregistrer un paiement reçu</DialogTitle>
+            <DialogDescription>
+              Facture {recordPaymentInvoice?.invoice_number} — {recordPaymentInvoice?.client_name}
+              <br />
+              Total : {recordPaymentInvoice?.total_amount.toFixed(2)} € · Déjà payé : {recordPaymentInvoice?.amount_paid.toFixed(2)} € · Restant : {recordPaymentInvoice ? (recordPaymentInvoice.total_amount - recordPaymentInvoice.amount_paid).toFixed(2) : "0"} €
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="record-amount">Montant reçu (€)</Label>
+              <Input
+                id="record-amount"
+                type="number"
+                step="0.01"
+                value={recordPaymentAmount}
+                onChange={(e) => setRecordPaymentAmount(e.target.value)}
+                placeholder="Ex : 204"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="record-note">Note (mode de paiement, référence…)</Label>
+              <Input
+                id="record-note"
+                value={recordPaymentNote}
+                onChange={(e) => setRecordPaymentNote(e.target.value)}
+                placeholder="Ex : Acompte virement bancaire 02/05/2026"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setRecordPaymentInvoice(null)} disabled={recordingPayment}>
+                Annuler
+              </Button>
+              <Button onClick={handleRecordPayment} disabled={recordingPayment}>
+                {recordingPayment ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                Enregistrer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
