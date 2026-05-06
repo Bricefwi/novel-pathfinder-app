@@ -482,7 +482,7 @@ export const AdminQuotesInvoices = () => {
     client_email: string;
     activity_title: string;
     amount: number;
-    payment_type: "full" | "deposit";
+    payment_type: "full" | "deposit" | "balance";
     deposit_percentage?: number;
   }) => {
     setSendingPaymentLink(params.id);
