@@ -160,6 +160,8 @@ serve(async (req: Request) => {
     const sender = EMAIL_SENDERS.factures;
     const paymentLabel = payment_type === "deposit"
       ? `Acompte de ${deposit_percentage}% (${formatPrice(chargeAmount)})`
+      : payment_type === "balance"
+      ? `Solde restant dû (${formatPrice(chargeAmount)})`
       : `Paiement intégral (${formatPrice(chargeAmount)})`;
 
     const emailBody = `
