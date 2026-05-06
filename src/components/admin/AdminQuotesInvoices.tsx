@@ -1137,6 +1137,28 @@ export const AdminQuotesInvoices = () => {
                                   </span>
                                 </Button>
                               )}
+                              {invoice.payment_status !== "paid" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setRecordPaymentInvoice({
+                                      id: invoice.id,
+                                      invoice_number: invoice.invoice_number,
+                                      total_amount: total,
+                                      amount_paid: paid,
+                                      client_name: invoice.client_name,
+                                    });
+                                    setRecordPaymentAmount(balance.toFixed(2));
+                                    setRecordPaymentNote("");
+                                  }}
+                                  title="Enregistrer un paiement déjà reçu (espèces, virement, acompte hors-ligne)"
+                                  className="gap-2"
+                                >
+                                  <Wallet className="h-4 w-4" />
+                                  <span className="hidden sm:inline">Saisir paiement</span>
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
