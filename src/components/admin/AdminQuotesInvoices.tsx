@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { FileText, Plus, Download, Eye, Receipt, CheckCircle, Mail, Loader2, Copy, CreditCard, CalendarClock } from "lucide-react";
+import { FileText, Plus, Download, Eye, Receipt, CheckCircle, Mail, Loader2, Copy, CreditCard, CalendarClock, Wallet } from "lucide-react";
 import { downloadQuotePDF, type QuoteData } from "@/components/pdf/QuotePDFGenerator";
 import { downloadInvoicePDF, type InvoiceData } from "@/components/pdf/InvoicePDFGenerator";
 import { InstallmentPaymentManager } from "@/components/admin/InstallmentPaymentManager";
@@ -57,6 +57,50 @@ export const AdminQuotesInvoices = () => {
   const [sendingPaymentLink, setSendingPaymentLink] = useState<string | null>(null);
   const [installmentManagerQuote, setInstallmentManagerQuote] = useState<{ id: string; quote_number: string; client_name: string; client_email: string; activity_title: string; total_price: number; start_date: string | null } | null>(null);
   const [editingQuote, setEditingQuote] = useState<typeof quotes extends (infer T)[] ? T : never | null>(null);
+  const [recordPaymentInvoice, setRecordPaymentInvoice] = useState<{ id: string; invoice_number: string; total_amount: number; amount_paid: number; client_name: string } | null>(null);
+  const [recordPaymentAmount, setRecordPaymentAmount] = useState<string>("");
+  const [recordPaymentNote, setRecordPaymentNote] = useState<string>("");
+  const [recordingPayment, setRecordingPayment] = useState(false);
+
+  const handleRecordPayment = async () => {
+    if (!recordPaymentInvoice) return;
+    const amount = parseFloat(recordPaymentAmount.replace(",", "."));
+    if (isNaN(amount) || amount <= 0) {
+      toast.error("Montant invalide");
+      return;
+    }
+    const newPaid = Number(recordPaymentInvoice.amount_paid) + amount;
+    if (newPaid > Number(recordPaymentInvoice.total_amount) + 0.01) {
+      toast.error(`Le total payé (${newPaid.toFixed(2)} €) dépasserait le montant de la facture (${recordPaymentInvoice.total_amount} €)`);
+      return;
+    }
+    const newStatus = newPaid >= Number(recordPaymentInvoice.total_amount) - 0.01 ? "paid" : "partial";
+    setRecordingPayment(true);
+    try {
+      const { error } = await supabase
+        .from("invoices")
+        .update({
+          amount_paid: newPaid,
+          payment_status: newStatus,
+          paid_at: newStatus === "paid" ? new Date().toISOString() : null,
+          notes: recordPaymentNote
+            ? `[Paiement manuel ${new Date().toLocaleDateString("fr-FR")}] +${amount.toFixed(2)} € — ${recordPaymentNote}`
+            : undefined,
+        })
+        .eq("id", recordPaymentInvoice.id);
+      if (error) throw error;
+      toast.success(`Paiement de ${amount.toFixed(2)} € enregistré pour ${recordPaymentInvoice.client_name}`);
+      setRecordPaymentInvoice(null);
+      setRecordPaymentAmount("");
+      setRecordPaymentNote("");
+      queryClient.invalidateQueries({ queryKey: ["admin-invoices"] });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Erreur inconnue";
+      toast.error(`Échec : ${msg}`);
+    } finally {
+      setRecordingPayment(false);
+    }
+  };
 
   // Send test email function
   const handleSendTestEmail = async () => {
@@ -1093,6 +1137,28 @@ export const AdminQuotesInvoices = () => {
                                   </span>
                                 </Button>
                               )}
+                              {invoice.payment_status !== "paid" && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setRecordPaymentInvoice({
+                                      id: invoice.id,
+                                      invoice_number: invoice.invoice_number,
+                                      total_amount: total,
+                                      amount_paid: paid,
+                                      client_name: invoice.client_name,
+                                    });
+                                    setRecordPaymentAmount(balance.toFixed(2));
+                                    setRecordPaymentNote("");
+                                  }}
+                                  title="Enregistrer un paiement déjà reçu (espèces, virement, acompte hors-ligne)"
+                                  className="gap-2"
+                                >
+                                  <Wallet className="h-4 w-4" />
+                                  <span className="hidden sm:inline">Saisir paiement</span>
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
@@ -1120,6 +1186,50 @@ export const AdminQuotesInvoices = () => {
           quote={installmentManagerQuote}
         />
       )}
+
+      <Dialog open={!!recordPaymentInvoice} onOpenChange={(o) => { if (!o) { setRecordPaymentInvoice(null); setRecordPaymentAmount(""); setRecordPaymentNote(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enregistrer un paiement reçu</DialogTitle>
+            <DialogDescription>
+              Facture {recordPaymentInvoice?.invoice_number} — {recordPaymentInvoice?.client_name}
+              <br />
+              Total : {recordPaymentInvoice?.total_amount.toFixed(2)} € · Déjà payé : {recordPaymentInvoice?.amount_paid.toFixed(2)} € · Restant : {recordPaymentInvoice ? (recordPaymentInvoice.total_amount - recordPaymentInvoice.amount_paid).toFixed(2) : "0"} €
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="record-amount">Montant reçu (€)</Label>
+              <Input
+                id="record-amount"
+                type="number"
+                step="0.01"
+                value={recordPaymentAmount}
+                onChange={(e) => setRecordPaymentAmount(e.target.value)}
+                placeholder="Ex : 204"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="record-note">Note (mode de paiement, référence…)</Label>
+              <Input
+                id="record-note"
+                value={recordPaymentNote}
+                onChange={(e) => setRecordPaymentNote(e.target.value)}
+                placeholder="Ex : Acompte virement bancaire 02/05/2026"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setRecordPaymentInvoice(null)} disabled={recordingPayment}>
+                Annuler
+              </Button>
+              <Button onClick={handleRecordPayment} disabled={recordingPayment}>
+                {recordingPayment ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                Enregistrer
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
