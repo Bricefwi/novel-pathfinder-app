@@ -82,10 +82,11 @@ export const AdminQuotesInvoices = () => {
         .update({
           amount_paid: newPaid,
           payment_status: newStatus,
-          paid_at: newStatus === "paid" ? new Date().toISOString() : null,
-          notes: recordPaymentNote
-            ? `[Paiement manuel ${new Date().toLocaleDateString("fr-FR")}] +${amount.toFixed(2)} € — ${recordPaymentNote}`
-            : undefined,
+          payment_date: newStatus === "paid" ? new Date().toISOString() : null,
+          payment_method: "manuel",
+          ...(recordPaymentNote
+            ? { notes: `[Paiement manuel ${new Date().toLocaleDateString("fr-FR")}] +${amount.toFixed(2)} € — ${recordPaymentNote}` }
+            : {}),
         })
         .eq("id", recordPaymentInvoice.id);
       if (error) throw error;
