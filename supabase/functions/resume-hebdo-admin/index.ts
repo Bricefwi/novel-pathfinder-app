@@ -29,7 +29,7 @@ serve(async (req) => {
     const [bookingsRes, quotesRes, invoicesRes, reviewsRes, contactsRes, profilesRes, emailsRes] = await Promise.all([
       supabase.from("bookings").select("id, total_price, status").gte("created_at", oneWeekAgo),
       supabase.from("quotes").select("id, total_price, status").gte("created_at", oneWeekAgo),
-      supabase.from("invoices").select("id, total_amount, payment_status").gte("created_at", oneWeekAgo),
+      supabase.from("invoices").select("id, total_amount, amount_paid, payment_status, payment_date, created_at").or(`created_at.gte.${oneWeekAgo},payment_date.gte.${oneWeekAgo}`),
       supabase.from("user_reviews").select("id, rating").gte("created_at", oneWeekAgo),
       supabase.from("contact_requests").select("id").gte("created_at", oneWeekAgo),
       supabase.from("profiles").select("id").gte("created_at", oneWeekAgo),
