@@ -84,7 +84,7 @@ serve(async (req) => {
           ${kpiRow("💶", "Chiffre d'affaires", totalCA > 0 ? formatPrice(totalCA) : "0 €")}
           ${kpiRow("📋", "Devis créés", quotes.length)}
           ${kpiRow("📅", "Réservations confirmées", confirmedBookings)}
-          ${kpiRow("🧾", "Factures émises", invoices.length)}
+          ${kpiRow("🧾", "Factures émises", invoicesIssuedThisWeek.length)}
           ${kpiRow("⭐", "Avis reçus (moy.)", `${reviews.length} (${avgRating}/5)`)}
           ${kpiRow("📩", "Demandes de contact", contacts.length)}
           ${kpiRow("👤", "Nouveaux inscrits", newProfiles.length)}
