@@ -77,6 +77,26 @@ serve(async (req: Request) => {
 
     const reqCtx = extractRequestContext(req);
 
+    // === SAFEGUARD: Block payment link if quote is cancelled ===
+    if (quote.status === "cancelled") {
+      return new Response(JSON.stringify({
+        error: "Ce devis a été annulé. Merci de contacter l'équipe pour en obtenir un nouveau.",
+        code: "QUOTE_CANCELLED",
+      }), {
+        status: 409, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    // === SAFEGUARD: Block payment link if CGV/CGU not accepted on the quote ===
+    if (!quote.cgv_accepted || !quote.cgu_accepted) {
+      return new Response(JSON.stringify({
+        error: "Vous devez d'abord valider les Conditions Générales de Vente et d'Utilisation depuis votre devis avant de demander un lien de paiement.",
+        code: "CGV_REQUIRED",
+      }), {
+        status: 412, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     // === SAFEGUARD: Block standard payment link if quote is on installment plan ===
     // The 3x payment must go through create-installment-payment to enforce 33.33% rules
     if (quote.payment_option === "installments") {

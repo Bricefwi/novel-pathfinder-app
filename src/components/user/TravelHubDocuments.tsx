@@ -78,6 +78,11 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
   const [cgvAccepted, setCgvAccepted] = useState(false);
   const [signatureConfirmed, setSignatureConfirmed] = useState(false);
   const [paymentLinkLoading, setPaymentLinkLoading] = useState(false);
+  // Validation devis (CGU/CGV) — étape OBLIGATOIRE avant paiement
+  const [quoteCguAccepted, setQuoteCguAccepted] = useState(false);
+  const [quoteCgvAccepted, setQuoteCgvAccepted] = useState(false);
+  const [quoteSignatureConfirmed, setQuoteSignatureConfirmed] = useState(false);
+  const [quoteValidating, setQuoteValidating] = useState(false);
   // État local pour la checklist (non persisté)
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
 
@@ -219,9 +224,61 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
       setSelectedQuote(null);
     } catch (err: any) {
       console.error("Payment link error:", err);
-      toast.error("Erreur lors de l'envoi du lien de paiement");
+      toast.error(err?.message || "Erreur lors de l'envoi du lien de paiement");
     } finally {
       setPaymentLinkLoading(false);
+    }
+  };
+
+  const handleValidateQuote = async (quote: any) => {
+    setQuoteValidating(true);
+    try {
+      const now = new Date().toISOString();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // 1) Mettre à jour le devis (CGU/CGV signées)
+      const { error: updateErr } = await supabase
+        .from("quotes")
+        .update({
+          cgu_accepted: true,
+          cgu_accepted_at: now,
+          cgv_accepted: true,
+          cgv_accepted_at: now,
+        })
+        .eq("id", quote.id);
+      if (updateErr) throw updateErr;
+
+      // 2) Trace légale dans legal_acceptances
+      if (user?.id) {
+        await supabase.from("legal_acceptances").insert({
+          user_id: user.id,
+          quote_id: quote.id,
+          activity_id: quote.activity_id,
+          client_email: quote.client_email,
+          client_name: quote.client_name,
+          cgu_accepted: true,
+          cgu_accepted_at: now,
+          cgv_accepted: true,
+          cgv_accepted_at: now,
+          acceptance_context: "quote_validation",
+          signature_type: "electronic_checkbox",
+          signature_data: `Signature électronique – ${now}`,
+          user_agent: navigator.userAgent,
+        });
+      }
+
+      toast.success("✅ Devis validé — vous pouvez maintenant demander votre lien de paiement");
+      setQuoteCguAccepted(false);
+      setQuoteCgvAccepted(false);
+      setQuoteSignatureConfirmed(false);
+      queryClient.invalidateQueries({ queryKey: ["user-quotes"] });
+      // Rafraîchir la fiche ouverte
+      setSelectedQuote({ ...quote, cgu_accepted: true, cgv_accepted: true, cgu_accepted_at: now, cgv_accepted_at: now });
+    } catch (err: any) {
+      console.error("Quote validation error:", err);
+      toast.error("Erreur lors de la validation du devis");
+    } finally {
+      setQuoteValidating(false);
     }
   };
 
@@ -625,8 +682,63 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
                     <span className="text-primary">{selectedQuote.total_price}€</span>
                   </div>
                 </div>
+                {/* Bloc Validation CGU/CGV — obligatoire avant paiement */}
+                {selectedQuote.status !== 'cancelled' && selectedQuote.status !== 'expired' && (
+                  selectedQuote.cgv_accepted && selectedQuote.cgu_accepted ? (
+                    <div className="border-t border-border pt-4">
+                      <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                        <Check className="h-5 w-5 text-green-700 flex-shrink-0" />
+                        <div className="text-sm">
+                          <p className="font-medium text-green-800">Devis validé (CGU/CGV acceptées)</p>
+                          {selectedQuote.cgv_accepted_at && (
+                            <p className="text-xs text-green-700/80">
+                              Le {format(new Date(selectedQuote.cgv_accepted_at), 'dd MMM yyyy à HH:mm', { locale: fr })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border-t border-border pt-4 space-y-3">
+                      <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                        <p className="text-sm font-medium text-yellow-900 mb-1">⚠️ Étape obligatoire avant paiement</p>
+                        <p className="text-xs text-yellow-800">Validez les conditions ci-dessous pour pouvoir recevoir votre lien de paiement.</p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <Checkbox id="q-cgu" checked={quoteCguAccepted} onCheckedChange={(c) => setQuoteCguAccepted(!!c)} />
+                        <label htmlFor="q-cgu" className="text-sm leading-relaxed cursor-pointer">
+                          J'accepte les <a href="/cgu" className="text-primary underline" target="_blank" rel="noreferrer">Conditions Générales d'Utilisation</a>
+                        </label>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <Checkbox id="q-cgv" checked={quoteCgvAccepted} onCheckedChange={(c) => setQuoteCgvAccepted(!!c)} />
+                        <label htmlFor="q-cgv" className="text-sm leading-relaxed cursor-pointer">
+                          J'accepte les <a href="/cgv" className="text-primary underline" target="_blank" rel="noreferrer">Conditions Générales de Vente</a>
+                        </label>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <Checkbox id="q-sign" checked={quoteSignatureConfirmed} onCheckedChange={(c) => setQuoteSignatureConfirmed(!!c)} />
+                        <label htmlFor="q-sign" className="text-sm leading-relaxed cursor-pointer">
+                          Je confirme ma signature électronique de ce devis
+                        </label>
+                      </div>
+                      <Button
+                        className="w-full"
+                        disabled={!quoteCguAccepted || !quoteCgvAccepted || !quoteSignatureConfirmed || quoteValidating}
+                        onClick={() => handleValidateQuote(selectedQuote)}
+                      >
+                        {quoteValidating ? (
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Validation...</>
+                        ) : (
+                          <><Check className="h-4 w-4 mr-2" /> Valider mon devis</>
+                        )}
+                      </Button>
+                    </div>
+                  )
+                )}
+
                 <div className="flex gap-3">
-                  <Button className="flex-1" onClick={() => handleDownloadQuote(selectedQuote)}>
+                  <Button className="flex-1" variant="outline" onClick={() => handleDownloadQuote(selectedQuote)}>
                     <Download className="h-4 w-4 mr-2" />
                     Télécharger PDF
                   </Button>
@@ -634,8 +746,9 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
                     <Button 
                       variant="default" 
                       className="flex-1"
-                      disabled={paymentLinkLoading}
+                      disabled={paymentLinkLoading || !selectedQuote.cgv_accepted || !selectedQuote.cgu_accepted}
                       onClick={() => handleRequestPaymentLink(selectedQuote)}
+                      title={!selectedQuote.cgv_accepted ? "Validez d'abord les CGV ci-dessus" : ""}
                     >
                       {paymentLinkLoading ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
