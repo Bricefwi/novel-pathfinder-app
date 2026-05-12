@@ -44,9 +44,18 @@ serve(async (req) => {
     const newProfiles = profilesRes.data || [];
     const emails = emailsRes.data || [];
 
+    // CA = somme des paiements reçus cette semaine (basé sur payment_date ou amount_paid)
+    const weekStartTs = new Date(oneWeekAgo).getTime();
     const totalCA = invoices
-      .filter(i => i.payment_status === "paid")
-      .reduce((sum, i) => sum + (i.total_amount || 0), 0);
+      .filter(i => {
+        if (!i.payment_date) return false;
+        const pd = new Date(i.payment_date).getTime();
+        return pd >= weekStartTs && (i.payment_status === "paid" || i.payment_status === "partial");
+      })
+      .reduce((sum, i) => sum + Number(i.amount_paid || i.total_amount || 0), 0);
+
+    // Factures émises cette semaine (créées)
+    const invoicesIssuedThisWeek = invoices.filter(i => new Date(i.created_at).getTime() >= weekStartTs);
 
     const confirmedBookings = bookings.filter(b => b.status === "confirmed" || b.status === "completed").length;
     const avgRating = reviews.length > 0
