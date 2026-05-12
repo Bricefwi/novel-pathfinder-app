@@ -421,7 +421,7 @@ export function AliceApologyEmailButton() {
             </DialogTrigger>
             <DialogContent className="max-w-3xl">
               <DialogHeader>
-                <DialogTitle>Envoyer l'email d'excuse</DialogTitle>
+                <DialogTitle>Envoyer l'email à Alice Damervalle</DialogTitle>
                 <DialogDescription>
                   Relisez le contenu et l'aperçu brandé avant envoi. Le message sera envoyé via votre adresse contact officielle.
                 </DialogDescription>
