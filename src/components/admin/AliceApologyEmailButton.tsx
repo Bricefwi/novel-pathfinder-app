@@ -27,23 +27,19 @@ import { fr } from "date-fns/locale";
 
 const ALICE_RECIPIENT = "adamervalle@gmail.com";
 const ALICE_NAME = "Alice Damervalle";
-const ALICE_SUBJECT = "Régularisation de votre paiement en 3 fois — Toutes nos excuses";
+const ALICE_SUBJECT = "Régularisation de votre réservation Bretagne Romantique — Lien de paiement du solde";
 
 const ALICE_DEFAULT_MESSAGE = `Bonjour Alice,
 
-Nous tenions à revenir personnellement vers vous au sujet de votre dossier de paiement en 3 fois.
+Nous revenons vers vous concernant votre séjour « Bretagne Romantique » du 7 au 11 mai 2026.
 
-Suite à un défaut de configuration de notre côté, vous avez reçu un lien de paiement dont le montant ne correspondait pas à la répartition prévue (33,33% / 33,33% / 33,34%). Nous en sommes sincèrement désolés et tenons à vous présenter nos excuses pour la confusion occasionnée.
+Votre acompte de 204 € a bien été reçu sur le tarif total de 680 €. Il vous reste donc un solde de 476 € à régler.
 
-Soyez assurée que nous avons immédiatement mis tout en œuvre pour consolider notre système :
-• Génération automatique des 3 liens de paiement à 33,33% / 33,33% / 33,34%, sans aucune intervention manuelle possible sur les montants.
-• Validation côté serveur empêchant désormais l'envoi de tout lien dont le montant ne correspondrait pas à l'étape attendue.
-• Tableau de suivi détaillé pour chaque versement (statut, date d'envoi, montant attendu, montant payé).
-• Journal d'audit complet retraçant chaque tentative d'envoi, afin de prévenir et diagnostiquer toute anomalie similaire à l'avenir.
+Suite aux récentes mises à jour de notre système de réservation, vous pouvez désormais demander vous-même votre lien de paiement sécurisé pour le solde restant, directement depuis votre espace client (Mon Espace → Mes Documents).
 
-Votre dossier est maintenant entièrement régularisé. Vous recevrez prochainement les bons liens de paiement, conformément à ce qui était initialement prévu.
+Si vous préférez, nous pouvons également vous générer ce lien manuellement sur simple demande par email ou au 06 59 22 62 70.
 
-Encore une fois, toutes nos excuses pour ce désagrément. Nous restons à votre entière disposition pour toute question.
+Nous restons à votre entière disposition pour toute question.
 
 Très cordialement,`;
 
