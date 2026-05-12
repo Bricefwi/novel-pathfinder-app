@@ -416,7 +416,7 @@ export function AliceApologyEmailButton() {
             <DialogTrigger asChild>
               <Button variant="default" className="gap-2">
                 <Send className="h-4 w-4" />
-                Envoyer l'email d'excuse à Alice
+                Envoyer l'email à Alice
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-3xl">
