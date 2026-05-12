@@ -29,7 +29,7 @@ serve(async (req) => {
     const [bookingsRes, quotesRes, invoicesRes, reviewsRes, contactsRes, profilesRes, emailsRes] = await Promise.all([
       supabase.from("bookings").select("id, total_price, status").gte("created_at", oneWeekAgo),
       supabase.from("quotes").select("id, total_price, status").gte("created_at", oneWeekAgo),
-      supabase.from("invoices").select("id, total_amount, payment_status").gte("created_at", oneWeekAgo),
+      supabase.from("invoices").select("id, total_amount, amount_paid, payment_status, payment_date, created_at").or(`created_at.gte.${oneWeekAgo},payment_date.gte.${oneWeekAgo}`),
       supabase.from("user_reviews").select("id, rating").gte("created_at", oneWeekAgo),
       supabase.from("contact_requests").select("id").gte("created_at", oneWeekAgo),
       supabase.from("profiles").select("id").gte("created_at", oneWeekAgo),
@@ -44,9 +44,18 @@ serve(async (req) => {
     const newProfiles = profilesRes.data || [];
     const emails = emailsRes.data || [];
 
+    // CA = somme des paiements reçus cette semaine (basé sur payment_date ou amount_paid)
+    const weekStartTs = new Date(oneWeekAgo).getTime();
     const totalCA = invoices
-      .filter(i => i.payment_status === "paid")
-      .reduce((sum, i) => sum + (i.total_amount || 0), 0);
+      .filter(i => {
+        if (!i.payment_date) return false;
+        const pd = new Date(i.payment_date).getTime();
+        return pd >= weekStartTs && (i.payment_status === "paid" || i.payment_status === "partial");
+      })
+      .reduce((sum, i) => sum + Number(i.amount_paid || i.total_amount || 0), 0);
+
+    // Factures émises cette semaine (créées)
+    const invoicesIssuedThisWeek = invoices.filter(i => new Date(i.created_at).getTime() >= weekStartTs);
 
     const confirmedBookings = bookings.filter(b => b.status === "confirmed" || b.status === "completed").length;
     const avgRating = reviews.length > 0
@@ -75,7 +84,7 @@ serve(async (req) => {
           ${kpiRow("💶", "Chiffre d'affaires", totalCA > 0 ? formatPrice(totalCA) : "0 €")}
           ${kpiRow("📋", "Devis créés", quotes.length)}
           ${kpiRow("📅", "Réservations confirmées", confirmedBookings)}
-          ${kpiRow("🧾", "Factures émises", invoices.length)}
+          ${kpiRow("🧾", "Factures émises", invoicesIssuedThisWeek.length)}
           ${kpiRow("⭐", "Avis reçus (moy.)", `${reviews.length} (${avgRating}/5)`)}
           ${kpiRow("📩", "Demandes de contact", contacts.length)}
           ${kpiRow("👤", "Nouveaux inscrits", newProfiles.length)}
