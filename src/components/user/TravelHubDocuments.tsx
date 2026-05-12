@@ -630,8 +630,63 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
                     <span className="text-primary">{selectedQuote.total_price}€</span>
                   </div>
                 </div>
+                {/* Bloc Validation CGU/CGV — obligatoire avant paiement */}
+                {selectedQuote.status !== 'cancelled' && selectedQuote.status !== 'expired' && (
+                  selectedQuote.cgv_accepted && selectedQuote.cgu_accepted ? (
+                    <div className="border-t border-border pt-4">
+                      <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                        <Check className="h-5 w-5 text-green-700 flex-shrink-0" />
+                        <div className="text-sm">
+                          <p className="font-medium text-green-800">Devis validé (CGU/CGV acceptées)</p>
+                          {selectedQuote.cgv_accepted_at && (
+                            <p className="text-xs text-green-700/80">
+                              Le {format(new Date(selectedQuote.cgv_accepted_at), 'dd MMM yyyy à HH:mm', { locale: fr })}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="border-t border-border pt-4 space-y-3">
+                      <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                        <p className="text-sm font-medium text-yellow-900 mb-1">⚠️ Étape obligatoire avant paiement</p>
+                        <p className="text-xs text-yellow-800">Validez les conditions ci-dessous pour pouvoir recevoir votre lien de paiement.</p>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <Checkbox id="q-cgu" checked={quoteCguAccepted} onCheckedChange={(c) => setQuoteCguAccepted(!!c)} />
+                        <label htmlFor="q-cgu" className="text-sm leading-relaxed cursor-pointer">
+                          J'accepte les <a href="/cgu" className="text-primary underline" target="_blank" rel="noreferrer">Conditions Générales d'Utilisation</a>
+                        </label>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <Checkbox id="q-cgv" checked={quoteCgvAccepted} onCheckedChange={(c) => setQuoteCgvAccepted(!!c)} />
+                        <label htmlFor="q-cgv" className="text-sm leading-relaxed cursor-pointer">
+                          J'accepte les <a href="/cgv" className="text-primary underline" target="_blank" rel="noreferrer">Conditions Générales de Vente</a>
+                        </label>
+                      </div>
+                      <div className="flex items-start space-x-3">
+                        <Checkbox id="q-sign" checked={quoteSignatureConfirmed} onCheckedChange={(c) => setQuoteSignatureConfirmed(!!c)} />
+                        <label htmlFor="q-sign" className="text-sm leading-relaxed cursor-pointer">
+                          Je confirme ma signature électronique de ce devis
+                        </label>
+                      </div>
+                      <Button
+                        className="w-full"
+                        disabled={!quoteCguAccepted || !quoteCgvAccepted || !quoteSignatureConfirmed || quoteValidating}
+                        onClick={() => handleValidateQuote(selectedQuote)}
+                      >
+                        {quoteValidating ? (
+                          <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Validation...</>
+                        ) : (
+                          <><Check className="h-4 w-4 mr-2" /> Valider mon devis</>
+                        )}
+                      </Button>
+                    </div>
+                  )
+                )}
+
                 <div className="flex gap-3">
-                  <Button className="flex-1" onClick={() => handleDownloadQuote(selectedQuote)}>
+                  <Button className="flex-1" variant="outline" onClick={() => handleDownloadQuote(selectedQuote)}>
                     <Download className="h-4 w-4 mr-2" />
                     Télécharger PDF
                   </Button>
@@ -639,8 +694,9 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
                     <Button 
                       variant="default" 
                       className="flex-1"
-                      disabled={paymentLinkLoading}
+                      disabled={paymentLinkLoading || !selectedQuote.cgv_accepted || !selectedQuote.cgu_accepted}
                       onClick={() => handleRequestPaymentLink(selectedQuote)}
+                      title={!selectedQuote.cgv_accepted ? "Validez d'abord les CGV ci-dessus" : ""}
                     >
                       {paymentLinkLoading ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
