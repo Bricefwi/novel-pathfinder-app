@@ -78,6 +78,11 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
   const [cgvAccepted, setCgvAccepted] = useState(false);
   const [signatureConfirmed, setSignatureConfirmed] = useState(false);
   const [paymentLinkLoading, setPaymentLinkLoading] = useState(false);
+  // Validation devis (CGU/CGV) — étape OBLIGATOIRE avant paiement
+  const [quoteCguAccepted, setQuoteCguAccepted] = useState(false);
+  const [quoteCgvAccepted, setQuoteCgvAccepted] = useState(false);
+  const [quoteSignatureConfirmed, setQuoteSignatureConfirmed] = useState(false);
+  const [quoteValidating, setQuoteValidating] = useState(false);
   // État local pour la checklist (non persisté)
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
 
