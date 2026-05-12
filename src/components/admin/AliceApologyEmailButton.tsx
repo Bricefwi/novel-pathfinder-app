@@ -367,7 +367,7 @@ export function AliceApologyEmailButton() {
         toast.info("Email déjà envoyé récemment (anti-doublon).");
       } else {
         await logSend("sent");
-        toast.success(`Email d'excuse envoyé à ${recipient}.`);
+        toast.success(`Email envoyé à ${recipient}.`);
       }
       setRetryCount(0);
       setOpen(false);
