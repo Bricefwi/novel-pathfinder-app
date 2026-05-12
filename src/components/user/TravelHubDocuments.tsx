@@ -224,9 +224,61 @@ export const TravelHubDocuments = ({ userId }: TravelHubDocumentsProps) => {
       setSelectedQuote(null);
     } catch (err: any) {
       console.error("Payment link error:", err);
-      toast.error("Erreur lors de l'envoi du lien de paiement");
+      toast.error(err?.message || "Erreur lors de l'envoi du lien de paiement");
     } finally {
       setPaymentLinkLoading(false);
+    }
+  };
+
+  const handleValidateQuote = async (quote: any) => {
+    setQuoteValidating(true);
+    try {
+      const now = new Date().toISOString();
+      const { data: { user } } = await supabase.auth.getUser();
+
+      // 1) Mettre à jour le devis (CGU/CGV signées)
+      const { error: updateErr } = await supabase
+        .from("quotes")
+        .update({
+          cgu_accepted: true,
+          cgu_accepted_at: now,
+          cgv_accepted: true,
+          cgv_accepted_at: now,
+        })
+        .eq("id", quote.id);
+      if (updateErr) throw updateErr;
+
+      // 2) Trace légale dans legal_acceptances
+      if (user?.id) {
+        await supabase.from("legal_acceptances").insert({
+          user_id: user.id,
+          quote_id: quote.id,
+          activity_id: quote.activity_id,
+          client_email: quote.client_email,
+          client_name: quote.client_name,
+          cgu_accepted: true,
+          cgu_accepted_at: now,
+          cgv_accepted: true,
+          cgv_accepted_at: now,
+          acceptance_context: "quote_validation",
+          signature_type: "electronic_checkbox",
+          signature_data: `Signature électronique – ${now}`,
+          user_agent: navigator.userAgent,
+        });
+      }
+
+      toast.success("✅ Devis validé — vous pouvez maintenant demander votre lien de paiement");
+      setQuoteCguAccepted(false);
+      setQuoteCgvAccepted(false);
+      setQuoteSignatureConfirmed(false);
+      queryClient.invalidateQueries({ queryKey: ["user-quotes"] });
+      // Rafraîchir la fiche ouverte
+      setSelectedQuote({ ...quote, cgu_accepted: true, cgv_accepted: true, cgu_accepted_at: now, cgv_accepted_at: now });
+    } catch (err: any) {
+      console.error("Quote validation error:", err);
+      toast.error("Erreur lors de la validation du devis");
+    } finally {
+      setQuoteValidating(false);
     }
   };
 
