@@ -400,16 +400,16 @@ export function AliceApologyEmailButton() {
   };
 
   return (
-    <Card className="border-accent bg-accent/30">
+      <Card className="border-accent bg-accent/30">
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <MailWarning className="h-5 w-5 text-accent-foreground" />
-          Email d'excuse — Cas Alice Damervalle
+          Email de relance — Alice Damervalle (Bretagne Romantique)
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
-          Texte d'excuse préparé suite à l'incident du paiement en 3 fois. Vous pouvez relire / modifier puis envoyer en un clic.
+          Message préparé pour informer Alice de la disponibilité du lien de paiement pour le solde restant (476 €). Vous pouvez relire / modifier puis envoyer en un clic.
         </p>
         <div className="flex flex-wrap gap-2">
           <Dialog open={open} onOpenChange={setOpen}>
