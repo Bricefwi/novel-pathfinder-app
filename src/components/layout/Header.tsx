@@ -41,6 +41,7 @@ const navigation = [
   { name: "Préparer Voyage", href: "/preparer-voyage" },
   { name: "Éco-Système", href: "/eco-systeme" },
   { name: "Carnet de Voyage", href: "/carnet-de-voyage" },
+  { name: "Galerie", href: "/galerie", icon: Camera },
   { name: "Contact", href: "/contact" },
   { name: "FAQ", href: "/agent-faq", icon: MessageCircle },
 ];
