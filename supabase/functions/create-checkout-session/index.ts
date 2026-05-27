@@ -75,6 +75,60 @@ serve(async (req: Request) => {
       });
     }
 
+    let quoteForLegalCheck: any = null;
+    let invoiceForLegalCheck: any = null;
+
+    if (quote_id) {
+      const { data: quote, error: quoteError } = await supabase
+        .from("quotes")
+        .select("id, quote_number, cgu_accepted, cgv_accepted")
+        .eq("id", quote_id)
+        .single();
+      if (quoteError || !quote) {
+        return new Response(JSON.stringify({ error: "Devis introuvable" }), {
+          status: 404, headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      quoteForLegalCheck = quote;
+    }
+
+    if (invoice_id) {
+      const { data: invoice, error: invoiceError } = await supabase
+        .from("invoices")
+        .select("id, invoice_number, quote_id, cgu_accepted, cgv_accepted")
+        .eq("id", invoice_id)
+        .single();
+      if (invoiceError || !invoice) {
+        return new Response(JSON.stringify({ error: "Facture introuvable" }), {
+          status: 404, headers: { "Content-Type": "application/json", ...corsHeaders },
+        });
+      }
+      invoiceForLegalCheck = invoice;
+
+      if (invoice.quote_id && !quoteForLegalCheck) {
+        const { data: linkedQuote } = await supabase
+          .from("quotes")
+          .select("id, quote_number, cgu_accepted, cgv_accepted")
+          .eq("id", invoice.quote_id)
+          .maybeSingle();
+        quoteForLegalCheck = linkedQuote;
+      }
+    }
+
+    const hasLegalAcceptance = Boolean(
+      (quoteForLegalCheck?.cgu_accepted && quoteForLegalCheck?.cgv_accepted) ||
+      (invoiceForLegalCheck?.cgu_accepted && invoiceForLegalCheck?.cgv_accepted)
+    );
+
+    if (!hasLegalAcceptance) {
+      return new Response(JSON.stringify({
+        error: "Impossible d'envoyer un lien de paiement : le client doit d'abord valider le devis et accepter les CGU/CGV dans son espace.",
+        code: "CGV_REQUIRED",
+      }), {
+        status: 412, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
       return new Response(JSON.stringify({ error: "STRIPE_SECRET_KEY not configured" }), {
