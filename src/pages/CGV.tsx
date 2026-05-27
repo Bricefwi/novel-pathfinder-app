@@ -68,7 +68,7 @@ const CGV = () => {
                 Article 3 – Réservation
               </h2>
               <p>
-                La réservation devient ferme et définitive après validation écrite et versement d'un acompte de 20% du montant 
+                La réservation devient ferme et définitive après validation écrite et versement d'un acompte de 30% du montant 
                 total de la prestation. Le solde est exigible au plus tard 30 jours avant le départ.
               </p>
               <p className="font-medium text-foreground">
