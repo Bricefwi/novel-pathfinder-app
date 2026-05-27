@@ -207,7 +207,7 @@ const Auth = () => {
 
   const handlePostLoginRedirect = async (userId: string) => {
     try {
-      // 1. Vérification Admin via RPC sécurisé ou table user_roles
+      // 1. Vérification Admin via la table user_roles (source de vérité)
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
@@ -215,11 +215,7 @@ const Auth = () => {
         .eq("role", "admin")
         .maybeSingle();
 
-      // Fallback: vérification par email admin connu
-      const { data: { user } } = await supabase.auth.getUser();
-      const isAdminEmail = user?.email === "ferme.equestre.arwen@gmail.com";
-
-      if (roleData?.role === "admin" || isAdminEmail) {
+      if (roleData?.role === "admin") {
         toast.success("Bienvenue, Administrateur !");
         navigate("/admin");
         return;
