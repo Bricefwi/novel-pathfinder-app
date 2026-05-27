@@ -112,6 +112,16 @@ serve(async (req: Request) => {
       });
     }
 
+    // === SAFEGUARD: CGU/CGV must be accepted on the quote before any installment link ===
+    if (!quote.cgv_accepted || !quote.cgu_accepted) {
+      return new Response(JSON.stringify({
+        error: "Impossible d'envoyer un lien de paiement : le client doit d'abord valider le devis et accepter les CGU/CGV dans son espace.",
+        code: "CGV_REQUIRED",
+      }), {
+        status: 412, headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const totalPrice = Number(quote.total_price);
 
     if (!Number.isFinite(totalPrice) || totalPrice <= 0) {

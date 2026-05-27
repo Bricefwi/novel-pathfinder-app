@@ -477,6 +477,7 @@ export type Database = {
       bookings: {
         Row: {
           activity_id: string | null
+          booking_number: string
           contact_email: string
           contact_name: string
           contact_phone: string | null
@@ -493,6 +494,7 @@ export type Database = {
         }
         Insert: {
           activity_id?: string | null
+          booking_number?: string
           contact_email: string
           contact_name: string
           contact_phone?: string | null
@@ -509,6 +511,7 @@ export type Database = {
         }
         Update: {
           activity_id?: string | null
+          booking_number?: string
           contact_email?: string
           contact_name?: string
           contact_phone?: string | null
@@ -1929,6 +1932,7 @@ export type Database = {
     }
     Functions: {
       cleanup_expired_seo_cache: { Args: never; Returns: undefined }
+      generate_booking_number: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
       generate_quote_number: { Args: never; Returns: string }
       get_config: { Args: { config_key: string }; Returns: Json }

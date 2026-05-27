@@ -212,7 +212,7 @@ const DemandeDevis = () => {
   const basePrice = selectedSlotDetails?.price || selectedSejourDetails?.price || 0;
   const totalParticipants = (form.adultsCount || 1) + (form.childrenCount || 0);
   const totalPrice = basePrice * totalParticipants;
-  const depositAmount = Math.ceil(totalPrice * 0.2); // 20% deposit
+  const depositAmount = Math.ceil(totalPrice * 0.3); // 30% deposit
 
   // Pre-fill from URL params ONCE when activities are loaded
   useEffect(() => {
@@ -313,7 +313,7 @@ const DemandeDevis = () => {
     setLoading(true);
 
     const paymentLabel = form.paymentOption === "deposit" 
-      ? `Acompte 20% (${depositAmount}€)` 
+      ? `Acompte 30% (${depositAmount}€)` 
       : form.paymentOption === "full" 
         ? `Paiement comptant (${totalPrice}€)` 
         : `Paiement en 3 fois (3x${Math.ceil(totalPrice / 3)}€)`;
@@ -414,7 +414,7 @@ ${form.howDidYouHear ? `- Comment nous avez-vous connu : ${form.howDidYouHear}` 
             </Badge>
             <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-background">
               <Percent className="h-4 w-4 text-primary" />
-              <span>Acompte 20% pour réserver</span>
+              <span>Acompte 30% pour réserver</span>
             </Badge>
             <Badge variant="outline" className="flex items-center gap-2 px-4 py-2 bg-background">
               <Clock className="h-4 w-4 text-primary" />
@@ -616,7 +616,7 @@ ${form.howDidYouHear ? `- Comment nous avez-vous connu : ${form.howDidYouHear}` 
                         <Label htmlFor="deposit" className="flex-1 cursor-pointer">
                           <div className="flex justify-between items-center">
                             <div>
-                              <span className="font-medium">Acompte 20%</span>
+                              <span className="font-medium">Acompte 30%</span>
                               <p className="text-sm text-muted-foreground">Réservez maintenant, payez le solde avant le départ</p>
                             </div>
                             <span className="font-bold text-primary">{depositAmount}€</span>
