@@ -56,6 +56,12 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Ownership check: non-admin callers must own the invoice
+    if (!isAdmin && invoice.user_id !== auth.user.id) {
+      return createAuthErrorResponse("Forbidden", 403, corsHeaders);
+    }
+
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(invoice.client_email)) {
       return new Response(
