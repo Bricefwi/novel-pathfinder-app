@@ -40,36 +40,30 @@ const handler = async (req: Request): Promise<Response> => {
     const quoteData: QuoteEmailRequest = await req.json();
     console.log("[send-quote-email] Processing quote:", quoteData.quote_number, "to:", quoteData.client_email);
 
-    // ── Auth ──
+    // ── Auth (required for all callers) ──
     const auth = await authenticateRequest(req);
-    let isAdmin = false;
-    let userId: string | undefined;
-
-    if (auth) {
-      userId = auth.user.id;
-      isAdmin = await verifyAdminRole(auth.supabase, auth.user.id);
-      console.log(`[send-quote-email] Authenticated user: ${userId}, isAdmin: ${isAdmin}`);
-
-      if (!isAdmin) {
-        let isOwner = false;
-        if (quoteData.quote_id) {
-          const { data: ownedQuote } = await auth.supabase
-            .from("quotes").select("id").eq("id", quoteData.quote_id).maybeSingle();
-          isOwner = !!ownedQuote;
-        }
-        if (!isOwner && quoteData.user_id) {
-          isOwner = auth.user.id === quoteData.user_id;
-        }
-        if (!isOwner) {
-          return createAuthErrorResponse("Admin access or quote ownership required", 403, corsHeaders);
-        }
-      }
-    } else {
-      if (!quoteData.quote_number || !quoteData.client_email || !quoteData.client_name) {
-        return createAuthErrorResponse("Authentication required or complete quote data", 401, corsHeaders);
-      }
-      console.log("[send-quote-email] No auth token - proceeding with provided data");
+    if (!auth) {
+      return createAuthErrorResponse("Authentication required", 401, corsHeaders);
     }
+    const userId = auth.user.id;
+    const isAdmin = await verifyAdminRole(auth.supabase, auth.user.id);
+    console.log(`[send-quote-email] Authenticated user: ${userId}, isAdmin: ${isAdmin}`);
+
+    if (!isAdmin) {
+      let isOwner = false;
+      if (quoteData.quote_id) {
+        const { data: ownedQuote } = await auth.supabase
+          .from("quotes").select("id").eq("id", quoteData.quote_id).maybeSingle();
+        isOwner = !!ownedQuote;
+      }
+      if (!isOwner && quoteData.user_id) {
+        isOwner = auth.user.id === quoteData.user_id;
+      }
+      if (!isOwner) {
+        return createAuthErrorResponse("Admin access or quote ownership required", 403, corsHeaders);
+      }
+    }
+
 
     // ── Validate email ──
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

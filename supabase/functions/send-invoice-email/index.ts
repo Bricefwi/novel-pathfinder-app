@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getCorsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { authenticateRequest, verifyAdminRole, createAuthErrorResponse } from "../_shared/rbac.ts";
 import { sendEmailWithAudit } from "../_shared/email-audit.ts";
 import {
   EMAIL_SENDERS, wrapInBrandedLayout, getAppUrl,
@@ -21,6 +22,13 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // ── Auth required: admin or owner of the invoice ──
+    const auth = await authenticateRequest(req);
+    if (!auth) {
+      return createAuthErrorResponse("Authentication required", 401, corsHeaders);
+    }
+    const isAdmin = await verifyAdminRole(auth.supabase, auth.user.id);
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -47,6 +55,12 @@ const handler = async (req: Request): Promise<Response> => {
         { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    // Ownership check: non-admin callers must own the invoice
+    if (!isAdmin && invoice.user_id !== auth.user.id) {
+      return createAuthErrorResponse("Forbidden", 403, corsHeaders);
+    }
+
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(invoice.client_email)) {
