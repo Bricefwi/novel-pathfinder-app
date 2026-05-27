@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Plus, Trash2, Loader2, Star, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+import { detectVideo } from "@/lib/video-embed";
 
 type GalleryPhoto = Tables<"gallery_photos"> & {
   media_type?: string | null;
