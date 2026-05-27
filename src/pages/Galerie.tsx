@@ -1,9 +1,11 @@
 import { Layout } from "@/components/layout/Layout";
-import { useState } from "react";
-import { X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X, Play } from "lucide-react";
 import { SEOHead, seoConfigs } from "@/components/seo/SEOHead";
+import { supabase } from "@/integrations/supabase/client";
+import { detectVideo } from "@/lib/video-embed";
 
-// Import real images
+// Images statiques utilisées comme repli si la table est vide
 import marocPaysageRoute from "@/assets/maroc-paysage-route.jpg";
 import marocArchitecture from "@/assets/maroc-architecture.jpg";
 import cavaliersPlageCoucherSoleil from "@/assets/cavaliers-plage-coucher-soleil.jpg";
@@ -15,75 +17,81 @@ import marocCanyonCavaliers from "@/assets/maroc-canyon-cavaliers.jpg";
 import marocDunesCavaliers from "@/assets/maroc-dunes-cavaliers.jpg";
 import marocEssaouiraBateau from "@/assets/maroc-essaouira-bateau.jpg";
 
-const photos = [
-  {
-    src: cavaliersPlageCoucherSoleil,
-    alt: "Cavaliers sur la plage au coucher de soleil",
-    category: "Randonnées",
-  },
-  {
-    src: marocDunesCavaliers,
-    alt: "Cavaliers sur les dunes du Sahara",
-    category: "Maroc",
-  },
-  {
-    src: bretagnVillageChevaux,
-    alt: "Chevaux devant un restaurant breton typique",
-    category: "Bretagne",
-  },
-  {
-    src: marocCavalierCote,
-    alt: "Randonnée équestre sur la côte marocaine",
-    category: "Maroc",
-  },
-  {
-    src: marocDesertNuages,
-    alt: "Paysage du désert marocain avec dunes",
-    category: "Paysages",
-  },
-  {
-    src: marocCanyonCavaliers,
-    alt: "Cavaliers dans le canyon de l'Atlas",
-    category: "Maroc",
-  },
-  {
-    src: marocArchitecture,
-    alt: "Architecture traditionnelle marocaine",
-    category: "Maroc",
-  },
-  {
-    src: marocPaysageRoute,
-    alt: "Route panoramique au Maroc",
-    category: "Paysages",
-  },
-  {
-    src: marocOmbreCavalier,
-    alt: "Ombre de cavalier dans le désert",
-    category: "Maroc",
-  },
-  {
-    src: marocEssaouiraBateau,
-    alt: "Bateau de pêche traditionnel à Essaouira",
-    category: "Maroc",
-  },
+type MediaItem = {
+  id: string;
+  src: string;            // image / thumbnail à afficher dans la grille
+  alt: string;
+  category: string;
+  mediaType: "image" | "video";
+  videoUrl?: string;      // URL d'embed (iframe) ou fichier
+  videoProvider?: "youtube" | "vimeo" | "file";
+};
+
+const fallbackPhotos: MediaItem[] = [
+  { id: "f1", src: cavaliersPlageCoucherSoleil, alt: "Cavaliers sur la plage au coucher de soleil", category: "Randonnées", mediaType: "image" },
+  { id: "f2", src: marocDunesCavaliers, alt: "Cavaliers sur les dunes du Sahara", category: "Maroc", mediaType: "image" },
+  { id: "f3", src: bretagnVillageChevaux, alt: "Chevaux devant un restaurant breton typique", category: "Bretagne", mediaType: "image" },
+  { id: "f4", src: marocCavalierCote, alt: "Randonnée équestre sur la côte marocaine", category: "Maroc", mediaType: "image" },
+  { id: "f5", src: marocDesertNuages, alt: "Paysage du désert marocain avec dunes", category: "Paysages", mediaType: "image" },
+  { id: "f6", src: marocCanyonCavaliers, alt: "Cavaliers dans le canyon de l'Atlas", category: "Maroc", mediaType: "image" },
+  { id: "f7", src: marocArchitecture, alt: "Architecture traditionnelle marocaine", category: "Maroc", mediaType: "image" },
+  { id: "f8", src: marocPaysageRoute, alt: "Route panoramique au Maroc", category: "Paysages", mediaType: "image" },
+  { id: "f9", src: marocOmbreCavalier, alt: "Ombre de cavalier dans le désert", category: "Maroc", mediaType: "image" },
+  { id: "f10", src: marocEssaouiraBateau, alt: "Bateau de pêche traditionnel à Essaouira", category: "Maroc", mediaType: "image" },
 ];
 
-const categories = ["Tous", "Randonnées", "Bretagne", "Maroc", "Paysages"];
-
 const Galerie = () => {
+  const [items, setItems] = useState<MediaItem[]>(fallbackPhotos);
   const [selectedCategory, setSelectedCategory] = useState("Tous");
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [lightboxItem, setLightboxItem] = useState<MediaItem | null>(null);
 
-  const filteredPhotos = selectedCategory === "Tous" 
-    ? photos 
-    : photos.filter(p => p.category === selectedCategory);
+  useEffect(() => {
+    const load = async () => {
+      const { data, error } = await supabase
+        .from("gallery_photos")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false });
+
+      if (error || !data || data.length === 0) return;
+
+      const mapped: MediaItem[] = data.map((p: any) => {
+        const isVideo = p.media_type === "video";
+        const embed = isVideo && p.video_url ? detectVideo(p.video_url) : null;
+        const thumb =
+          p.thumbnail_url ||
+          embed?.thumbnailUrl ||
+          p.image_url;
+        return {
+          id: p.id,
+          src: thumb,
+          alt: p.title || p.description || "Photo",
+          category: p.category
+            ? p.category.charAt(0).toUpperCase() + p.category.slice(1)
+            : "Général",
+          mediaType: isVideo ? "video" : "image",
+          videoUrl: embed?.embedUrl,
+          videoProvider: embed?.provider,
+        };
+      });
+      setItems(mapped);
+    };
+    load();
+  }, []);
+
+  const categories = ["Tous", ...Array.from(new Set(items.map((i) => i.category)))];
+
+  const filtered = selectedCategory === "Tous"
+    ? items
+    : items.filter((p) => p.category === selectedCategory);
 
   return (
     <Layout>
       <SEOHead {...seoConfigs.galerie} />
       {/* Hero */}
       <section className="relative min-h-[50vh] flex items-center justify-center overflow-hidden">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${marocDunesCavaliers})` }}
         />
@@ -108,10 +116,9 @@ const Galerie = () => {
                 onClick={() => setSelectedCategory(cat)}
                 role="tab"
                 aria-selected={selectedCategory === cat}
-                aria-controls="gallery-grid"
                 className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
-                  selectedCategory === cat 
-                    ? "bg-primary text-primary-foreground" 
+                  selectedCategory === cat
+                    ? "bg-primary text-primary-foreground"
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
@@ -122,32 +129,39 @@ const Galerie = () => {
         </div>
       </section>
 
-      {/* Gallery Grid - Masonry style */}
-      <section className="py-16 bg-background" id="gallery-grid" role="tabpanel">
+      {/* Grille masonry */}
+      <section className="py-16 bg-background">
         <div className="container mx-auto px-4">
           <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-            {filteredPhotos.map((photo, i) => (
-              <div 
-                key={i} 
-                className="break-inside-avoid rounded-2xl overflow-hidden group cursor-pointer"
-                onClick={() => setLightboxImage(photo.src)}
+            {filtered.map((item) => (
+              <div
+                key={item.id}
+                className="break-inside-avoid rounded-2xl overflow-hidden group cursor-pointer relative"
+                onClick={() => setLightboxItem(item)}
                 role="button"
                 tabIndex={0}
-                aria-label={`Agrandir l'image: ${photo.alt}`}
-                onKeyDown={(e) => e.key === 'Enter' && setLightboxImage(photo.src)}
+                aria-label={`Agrandir : ${item.alt}`}
+                onKeyDown={(e) => e.key === "Enter" && setLightboxItem(item)}
               >
                 <div className="relative">
-                  <img 
-                    src={photo.src} 
-                    alt={photo.alt} 
+                  <img
+                    src={item.src}
+                    alt={item.alt}
                     className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
                   />
+                  {item.mediaType === "video" && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-foreground/30">
+                      <div className="w-16 h-16 rounded-full bg-primary/90 flex items-center justify-center">
+                        <Play className="h-8 w-8 text-primary-foreground fill-current" />
+                      </div>
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-foreground/0 group-hover:bg-foreground/30 transition-colors duration-300" />
                   <div className="absolute inset-0 flex items-end p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     <div>
-                      <p className="text-primary-foreground font-medium">{photo.alt}</p>
-                      <p className="text-primary-foreground/80 text-sm">{photo.category}</p>
+                      <p className="text-primary-foreground font-medium">{item.alt}</p>
+                      <p className="text-primary-foreground/80 text-sm">{item.category}</p>
                     </div>
                   </div>
                 </div>
@@ -158,27 +172,53 @@ const Galerie = () => {
       </section>
 
       {/* Lightbox */}
-      {lightboxImage && (
-        <div 
+      {lightboxItem && (
+        <div
           className="fixed inset-0 z-50 bg-foreground/90 flex items-center justify-center p-4"
-          onClick={() => setLightboxImage(null)}
+          onClick={() => setLightboxItem(null)}
           role="dialog"
           aria-modal="true"
-          aria-label="Image agrandie"
+          aria-label="Média agrandi"
         >
-          <button 
-            className="absolute top-6 right-6 text-primary-foreground hover:text-primary transition-colors"
-            onClick={() => setLightboxImage(null)}
+          <button
+            className="absolute top-6 right-6 text-primary-foreground hover:text-primary transition-colors z-10"
+            onClick={() => setLightboxItem(null)}
             aria-label="Fermer"
           >
             <X className="h-8 w-8" />
           </button>
-          <img 
-            src={lightboxImage} 
-            alt="Photo agrandie" 
-            className="max-w-full max-h-[90vh] rounded-lg object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
+
+          <div onClick={(e) => e.stopPropagation()} className="max-w-5xl w-full">
+            {lightboxItem.mediaType === "video" && lightboxItem.videoUrl ? (
+              lightboxItem.videoProvider === "file" ? (
+                <video
+                  src={lightboxItem.videoUrl}
+                  controls
+                  autoPlay
+                  className="w-full max-h-[85vh] rounded-lg"
+                />
+              ) : (
+                <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+                  <iframe
+                    src={`${lightboxItem.videoUrl}${lightboxItem.videoUrl.includes("?") ? "&" : "?"}autoplay=1`}
+                    title={lightboxItem.alt}
+                    className="absolute inset-0 w-full h-full rounded-lg"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                </div>
+              )
+            ) : (
+              <img
+                src={lightboxItem.src}
+                alt={lightboxItem.alt}
+                className="max-w-full max-h-[85vh] rounded-lg object-contain mx-auto"
+              />
+            )}
+            <p className="text-primary-foreground text-center mt-4 text-lg font-medium">
+              {lightboxItem.alt}
+            </p>
+          </div>
         </div>
       )}
     </Layout>

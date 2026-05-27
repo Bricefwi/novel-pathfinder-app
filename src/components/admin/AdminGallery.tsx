@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Plus, Trash2, Loader2, Star, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Tables } from "@/integrations/supabase/types";
+import { detectVideo } from "@/lib/video-embed";
 
 type GalleryPhoto = Tables<"gallery_photos"> & {
   media_type?: string | null;
@@ -209,11 +210,16 @@ export function AdminGallery() {
         ) : (
           photos.map((photo) => {
             const isVideo = photo.media_type === "video";
-            const preview = photo.thumbnail_url || photo.image_url;
+            const embed = isVideo && photo.video_url ? detectVideo(photo.video_url) : null;
+            const preview =
+              photo.thumbnail_url ||
+              (embed?.thumbnailUrl) ||
+              photo.image_url;
+            const showInlineFile = isVideo && embed?.provider === "file" && !photo.thumbnail_url;
             return (
               <Card key={photo.id} className="overflow-hidden">
                 <div className="relative aspect-square bg-muted">
-                  {isVideo && photo.video_url && !photo.thumbnail_url ? (
+                  {showInlineFile && photo.video_url ? (
                     <video src={photo.video_url} className="w-full h-full object-cover" muted playsInline />
                   ) : (
                     <img src={preview} alt={photo.title || ""} className="w-full h-full object-cover" />
