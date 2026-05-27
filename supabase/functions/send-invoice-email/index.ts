@@ -22,6 +22,13 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // ── Auth required: admin or owner of the invoice ──
+    const auth = await authenticateRequest(req);
+    if (!auth) {
+      return createAuthErrorResponse("Authentication required", 401, corsHeaders);
+    }
+    const isAdmin = await verifyAdminRole(auth.supabase, auth.user.id);
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
