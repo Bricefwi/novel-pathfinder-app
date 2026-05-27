@@ -812,7 +812,7 @@ const Destinations = () => {
               </div>
               <h3 className="font-semibold text-foreground mb-2">Paiement flexible</h3>
               <p className="text-muted-foreground text-sm">
-                Acompte de 20%, paiement en plusieurs fois possible
+                Acompte de 30%, paiement en plusieurs fois possible
               </p>
             </div>
             <div className="text-center p-6">
