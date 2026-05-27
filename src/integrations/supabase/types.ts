@@ -873,9 +873,12 @@ export type Database = {
           image_url: string
           is_active: boolean | null
           is_featured: boolean | null
+          media_type: string
           sort_order: number | null
           tags: string[] | null
+          thumbnail_url: string | null
           title: string | null
+          video_url: string | null
         }
         Insert: {
           category?: string | null
@@ -885,9 +888,12 @@ export type Database = {
           image_url: string
           is_active?: boolean | null
           is_featured?: boolean | null
+          media_type?: string
           sort_order?: number | null
           tags?: string[] | null
+          thumbnail_url?: string | null
           title?: string | null
+          video_url?: string | null
         }
         Update: {
           category?: string | null
@@ -897,9 +903,12 @@ export type Database = {
           image_url?: string
           is_active?: boolean | null
           is_featured?: boolean | null
+          media_type?: string
           sort_order?: number | null
           tags?: string[] | null
+          thumbnail_url?: string | null
           title?: string | null
+          video_url?: string | null
         }
         Relationships: []
       }
