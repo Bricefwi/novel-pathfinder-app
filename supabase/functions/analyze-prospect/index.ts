@@ -30,12 +30,21 @@ Réponds UNIQUEMENT au format JSON avec cette structure exacte :
 }`;
 
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return handleCorsPreflightRequest(origin);
   }
 
   try {
+    // ── Auth ──
+    const auth = await authenticateRequest(req);
+    if (!auth) {
+      return createAuthErrorResponse("Authentication required", 401, corsHeaders);
+    }
+
     const { user_id, session_id } = await req.json();
 
     if (!user_id && !session_id) {
@@ -45,10 +54,17 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client
+    // Only admins, or users requesting their own analysis, are allowed
+    const isAdmin = await verifyAdminRole(auth.supabase, auth.user.id);
+    if (!isAdmin && (!user_id || user_id !== auth.user.id)) {
+      return createAuthErrorResponse("Forbidden", 403, corsHeaders);
+    }
+
+    // Initialize Supabase client (service role used only after auth passed)
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
 
     // Build query for analytics events
     let query = supabase
