@@ -786,6 +786,51 @@ export type Database = {
           },
         ]
       }
+      efacture_events: {
+        Row: {
+          created_at: string
+          direction: string
+          error_message: string | null
+          event_type: string
+          id: string
+          inbound_invoice_id: string | null
+          invoice_id: string | null
+          pa_event_id: string | null
+          pa_provider: string | null
+          payload: Json | null
+          quote_id: string | null
+          status_value: string | null
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          inbound_invoice_id?: string | null
+          invoice_id?: string | null
+          pa_event_id?: string | null
+          pa_provider?: string | null
+          payload?: Json | null
+          quote_id?: string | null
+          status_value?: string | null
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          inbound_invoice_id?: string | null
+          invoice_id?: string | null
+          pa_event_id?: string | null
+          pa_provider?: string | null
+          payload?: Json | null
+          quote_id?: string | null
+          status_value?: string | null
+        }
+        Relationships: []
+      }
       email_audit_log: {
         Row: {
           created_at: string | null
@@ -912,6 +957,87 @@ export type Database = {
         }
         Relationships: []
       }
+      inbound_invoices: {
+        Row: {
+          created_at: string
+          currency: string
+          due_date: string | null
+          format: string
+          id: string
+          invoice_date: string | null
+          invoice_number: string
+          notes: string | null
+          pa_id: string | null
+          pdf_url: string | null
+          raw_metadata: Json | null
+          received_via: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          supplier_email: string | null
+          supplier_name: string
+          supplier_siren: string | null
+          supplier_vat_number: string | null
+          total_ht: number | null
+          total_ttc: number
+          total_tva: number | null
+          updated_at: string
+          xml_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          format?: string
+          id?: string
+          invoice_date?: string | null
+          invoice_number: string
+          notes?: string | null
+          pa_id?: string | null
+          pdf_url?: string | null
+          raw_metadata?: Json | null
+          received_via?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          supplier_email?: string | null
+          supplier_name: string
+          supplier_siren?: string | null
+          supplier_vat_number?: string | null
+          total_ht?: number | null
+          total_ttc: number
+          total_tva?: number | null
+          updated_at?: string
+          xml_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          due_date?: string | null
+          format?: string
+          id?: string
+          invoice_date?: string | null
+          invoice_number?: string
+          notes?: string | null
+          pa_id?: string | null
+          pdf_url?: string | null
+          raw_metadata?: Json | null
+          received_via?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          supplier_email?: string | null
+          supplier_name?: string
+          supplier_siren?: string | null
+          supplier_vat_number?: string | null
+          total_ht?: number | null
+          total_ttc?: number
+          total_tva?: number | null
+          updated_at?: string
+          xml_url?: string | null
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           activity_duration: string | null
@@ -922,18 +1048,29 @@ export type Database = {
           cgv_accepted: boolean | null
           cgv_accepted_at: string | null
           client_address: string | null
+          client_company_name: string | null
           client_email: string
           client_name: string
           client_phone: string | null
           client_signature: string | null
+          client_siren: string | null
+          client_type: string
           client_validated: boolean | null
           client_validated_at: string | null
+          client_vat_number: string | null
           created_at: string
+          delivery_address: string | null
           due_date: string | null
+          efacture_pa_id: string | null
+          efacture_pdf_url: string | null
+          efacture_status: string | null
+          efacture_submitted_at: string | null
+          efacture_xml_url: string | null
           end_date: string | null
           id: string
           invoice_number: string
           notes: string | null
+          operation_nature: string
           participants: number
           payment_date: string | null
           payment_method: string | null
@@ -952,6 +1089,7 @@ export type Database = {
           unit_price: number
           updated_at: string
           user_id: string | null
+          vat_on_debit_option: boolean
         }
         Insert: {
           activity_duration?: string | null
@@ -962,18 +1100,29 @@ export type Database = {
           cgv_accepted?: boolean | null
           cgv_accepted_at?: string | null
           client_address?: string | null
+          client_company_name?: string | null
           client_email: string
           client_name: string
           client_phone?: string | null
           client_signature?: string | null
+          client_siren?: string | null
+          client_type?: string
           client_validated?: boolean | null
           client_validated_at?: string | null
+          client_vat_number?: string | null
           created_at?: string
+          delivery_address?: string | null
           due_date?: string | null
+          efacture_pa_id?: string | null
+          efacture_pdf_url?: string | null
+          efacture_status?: string | null
+          efacture_submitted_at?: string | null
+          efacture_xml_url?: string | null
           end_date?: string | null
           id?: string
           invoice_number: string
           notes?: string | null
+          operation_nature?: string
           participants?: number
           payment_date?: string | null
           payment_method?: string | null
@@ -992,6 +1141,7 @@ export type Database = {
           unit_price?: number
           updated_at?: string
           user_id?: string | null
+          vat_on_debit_option?: boolean
         }
         Update: {
           activity_duration?: string | null
@@ -1002,18 +1152,29 @@ export type Database = {
           cgv_accepted?: boolean | null
           cgv_accepted_at?: string | null
           client_address?: string | null
+          client_company_name?: string | null
           client_email?: string
           client_name?: string
           client_phone?: string | null
           client_signature?: string | null
+          client_siren?: string | null
+          client_type?: string
           client_validated?: boolean | null
           client_validated_at?: string | null
+          client_vat_number?: string | null
           created_at?: string
+          delivery_address?: string | null
           due_date?: string | null
+          efacture_pa_id?: string | null
+          efacture_pdf_url?: string | null
+          efacture_status?: string | null
+          efacture_submitted_at?: string | null
+          efacture_xml_url?: string | null
           end_date?: string | null
           id?: string
           invoice_number?: string
           notes?: string | null
+          operation_nature?: string
           participants?: number
           payment_date?: string | null
           payment_method?: string | null
@@ -1032,6 +1193,7 @@ export type Database = {
           unit_price?: number
           updated_at?: string
           user_id?: string | null
+          vat_on_debit_option?: boolean
         }
         Relationships: [
           {
@@ -1641,15 +1803,25 @@ export type Database = {
           cgv_accepted: boolean | null
           cgv_accepted_at: string | null
           client_address: string | null
+          client_company_name: string | null
           client_email: string
           client_name: string
           client_phone: string | null
+          client_siren: string | null
+          client_type: string
+          client_vat_number: string | null
           created_at: string
+          delivery_address: string | null
           deposit_amount: number | null
           deposit_percentage: number | null
+          efacture_pa_id: string | null
+          efacture_status: string | null
+          efacture_submitted_at: string | null
+          efacture_xml_url: string | null
           end_date: string | null
           id: string
           notes: string | null
+          operation_nature: string
           participants: number
           payment_option: string | null
           pdf_generated_at: string | null
@@ -1665,6 +1837,7 @@ export type Database = {
           user_id: string | null
           valid_until: string | null
           validation_notification_sent: boolean | null
+          vat_on_debit_option: boolean
         }
         Insert: {
           activity_duration?: string | null
@@ -1679,15 +1852,25 @@ export type Database = {
           cgv_accepted?: boolean | null
           cgv_accepted_at?: string | null
           client_address?: string | null
+          client_company_name?: string | null
           client_email: string
           client_name: string
           client_phone?: string | null
+          client_siren?: string | null
+          client_type?: string
+          client_vat_number?: string | null
           created_at?: string
+          delivery_address?: string | null
           deposit_amount?: number | null
           deposit_percentage?: number | null
+          efacture_pa_id?: string | null
+          efacture_status?: string | null
+          efacture_submitted_at?: string | null
+          efacture_xml_url?: string | null
           end_date?: string | null
           id?: string
           notes?: string | null
+          operation_nature?: string
           participants?: number
           payment_option?: string | null
           pdf_generated_at?: string | null
@@ -1703,6 +1886,7 @@ export type Database = {
           user_id?: string | null
           valid_until?: string | null
           validation_notification_sent?: boolean | null
+          vat_on_debit_option?: boolean
         }
         Update: {
           activity_duration?: string | null
@@ -1717,15 +1901,25 @@ export type Database = {
           cgv_accepted?: boolean | null
           cgv_accepted_at?: string | null
           client_address?: string | null
+          client_company_name?: string | null
           client_email?: string
           client_name?: string
           client_phone?: string | null
+          client_siren?: string | null
+          client_type?: string
+          client_vat_number?: string | null
           created_at?: string
+          delivery_address?: string | null
           deposit_amount?: number | null
           deposit_percentage?: number | null
+          efacture_pa_id?: string | null
+          efacture_status?: string | null
+          efacture_submitted_at?: string | null
+          efacture_xml_url?: string | null
           end_date?: string | null
           id?: string
           notes?: string | null
+          operation_nature?: string
           participants?: number
           payment_option?: string | null
           pdf_generated_at?: string | null
@@ -1741,6 +1935,7 @@ export type Database = {
           user_id?: string | null
           valid_until?: string | null
           validation_notification_sent?: boolean | null
+          vat_on_debit_option?: boolean
         }
         Relationships: [
           {
